@@ -12,6 +12,10 @@ bool is_letter(char c)
 {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
 }
+bool is_alpha_numeric(char c)
+{
+    return is_letter(c) || ('0' <= c && c <= '9');
+}
 
 }
 
@@ -26,7 +30,7 @@ boost::optional<symbol> parse_reference(State& state)
         symbol::reference result;
         source_location begin = state.location();
 
-        while(!state.empty() && is_letter(state.front()))
+        while(!state.empty() && is_alpha_numeric(state.front()))
         {
             result.identifier += state.front();
             state.pop_front();

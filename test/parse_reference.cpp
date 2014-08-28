@@ -15,8 +15,8 @@ int main()
         state state(str.begin(), str.end());
 
         symbol result = *parse_reference(state);
-        assert(boost::get<symbol::reference>(result.content).identifier == "abc");
-        assert(remaining(state) == "9");
+        assert(boost::get<symbol::reference>(result.content).identifier == str);
+        assert(state.empty());
     }
     {
         string str = "abc";
@@ -25,6 +25,14 @@ int main()
         symbol result = *parse_reference(state);
         assert(boost::get<symbol::reference>(result.content).identifier == "abc");
         assert(state.empty());
+    }
+    {
+        string str = "ab[cd";
+        state state(str.begin(), str.end());
+
+        symbol result = *parse_reference(state);
+        assert(boost::get<symbol::reference>(result.content).identifier == "ab");
+        assert(remaining(state) == "[cd");
     }
     {
         string str = "9abc";
