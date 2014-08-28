@@ -51,5 +51,17 @@ public:
     }
 };
 
+template <class Iterator>
+std::string remaining(parse_state<Iterator> state)
+{
+    std::string result;
+    while(!state.empty())
+    {
+        result += state.front();
+        state.pop_front();
+    }
+    return result;
+}
+
 #endif
 
