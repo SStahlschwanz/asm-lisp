@@ -66,6 +66,30 @@ int main()
         assert(boost::get<symbol::list>(second_content[0].content).size() == 1);
         assert(boost::get<symbol::list>(third_content[0].content).size() == 1);
     }
+    {
+        string str = "( ff, aa (a b) , (),)";
+        state state(str.begin(), str.end());
+        symbol result = *parse_node(state);
+        assert(remaining(state) == "");
+
+        symbol::list content = boost::get<symbol::list>(result.content);
+        assert(content.size() == 4);
+
+        symbol::list first_content = boost::get<symbol::list>(content[0].content);
+        symbol::list second_content = boost::get<symbol::list>(content[1].content);
+        symbol::list third_content = boost::get<symbol::list>(content[2].content);
+        symbol::list fourth_content = boost::get<symbol::list>(content[3].content);
+        assert(first_content.size() == 1);
+        assert(second_content.size() == 2);
+        assert(third_content.size() == 1);
+        assert(fourth_content.size() == 0);
+        assert(boost::get<symbol::reference>(first_content[0].content).identifier == "ff");
+        
+        assert(boost::get<symbol::reference>(second_content[0].content).identifier == "aa");
+        assert(boost::get<symbol::list>(second_content[1].content).size() == 2);
+        
+        assert(boost::get<symbol::list>(third_content[0].content).size() == 0);
+    }
 
 }
 
