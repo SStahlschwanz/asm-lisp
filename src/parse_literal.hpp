@@ -31,7 +31,7 @@ boost::optional<symbol> parse_literal(State& state)
         state.pop_front();
         while(true)
         {
-            if(state.empty())
+            if(state.empty() || state.front() == '\n')
                 throw parse_error();
             if(state.front() == '"')
                 break;

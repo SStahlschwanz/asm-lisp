@@ -32,8 +32,7 @@ int main()
         {
             parse_literal(state);
             assert(false);
-        }
-        catch(const parse_error& err)
+        } catch(const parse_error&)
         {}
     }
     {
@@ -41,5 +40,15 @@ int main()
         state state(begin(str), end(str));
         assert(!parse_literal(state));
         assert(remaining(state) == str);
+    }
+    {
+        string str = "\"asdfasdf\nasdf";
+        state state(begin(str), end(str));
+        try
+        {
+            parse_literal(state);
+            assert(false);
+        } catch(const parse_error&)
+        {}
     }
 }
