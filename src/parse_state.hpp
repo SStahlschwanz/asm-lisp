@@ -17,6 +17,11 @@ public:
         end(end),
         loc()
     {}
+    parse_state(Iterator begin, Iterator end, const char* file_name)
+      : parse_state(begin, end)
+    {
+        loc.file_name = file_name;
+    }
     
     bool empty() const
     {

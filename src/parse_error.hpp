@@ -9,6 +9,8 @@
 
 inline std::ostream& operator<<(std::ostream& os, const source_location& location)
 {
+    if(location.file_name)
+        os << location.file_name << ":";
     os << location.line;
     os << ":";
     os << location.pos;

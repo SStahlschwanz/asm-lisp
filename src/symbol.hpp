@@ -7,6 +7,7 @@ struct source_location
 {
     size_t line;
     size_t pos;
+    const char* file_name;
 };
 
 class symbol
