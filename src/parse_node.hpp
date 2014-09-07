@@ -47,7 +47,7 @@ boost::optional<symbol> parse_semicolon_list(State& state)
             if(result.empty())
                 return boost::none;
             else
-                throw parse_error();
+                throw parse_error(state.location(), "expected \";\"");
         }
         else
         {
@@ -76,7 +76,7 @@ boost::optional<symbol> parse_curly_list(State& state)
         }
         
         if(state.empty() || state.front() != '}')
-            throw parse_error();
+            throw parse_error(begin, "umatched \"{\"");
         else
         {
             state.pop_front();
@@ -106,7 +106,7 @@ boost::optional<symbol> parse_square_list(State& state)
         } while(!state.empty() && state.front() == ',');
         
         if(state.empty() || state.front() != ']')
-            throw parse_error();
+            throw parse_error(begin, "unmatched \"[\"");
         else
         {
             state.pop_front();
@@ -130,7 +130,7 @@ boost::optional<symbol> parse_round_list(State& state)
         symbol::list first_list = parse_nodes(state);
 
         if(state.empty())
-            throw parse_error();
+            throw parse_error(begin, "unmatched \"(\"");
         else if(state.front() == ')')
         {
             state.pop_front();
@@ -150,7 +150,7 @@ boost::optional<symbol> parse_round_list(State& state)
             } while(!state.empty() && state.front() == ',');
             
             if(state.empty() || state.front() != ')')
-                throw parse_error();
+                throw parse_error(begin, "unmatched \"(\"");
             else
             {
                 state.pop_front();
@@ -158,7 +158,7 @@ boost::optional<symbol> parse_round_list(State& state)
             }
         }
         else
-            throw parse_error();
+            throw parse_error(begin, "unmatched \"(\"");
     }
 }
 

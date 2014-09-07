@@ -32,7 +32,7 @@ boost::optional<symbol> parse_literal(State& state)
         while(true)
         {
             if(state.empty() || state.front() == '\n')
-                throw parse_error();
+                throw parse_error(begin, "unmatched \"");
             if(state.front() == '"')
                 break;
             else
