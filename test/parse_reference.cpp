@@ -48,4 +48,12 @@ int main()
         assert(!parse_reference(state));
         assert(remaining(state) == str);
     }
+    {
+        string str = "$*&%<fw";
+        state state(str.begin(), str.end());
+
+        symbol result = *parse_reference(state);
+        assert(boost::get<symbol::reference>(result.content).identifier == "$*&%<");
+        assert(remaining(state) == "fw");
+    }
 }
