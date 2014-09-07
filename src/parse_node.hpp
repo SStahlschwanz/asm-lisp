@@ -180,5 +180,22 @@ boost::optional<symbol> parse_node(State& state)
         return boost::none;
 }
 
+template <class State>
+symbol parse_file(State& state)
+{
+    symbol::list result;
+    whitespace(state);
+    boost::optional<symbol> next_list;
+    while( (next_list = parse_semicolon_list(state)) )
+    {
+        result.push_back(*next_list);
+        whitespace(state);
+    }
+    if(!state.empty())
+        throw parse_error(state.location(), "invalid token after input");
+    else
+        return symbol{source_location(), state.location(), std::move(result)};
+}
+
 #endif
 
