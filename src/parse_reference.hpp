@@ -19,7 +19,7 @@ bool is_alpha_numeric(char c)
 bool is_operator(char c)
 {
     static const char operators[] = "+-*^/%~<>=!|&.$";
-    static const char* end = operators + sizeof(operators) - 1;
+    static const char* end = operators + sizeof(operators) - 1; // zero-terminated string
     return std::find(operators, end, c) != end;
 }
 
