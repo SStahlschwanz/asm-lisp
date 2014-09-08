@@ -16,7 +16,11 @@ public:
     typedef std::string literal;
     struct reference
     {
+        reference()
+          : refered(nullptr)
+        {}
         std::string identifier;
+        symbol* refered;
     };
     typedef std::vector<symbol> list;
     
