@@ -14,12 +14,12 @@ public:
     module() = delete;
     module(const std::string& file_name)
     {
-        std::ifstream fs(file_name);
+        std::ifstream fs(file_name, std::ios::binary);
         if(fs)
         {
-            std::istream_iterator<char> begin(fs);
-            std::istream_iterator<char> end;
-            parse_state<std::istream_iterator<char>> state(begin, end);
+            std::istreambuf_iterator<char> begin(fs);
+            std::istreambuf_iterator<char> end;
+            parse_state<std::istreambuf_iterator<char>> state(begin, end);
             
            module_contents = parse_file(state);
         }
