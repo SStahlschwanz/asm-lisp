@@ -23,7 +23,7 @@ struct parse_error
     parse_error(const source_location& location, const std::string& msg)
     {
         std::ostringstream oss;
-        oss << location << ":" << msg;
+        oss << location << ": " << msg;
         error = oss.str();
     }
     
