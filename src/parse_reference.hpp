@@ -34,7 +34,7 @@ boost::optional<symbol> parse_reference(State& state)
     else if(is_letter(state.front()))
     {
         symbol::reference result;
-        source_location begin = state.location();
+        source_position begin = state.position();
 
         while(!state.empty() && is_alpha_numeric(state.front()))
         {
@@ -42,13 +42,13 @@ boost::optional<symbol> parse_reference(State& state)
             state.pop_front();
         }
         
-        source_location end = state.location();
-        return symbol{begin, end, result};
+        source_position end = state.position();
+        return symbol{source_range{begin, end, state.file()}, std::move(result)};
     }
     else if(is_operator(state.front()))
     {
         symbol::reference result;
-        source_location begin = state.location();
+        source_position begin = state.position();
 
         while(!state.empty() && is_operator(state.front()))
         {
@@ -56,8 +56,8 @@ boost::optional<symbol> parse_reference(State& state)
             state.pop_front();
         }
 
-        source_location end = state.location();
-        return symbol{begin, end, result};
+        source_position end = state.position();
+        return symbol{source_range{begin, end, state.file()}, std::move(result)};
     }
     else
         return boost::none;

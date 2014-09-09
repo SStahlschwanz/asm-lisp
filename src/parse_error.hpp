@@ -1,29 +1,24 @@
 #ifndef PARSE_ERROR_HPP_
 #define PARSE_ERROR_HPP_
 
-#include "symbol.hpp"
+#include "source_location.hpp"
 
 #include <exception>
 #include <string>
 #include <sstream>
 
-inline std::ostream& operator<<(std::ostream& os, const source_location& location)
-{
-    if(location.file_name)
-        os << location.file_name << ":";
-    os << location.line;
-    os << ":";
-    os << location.pos;
-    return os;
-}
-
 struct parse_error
   : std::exception
 {
-    parse_error(const source_location& location, const std::string& msg)
+    parse_error(const std::string& msg, const source_position& position, const char* file_name)
     {
         std::ostringstream oss;
-        oss << location << ": " << msg;
+        if(file_name)
+            oss << file_name << ":";
+        oss << position.line << ":";
+        oss << position.line_position << ": ";
+        oss << msg;
+
         error = oss.str();
     }
     

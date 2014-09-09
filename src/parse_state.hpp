@@ -1,7 +1,10 @@
 #ifndef PARSE_STATE_HPP_
 #define PARSE_STATE_HPP_
 
-#include "symbol.hpp"
+#include "source_location.hpp"
+
+#include <string>
+#include <cassert>
 
 template <class Iterator>
 class parse_state
@@ -10,17 +13,19 @@ private:
     Iterator pos;
     Iterator end;
     
-    source_location loc;
+    source_position source_pos;
+    const char* file_name;
 public:
     parse_state(Iterator begin, Iterator end)
       : pos(begin),
         end(end),
-        loc()
+        source_pos(),
+        file_name(0)
     {}
     parse_state(Iterator begin, Iterator end, const char* file_name)
-      : parse_state(begin, end)
+      : parse_state(begin, end),
+        file_name(file_name)
     {
-        loc.file_name = file_name;
     }
     
     bool empty() const
@@ -39,20 +44,24 @@ public:
         
         if(front() == '\n')
         {
-            loc.pos = 0;
-            ++loc.line;
+            source_pos.line_position = 0;
+            ++source_pos.line;
         }
         else
         {
-            ++loc.pos;
+            ++source_pos.line_position;
         }
         
         ++pos;
     }
     
-    const source_location& location() const
+    const source_position& position() const
     {
-        return loc;
+        return source_pos;
+    }
+    const char* file() const
+    {
+        return file_name;
     }
 };
 

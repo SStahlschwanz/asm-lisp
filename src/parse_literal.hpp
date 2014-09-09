@@ -25,14 +25,14 @@ boost::optional<symbol> parse_literal(State& state)
         return boost::none;
     else if(state.front() == '"')
     {
-        source_location begin = state.location();
+        source_position begin = state.position();
         symbol::literal result; // std::string
         
         state.pop_front();
         while(true)
         {
             if(state.empty() || state.front() == '\n')
-                throw parse_error(begin, "unmatched \"");
+                throw parse_error("unmatched \"", begin, state.file());
             if(state.front() == '"')
                 break;
             else
@@ -44,12 +44,12 @@ boost::optional<symbol> parse_literal(State& state)
         
         state.pop_front();
         
-        source_location end = state.location();
-        return symbol{begin, end, result};
+        source_position end = state.position();
+        return symbol{source_range{begin, end, state.file()}, result};
     }
     else if(is_digit(state.front()))
     {
-        source_location begin = state.location();
+        source_position begin = state.position();
         symbol::literal result; // std::string
         result += state.front();
         
@@ -59,8 +59,8 @@ boost::optional<symbol> parse_literal(State& state)
             result += state.front();
             state.pop_front();
         }
-        source_location end = state.location();
-        return symbol{begin, end, result};
+        source_position end = state.position();
+        return symbol{source_range{begin, end, state.file()}, result};
     }
     else
         return boost::none;
