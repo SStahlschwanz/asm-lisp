@@ -1,5 +1,5 @@
-#ifndef PARSE_NODE_HPP_
-#define PARSE_NODE_HPP_
+#ifndef PARSE_HPP_
+#define PARSE_HPP_
 
 #include "symbol.hpp"
 #include "parse_error.hpp"

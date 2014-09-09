@@ -2,7 +2,7 @@
 #define MODULE_HPP_
 
 #include "symbol.hpp"
-#include "parse_node.hpp"
+#include "parse.hpp"
 #include "parse_state.hpp"
 
 #include <fstream>
