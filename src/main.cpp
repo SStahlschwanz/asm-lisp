@@ -15,7 +15,7 @@ int main(int argc, char** argv)
     {
         try
         {
-            module m(argv[1]);
+            module m = parse_module(argv[1]);
             return 0;
         }
         catch(const parse_error& exc)
