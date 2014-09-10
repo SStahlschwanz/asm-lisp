@@ -40,7 +40,8 @@ build-dirs:
 # convenience targets
 debug: build/debug/bin
 release: build/release/bin
-
+debugger: build/debug/bin
+	gdb build/debug/bin
 
 # include generated dependency files
 include $(wildcard build/dep/*.dep)
