@@ -9,7 +9,7 @@
 namespace parse_literal_detail
 {
 
-bool is_digit(char c)
+inline bool is_digit(char c)
 {
     return '0' <= c && c <= '9';
 }

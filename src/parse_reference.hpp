@@ -8,15 +8,15 @@
 namespace parse_reference_detail
 {
 
-bool is_letter(char c)
+inline bool is_letter(char c)
 {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
 }
-bool is_alpha_numeric(char c)
+inline bool is_alpha_numeric(char c)
 {
     return is_letter(c) || ('0' <= c && c <= '9');
 }
-bool is_operator(char c)
+inline bool is_operator(char c)
 {
     static const char operators[] = "+-*^/%~<>=!|&.$";
     static const char* end = operators + sizeof(operators) - 1; // zero-terminated string

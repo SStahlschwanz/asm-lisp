@@ -4,7 +4,7 @@
 namespace whitespace_detail
 {
 
-bool is_whitespace(char c)
+inline bool is_whitespace(char c)
 {
     return c == ' ' || c == '\t' || c == '\n';
 }
