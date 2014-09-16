@@ -181,7 +181,7 @@ boost::optional<symbol> parse_node(State& state)
 }
 
 template <class State>
-symbol parse_file(State& state)
+symbol::list parse_file(State& state)
 {
     symbol::list result;
     whitespace(state);
@@ -194,7 +194,7 @@ symbol parse_file(State& state)
     if(!state.empty())
         throw parse_error("invalid token after input", state.position(), state.file());
     else
-        return symbol{source_range{source_position(), state.position(), state.file()}, std::move(result)};
+        return result;
 }
 
 #endif
