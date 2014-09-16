@@ -3,20 +3,19 @@
 
 #include "symbol.hpp"
 #include "parse.hpp"
-#include "parse_state.hpp"
 
-#include <fstream>
-#include <stdexcept>
-
+#include <string>
+#include <vector>
 
 struct module
 {
     std::string file_name;
     std::vector<std::string> required_modules;
-    symbol contents;
+    symbol::list contents;
 };
 
-module parse_module(const std::string& file_name);
+symbol::list parse_module(const std::string& file_name);
+std::vector<std::string> required_modules(const symbol::list& parsed_module);
 
 #endif
 

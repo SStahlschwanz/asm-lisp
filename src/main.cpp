@@ -15,7 +15,10 @@ int main(int argc, char** argv)
     {
         try
         {
-            module m = parse_module(argv[1]);
+            symbol::list parsed_module = parse_module(argv[1]);
+            vector<string> imports = required_modules(parsed_module);
+            for(auto s : imports)
+                cout << s << endl;
             return 0;
         }
         catch(const parse_error& exc)
