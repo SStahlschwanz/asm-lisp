@@ -57,6 +57,7 @@ vector<string> required_modules(const symbol::list& parsed_file)
     // remove duplicates
     sort(result.begin(), result.end());
     result.erase(unique(result.begin(), result.end()), result.end());
+    
     return result;
 }
 
