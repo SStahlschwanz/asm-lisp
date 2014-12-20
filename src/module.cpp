@@ -61,3 +61,24 @@ vector<string> required_modules(const symbol::list& parsed_file)
     return result;
 }
 
+void dispatch_references(module& mod)
+{
+    unordered_map<string, symbol*> symbol_map;
+    for(const symbol& s : mod.contents)
+    {
+        const symbol::list* l = boost::get<symbol::list>(&s.content);
+        if(l && !l->empty())
+        {
+            const symbol::reference* def_stmnt = boost::get<symbol::reference>(&l->front().content);
+            if(def_stmnt && def_stmnt->identifier == "def")
+            {
+                for(auto it = l->begin() + 1; it != l->end(); ++i)
+                {
+                    const symbol& current_symbol = *it;
+                    const symbol::referenc
+                }
+            }
+        }
+    }
+}
+
