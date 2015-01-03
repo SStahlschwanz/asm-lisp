@@ -15,14 +15,38 @@ public:
           : refered(nullptr)
         {}
         std::string identifier;
-        symbol* refered;
+        const symbol* refered;
     };
     typedef std::vector<symbol> list;
     
     boost::variant<boost::blank, source_range> source;
     boost::variant<literal, reference, list> content;
-
-
+ 
+    literal* cast_literal()
+    {
+        return boost::get<literal*>(content);
+    }
+    reference* cast_reference()
+    {
+        return boost::get<reference*>(content);
+    }
+    list* cast_list()
+    {
+        return boost::get<list*>(content);
+    }
+    
+    const literal* cast_literal() const
+    {
+        return boost::get<literal*>(content);
+    }
+    const reference* cast_reference() const
+    {
+        return boost::get<reference*>(content);
+    }
+    const list* cast_list() const
+    {
+        return boost::get<list*>(content);
+    }
 };
 
 namespace symbol_building
