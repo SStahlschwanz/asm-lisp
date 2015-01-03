@@ -11,12 +11,23 @@ public:
     typedef std::string literal;
     struct reference
     {
-        reference(std::string id = std::string())
+        reference(std::string id = std::string(), const symbol* ref = nullptr)
           : identifier(std::move(id)),
-            refered(nullptr)
+            refered(ref)
         {}
         std::string identifier;
         const symbol* refered;
+
+        bool operator==(const reference& that) const
+        {
+            if(identifier != that.identifier)
+                return false;
+
+            if(refered != nullptr && that.refered != nullptr)
+                return *refered == *that.refered;
+            else
+                return refered == nullptr && that.refered == nullptr;
+        }
     };
     typedef std::vector<symbol> list;
     
@@ -48,6 +59,15 @@ public:
     {
         return boost::get<list>(&content);
     }
+
+    bool operator==(const symbol& that) const
+    {
+        return content == that.content;
+    }
+    bool operator!=(const symbol& that) const
+    {
+        return !(*this == that);
+    }
 };
 
 namespace symbol_building
@@ -57,13 +77,15 @@ inline symbol lit(std::string str)
 {
     return symbol{boost::blank(), std::move(str)};
 }
-inline symbol ref(std::string identifier)
+inline symbol ref(std::string identifier, const symbol* refered = nullptr)
 {
-    return symbol{boost::blank(), symbol::reference(std::move(identifier))};
+    return symbol{boost::blank(), symbol::reference(std::move(identifier), refered)};
 }
-inline symbol list(symbol::list list)
+
+template<class... Symbols>
+symbol list(Symbols&&... symbols)
 {
-    return symbol{boost::blank(), std::move(list)};
+    return symbol{boost::blank(), symbol::list{std::forward<Symbols>(symbols)...}};
 }
 
 }
