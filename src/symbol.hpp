@@ -11,8 +11,9 @@ public:
     typedef std::string literal;
     struct reference
     {
-        reference()
-          : refered(nullptr)
+        reference(std::string id = std::string())
+          : identifier(std::move(id)),
+            refered(nullptr)
         {}
         std::string identifier;
         const symbol* refered;
@@ -24,28 +25,28 @@ public:
  
     literal* cast_literal()
     {
-        return boost::get<literal*>(content);
+        return boost::get<literal>(&content);
     }
     reference* cast_reference()
     {
-        return boost::get<reference*>(content);
+        return boost::get<reference>(&content);
     }
     list* cast_list()
     {
-        return boost::get<list*>(content);
+        return boost::get<list>(&content);
     }
     
     const literal* cast_literal() const
     {
-        return boost::get<literal*>(content);
+        return boost::get<literal>(&content);
     }
     const reference* cast_reference() const
     {
-        return boost::get<reference*>(content);
+        return boost::get<reference>(&content);
     }
     const list* cast_list() const
     {
-        return boost::get<list*>(content);
+        return boost::get<list>(&content);
     }
 };
 
@@ -58,7 +59,7 @@ inline symbol lit(std::string str)
 }
 inline symbol ref(std::string identifier)
 {
-    return symbol{boost::blank(), std::move(identifier)};
+    return symbol{boost::blank(), symbol::reference(std::move(identifier))};
 }
 inline symbol list(symbol::list list)
 {
