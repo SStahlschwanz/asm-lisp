@@ -9,7 +9,6 @@
 
 struct module
 {
-    std::string file_name;
     std::vector<std::string> required_modules;
     symbol::list syntax_tree;
 };
