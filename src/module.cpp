@@ -23,35 +23,49 @@ symbol::list parse_module(const std::string& file_name)
         throw runtime_error("file not found: " + file_name);
 }
 
+boost::optional<std::vector<std::string>> parse_import_statement(const symbol::list& statement)
+{
+    if(statement.empty())
+        return boost::none;
+
+    const symbol::reference* import_symbol = statement[0].cast_reference();
+    
+    if(import_symbol == nullptr || import_symbol->identifier != "import")
+        return boost::none;
+    
+    if(statement.size() == 1)
+    {
+        std::ostringstream error_builder;
+        error_builder << boost::get<source_range>(statement[0].source) << ": empty import statement";
+        throw import_error(error_builder.str());
+    }
+
+    std::vector<std::string> result;
+    for(auto it = statement.begin() + 1; it != statement.end(); ++it)
+    {
+        const symbol::reference* module_name = it->cast_reference();
+        if(!module_name)
+        {
+            std::ostringstream error_builder;
+            error_builder << boost::get<source_range>(it->source) << ": invalid argument for 'import' statement";
+            throw import_error(error_builder.str());
+        }
+        result.push_back(module_name->identifier);
+    }
+    return result;
+}
+
 vector<string> required_modules(const symbol::list& parsed_file)
 {
     vector<string> result;
     for(const symbol& s : parsed_file)
     {
-        const symbol::list* l = boost::get<symbol::list>(&s.content);
-        if(l && !l->empty())
-        {
-            const symbol::reference* import_stmnt = boost::get<symbol::reference>(&l->front().content);
-            if(import_stmnt && import_stmnt->identifier == "import")
-            {
-                for(auto it = l->begin() + 1; it != l->end(); ++it)
-                {
-                    const symbol& current_symbol = *it;
-                    const symbol::reference* module_reference = boost::get<symbol::reference>(&current_symbol.content);
-                    if(module_reference)
-                        result.push_back(module_reference->identifier);
-                    else
-                    {
-                        ostringstream oss;
-                        const source_range& import_location = boost::get<source_range>(l->front().content);
-                        const source_range& current_symbol_location = boost::get<source_range>(current_symbol.source);
-                        oss << current_symbol_location << ": invalid symbol following import statement at "
-                            << import_location << endl;
-                        throw import_error(oss.str());
-                    }
-                }
-            }
-        }
+        const symbol::list* l = s.cast_list();
+
+        assert(l != nullptr);
+        boost::optional<vector<string>> import_parse_result = parse_import_statement(*l);
+        if(import_parse_result)
+            result.insert(result.end(), import_parse_result->begin(), import_parse_result->end());
     }
     
     // remove duplicates
@@ -59,26 +73,5 @@ vector<string> required_modules(const symbol::list& parsed_file)
     result.erase(unique(result.begin(), result.end()), result.end());
     
     return result;
-}
-
-void dispatch_references(module& mod)
-{
-    unordered_map<string, symbol*> symbol_map;
-    for(const symbol& s : mod.contents)
-    {
-        const symbol::list* l = boost::get<symbol::list>(&s.content);
-        if(l && !l->empty())
-        {
-            const symbol::reference* def_stmnt = boost::get<symbol::reference>(&l->front().content);
-            if(def_stmnt && def_stmnt->identifier == "def")
-            {
-                for(auto it = l->begin() + 1; it != l->end(); ++i)
-                {
-                    const symbol& current_symbol = *it;
-                    const symbol::referenc
-                }
-            }
-        }
-    }
 }
 
