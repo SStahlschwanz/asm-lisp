@@ -77,7 +77,7 @@ inline symbol lit(std::string str)
 {
     return symbol{boost::blank(), std::move(str)};
 }
-inline symbol ref(std::string identifier, const symbol* refered = nullptr)
+inline symbol sref(std::string identifier, const symbol* refered = nullptr)
 {
     return symbol{boost::blank(), symbol::reference(std::move(identifier), refered)};
 }
@@ -85,7 +85,7 @@ inline symbol ref(std::string identifier, const symbol* refered = nullptr)
 template<class... Symbols>
 symbol list(Symbols&&... symbols)
 {
-    return symbol{boost::blank(), symbol::list{std::forward<Symbols>(symbols)...}};
+    return symbol{boost::blank(), symbol::list({std::forward<Symbols>(symbols)...})};
 }
 
 }

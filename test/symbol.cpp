@@ -11,33 +11,33 @@ int main()
         assert(a == b);
     }
     {
-        symbol a = list(lit("asdf"), ref("sdf"));
-        symbol b = list(lit("asdf"), ref("sdf"));
+        symbol a = list(lit("asdf"), sref("sdf"));
+        symbol b = list(lit("asdf"), sref("sdf"));
         assert(a == b);
     }
     {
-        symbol a = list(lit("ff"), ref("fff"), list());
-        symbol b = list(lit("asdff"), ref("fff"), list());
+        symbol a = list(lit("ff"), sref("fff"), list());
+        symbol b = list(lit("asdff"), sref("fff"), list());
         assert(a != b);
     }
     {
-        symbol a = list(lit("asdff"), ref("fff"), list());
-        symbol b = list(lit("asdff"), ref("fff"), list());
+        symbol a = list(lit("asdff"), sref("fff"), list());
+        symbol b = list(lit("asdff"), sref("fff"), list());
         
-        symbol c = ref("ff", &a);
-        symbol d = ref("ff", &b);
+        symbol c = sref("ff", &a);
+        symbol d = sref("ff", &b);
         assert(c == d);
         
-        a = list(lit("asdff"), ref(""), list());
+        a = list(lit("asdff"), sref(""), list());
         assert(c != d);
 
-        c = ref("ff", &b);
+        c = sref("ff", &b);
         assert(c == d);
 
-        c = ref("ffsdf", &b);
+        c = sref("ffsdf", &b);
         assert(c != d);
 
-        c = ref("ff");
+        c = sref("ff");
         assert(c != d);
     }
 }
