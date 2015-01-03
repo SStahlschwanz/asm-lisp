@@ -9,20 +9,6 @@
 
 using namespace std;
 
-symbol::list parse_module(const std::string& file_name)
-{
-    ifstream fs(file_name, ios::binary);
-    if(fs)
-    {
-        istreambuf_iterator<char> begin(fs);
-        istreambuf_iterator<char> end;
-        parse_state<istreambuf_iterator<char>> state(begin, end);
-        return parse_file(state);
-    }
-    else
-        throw runtime_error("file not found: " + file_name);
-}
-
 boost::optional<std::vector<std::string>> parse_import_statement(const symbol::list& statement)
 {
     if(statement.empty())
@@ -75,3 +61,21 @@ vector<string> required_modules(const symbol::list& parsed_file)
     return result;
 }
 
+module read_module(const std::string& file_name)
+{
+    ifstream fs(file_name, ios::binary);
+    if(!fs)
+        throw runtime_error("unable to open file: " + file_name);
+    
+    istreambuf_iterator<char> begin(fs);
+    istreambuf_iterator<char> end;
+    
+    module result;
+    
+    parse_state<istreambuf_iterator<char>> state(begin, end);
+    result.syntax_tree = parse_file(state);
+    
+    result.required_modules = required_modules(result.syntax_tree);
+
+    return result;
+}
