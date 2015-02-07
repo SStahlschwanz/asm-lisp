@@ -95,8 +95,6 @@ void dispatch_references(symbol& root_node, LookupFunctor&& lookup)
 
 void dispatch_and_eval(module& m, const std::vector<const module*>& dependencies)
 {
-    stack<symbol::list*> open_nodes;
-
     auto lookup_symbol = [&](const string& identifier) -> const symbol*
     {
         const symbol* result = nullptr;
@@ -123,7 +121,8 @@ void dispatch_and_eval(module& m, const std::vector<const module*>& dependencies
     {
         symbol::list* l = s.cast_list();
         assert(l != nullptr);
-        if(symbol::reference* command = l->front().cast_reference())
+        symbol::reference* command = nullptr;
+        if(!l->empty() && (command = l->front().cast_reference()))
         {
             if(command->identifier == "def")
             {
