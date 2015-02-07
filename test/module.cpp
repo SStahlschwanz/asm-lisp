@@ -1,13 +1,16 @@
 #include <module.hpp>
 
 #include <cassert>
+#include <fstream>
+#include <iterator>
 
 using namespace std;
 using namespace symbol_building;
 
 int main()
 {
-    module mod = read_module("test-res/module1.al");
+    ifstream file("test-res/module1.al");
+    module mod = read_module(file);
     symbol::list syntax_tree =
     {
         list(list()),

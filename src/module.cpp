@@ -3,9 +3,11 @@
 #include "parse_state.hpp"
 #include "parse.hpp"
 #include "import_error.hpp"
+#include "define_error.hpp"
 
 #include <fstream>
 #include <stdexcept>
+#include <stack>
 
 using namespace std;
 
@@ -61,13 +63,9 @@ vector<string> required_modules(const symbol::list& parsed_file)
     return result;
 }
 
-module read_module(const std::string& file_name)
+module read_module(std::istream& stream)
 {
-    ifstream fs(file_name, ios::binary);
-    if(!fs)
-        throw runtime_error("unable to open file: " + file_name);
-    
-    istreambuf_iterator<char> begin(fs);
+    istreambuf_iterator<char> begin(stream);
     istreambuf_iterator<char> end;
     
     module result;
@@ -78,4 +76,84 @@ module read_module(const std::string& file_name)
     result.required_modules = required_modules(result.syntax_tree);
 
     return result;
+}
+
+template<class LookupFunctor>
+void dispatch_references(symbol& root_node, LookupFunctor&& lookup)
+{
+    if(symbol::reference* r = root_node.cast_reference())
+        r->refered = lookup(r->identifier);
+    else if(symbol::list* l = root_node.cast_list())
+    {
+        for(symbol& child : *l)
+        {
+            dispatch_references(child, lookup);
+        }
+    }
+    // ignore literal, nothing to dispatch
+}
+
+void dispatch_and_eval(module& m, const std::vector<const module*>& dependencies)
+{
+    stack<symbol::list*> open_nodes;
+
+    auto lookup_symbol = [&](const string& identifier) -> const symbol*
+    {
+        const symbol* result = nullptr;
+        auto it = m.defined_symbols.find(identifier);
+        if(it != m.defined_symbols.end())
+            result = &it->second;
+
+        for(const module* mod : dependencies)
+        {
+            auto it = mod->defined_symbols.find(identifier);
+            if(it != mod->defined_symbols.end())
+            {
+                if(result != nullptr)
+                    throw import_error("reference is ambiguous: " + identifier);
+                else if(result != nullptr)
+                    result = &it->second;
+            }
+        }
+
+        return result;
+    };
+    
+    for(symbol& s : m.syntax_tree)
+    {
+        symbol::list* l = s.cast_list();
+        assert(l != nullptr);
+        if(symbol::reference* command = l->front().cast_reference())
+        {
+            if(command->identifier == "def")
+            {
+                if(l->size() < 3)
+                    throw define_error("\"def\" needs as least 3 arguments");
+                symbol::reference* arg1 = (*l)[1].cast_reference();
+                if(arg1 == nullptr)
+                    throw define_error("\"def\": first argument is not identifier");
+                if(m.defined_symbols.find(arg1->identifier) != m.defined_symbols.end())
+                    throw define_error("\"def\": redefinition of symbol");
+                if(arg1->identifier == "def")
+                    throw define_error("\"def\": forbidden identifier \"def\"");
+                
+                for(auto it = l->begin() + 2; it != l->end(); ++it)
+                    dispatch_references(*it, lookup_symbol);
+                
+                if(l->size() == 3)
+                    m.defined_symbols[arg1->identifier] = (*l)[2];
+                else // l->size() > 3
+                {
+                    symbol::list defined_list(l->begin() + 2, l->end());
+                    m.defined_symbols[arg1->identifier] = symbol{boost::blank(), std::move(defined_list)};
+                    //symbol::reference* macro_ref = (*l)[2].cast_reference();
+                    //if(macro_ref == nullptr)
+                    //    throw define_error("\def\": need identifier here");
+                    //if(macro_ref->refered == nullptr)
+                    //    throw define_error("\def\": use of undefined error");
+                    
+                }
+            }
+        }
+    }
 }

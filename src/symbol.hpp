@@ -30,10 +30,19 @@ public:
         }
     };
     typedef std::vector<symbol> list;
+    struct macro
+    {
+        bool operator==(const macro&) const
+        {
+            return true;
+        }
+    };
     
-    boost::variant<boost::blank, source_range> source;
-    boost::variant<literal, reference, list> content;
- 
+    typedef boost::variant<boost::blank, source_range> source_type;
+    source_type source;
+    typedef boost::variant<literal, reference, list, macro> content_type;
+    content_type content;
+    
     literal* cast_literal()
     {
         return boost::get<literal>(&content);
