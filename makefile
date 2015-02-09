@@ -24,6 +24,7 @@ full-build:
 
 clean:
 	rm -r build test-build || true
+	make build-dirs
 
 # all required directories for builds
 build-dirs:
