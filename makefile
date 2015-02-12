@@ -1,11 +1,18 @@
 CPP=clang++
-COMMON_CPPFLAGS=-std=c++1y
+LLVM_CPP_FLAGS=-D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
+COMMON_CPPFLAGS=-std=c++1y $(LLVM_CPP_FLAGS)
 DEBUG_CPPFLAGS=$(COMMON_CPPFLAGS) -Wall -g -fcolor-diagnostics
-RELEASE_CPPFLAGS=$(COMMON_CPPFLAGS) -O3
+RELEASE_CPPFLAGS=$(COMMON_CPPFLAGS) -O3 -DNDEBUG
 
-COMMON_LDFLAGS=
+LLVM_LD_FLAGS=-rdynamic
+LLVM_LIBS=-lLLVMX86Disassembler -lLLVMX86AsmParser -lLLVMX86CodeGen -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMX86Desc -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMX86Info -lLLVMX86AsmPrinter -lLLVMX86Utils -lLLVMJIT -lLLVMExecutionEngine -lLLVMCodeGen -lLLVMScalarOpts -lLLVMInstCombine -lLLVMTransformUtils -lLLVMipa -lLLVMAnalysis -lLLVMTarget -lLLVMMC -lLLVMCore -lLLVMSupport -lz -lpthread -lffi -lcurses -ldl -lm
+
+COMMON_LDFLAGS=$(LLVM_LD_FLAGS)
+COMMON_LIBS=$(LLVM_LIBS)
 DEBUG_LDFLAGS=$(COMMON_LDFLAGS)
+DEBUG_LIBS=$(LLVM_LIBS)
 RELEASE_LDFLAGS=-O3 $(COMMON_LDFLAGS)
+RELEASE_LIBS=$(LLVM_LIBS)
 
 
 ALL_SRCS=$(wildcard src/*.cpp)
@@ -60,7 +67,7 @@ build/debug/obj/%.o: build/dep/%.dep
 	$(CPP) $(DEBUG_CPPFLAGS) -c $(patsubst build/debug/obj/%.o,src/%.cpp,$@) -o $@
 
 build/debug/bin: $(patsubst src/%.cpp,build/debug/obj/%.o,$(ALL_SRCS))
-	$(CPP) $(DEBUG_LDFLAGS) -o $@ $^
+	$(CPP) $(DEBUG_LDFLAGS) -o $@ $^ $(DEBUG_LIBS)
 
 # release build
 RELEASE_OBJS=$(patsubst src/%.cpp,build/release/obj/%.o,$(ALL_SRCS))
@@ -69,7 +76,7 @@ build/release/obj/%.o: build/dep/%.dep
 	$(CPP) $(RELEASE_CPPFLAGS) -c $(patsubst build/release/obj/%.o,src/%.cpp,$@) -o $@
 
 build/release/bin: $(patsubst src/%.cpp,build/release/obj/%.o,$(ALL_SRCS))
-	$(CPP) $(RELEASE_LDFLAGS) -o $@ $^
+	$(CPP) $(RELEASE_LDFLAGS) -o $@ $^ $(RELEASE_LIBS)
 
 # tests
 # dependency files for tests
@@ -85,7 +92,7 @@ test-build/obj/%.o: test-build/dep/%.dep
 # binaries fo tests
 .SECONARY: $(patsubst test/%.cpp,test-build/%,$(ALL_TESTS))
 test-build/%: $(filter-out %main.o,$(DEBUG_OBJS)) test-build/obj/%.o
-	$(CPP) $(DEBUG_LDFLAGS) -o $@ $^
+	$(CPP) $(DEBUG_LDFLAGS) -o $@ $^ $(DEBUG_LIBS)
 
 test-%: test-build/%
 	./$^
