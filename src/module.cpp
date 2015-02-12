@@ -152,7 +152,7 @@ void dispatch_and_eval(module& m, const std::vector<const std::unordered_map<std
                     if(macro == nullptr)
                         throw define_error("\"def\": got something else than macro here");
                     
-                    symbol::list argument_list(l->begin() + 2, l->end());
+                    symbol::list argument_list(l->begin() + 3, l->end());
                     m.defined_symbols[arg1->identifier] = macro->f(argument_list);
                 }
             }
