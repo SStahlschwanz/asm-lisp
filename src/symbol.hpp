@@ -1,9 +1,11 @@
 #ifndef SYMBOL_HPP_
 #define SYMBOL_HPP_
 
+#include "source_location.hpp"
+
 #include <boost/variant.hpp>
 
-#include "source_location.hpp"
+#include <functional>
 
 class symbol
 {
@@ -32,6 +34,7 @@ public:
     typedef std::vector<symbol> list;
     struct macro
     {
+        std::function<symbol (symbol::list param)> f;
         bool operator==(const macro&) const
         {
             return true;
@@ -55,6 +58,10 @@ public:
     {
         return boost::get<list>(&content);
     }
+    macro* cast_macro()
+    {
+        return boost::get<macro>(&content);
+    }
     
     const literal* cast_literal() const
     {
@@ -67,6 +74,10 @@ public:
     const list* cast_list() const
     {
         return boost::get<list>(&content);
+    }
+    const macro* cast_macro() const
+    {
+        return boost::get<macro>(&content);
     }
 
     bool operator==(const symbol& that) const

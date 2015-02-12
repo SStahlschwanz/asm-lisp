@@ -42,6 +42,14 @@ vector<string> compilation_order(const unordered_map<string, module> modules)
     return order;
 }
 
+std::unordered_map<std::string, symbol> create_core_symbol_table()
+{
+    std::unordered_map<std::string, symbol> result;
+    return result;
+}
+
+const auto core_symbol_table = create_core_symbol_table();
+
 compilation_unit compile(const vector<string>& files)
 {
     compilation_unit unit;
@@ -60,10 +68,20 @@ compilation_unit compile(const vector<string>& files)
     for(const string& module_name : order)
     {
         module& m = unit.modules[module_name];
-        vector<const module*> dependencies;
+        std::vector<const std::unordered_map<std::string, symbol>*> imported_tables;
         for(const string& dependency : m.required_modules)
-            dependencies.push_back(&unit.modules[dependency]);
-        dispatch_and_eval(m, dependencies);
+        {
+            if(dependency == "core")
+                imported_tables.push_back(&core_symbol_table);
+            else
+            {
+                auto module_it = unit.modules.find(dependency);
+                if(module_it == unit.modules.end())
+                    throw std::runtime_error("invalid import: " + dependency);
+                imported_tables.push_back(&module_it->second.defined_symbols);
+            }
+        }
+        dispatch_and_eval(m, imported_tables);
     }
 
     return unit;

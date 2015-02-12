@@ -38,7 +38,7 @@ vector<string> source1_imports = {"fff", "aa", "bb"};
 
 stringstream source2(
 R"(def a {};
-def b "asdf" {};
+def b "asdf";
 def c x;
 def d b;
 )");
@@ -46,7 +46,7 @@ def d b;
 symbol::list source2_syntax =
 {
     list(sref("def"), sref("a"), list()),
-    list(sref("def"), sref("b"), lit("asdf"), list()),
+    list(sref("def"), sref("b"), lit("asdf")),
     list(sref("def"), sref("c"), sref("x")),
     list(sref("def"), sref("d"), sref("b"))
 };
@@ -68,7 +68,7 @@ int main()
     module m2 = verify(source2, source2_syntax, source2_imports);
     dispatch_and_eval(m2, {});
     symbol a_def = list() ;
-    symbol b_def = list(lit("asdf"),  list());
+    symbol b_def = lit("asdf");
     symbol c_def = sref("x");
     symbol d_def = sref("b", &b_def);
     assert(m2.defined_symbols.size() == 4);

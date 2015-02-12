@@ -17,7 +17,7 @@ struct module
 };
 
 module read_module(std::istream& file_name);
-void dispatch_and_eval(module& m, const std::vector<const module*>& dependencies);
+void dispatch_and_eval(module& m, const std::vector<const std::unordered_map<std::string, symbol>*>& imported_symbol_tables);
 
 #endif
 

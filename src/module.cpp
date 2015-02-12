@@ -93,7 +93,7 @@ void dispatch_references(symbol& root_node, LookupFunctor&& lookup)
     // ignore literal, nothing to dispatch
 }
 
-void dispatch_and_eval(module& m, const std::vector<const module*>& dependencies)
+void dispatch_and_eval(module& m, const std::vector<const std::unordered_map<std::string, symbol>*>& symbol_tables)
 {
     auto lookup_symbol = [&](const string& identifier) -> const symbol*
     {
@@ -101,11 +101,11 @@ void dispatch_and_eval(module& m, const std::vector<const module*>& dependencies
         auto it = m.defined_symbols.find(identifier);
         if(it != m.defined_symbols.end())
             result = &it->second;
-
-        for(const module* mod : dependencies)
+        
+        for(const unordered_map<string, symbol>* table : symbol_tables)
         {
-            auto it = mod->defined_symbols.find(identifier);
-            if(it != mod->defined_symbols.end())
+            auto it = table->find(identifier);
+            if(it != table->end())
             {
                 if(result != nullptr)
                     throw import_error("reference is ambiguous: " + identifier);
@@ -143,14 +143,17 @@ void dispatch_and_eval(module& m, const std::vector<const module*>& dependencies
                     m.defined_symbols[arg1->identifier] = (*l)[2];
                 else // l->size() > 3
                 {
-                    symbol::list defined_list(l->begin() + 2, l->end());
-                    m.defined_symbols[arg1->identifier] = symbol{boost::blank(), std::move(defined_list)};
-                    //symbol::reference* macro_ref = (*l)[2].cast_reference();
-                    //if(macro_ref == nullptr)
-                    //    throw define_error("\def\": need identifier here");
-                    //if(macro_ref->refered == nullptr)
-                    //    throw define_error("\def\": use of undefined error");
+                    symbol::reference* macro_ref = (*l)[2].cast_reference();
+                    if(macro_ref == nullptr)
+                        throw define_error("\"def\": need identifier here");
+                    if(macro_ref->refered == nullptr)
+                        throw define_error("\"def\":  use of undefined macro");
+                    const symbol::macro* macro = macro_ref->refered->cast_macro();
+                    if(macro == nullptr)
+                        throw define_error("\"def\": got something else than macro here");
                     
+                    symbol::list argument_list(l->begin() + 2, l->end());
+                    m.defined_symbols[arg1->identifier] = macro->f(argument_list);
                 }
             }
         }
