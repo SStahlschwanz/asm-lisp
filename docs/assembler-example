@@ -1,0 +1,78 @@
+
+
+// calculates a * b (badly, a * b = a + a + ... + a)
+def f procedure (a int, b int) int
+{
+	block entry
+	{
+		// syntax for variable names:
+		// let <variable name> <initializer>
+		// types of variables are infered from their initializers
+		// syntax for built-in commands (initializers are commands with a result, e.g. alloc)
+		// <command name> [params*]
+		// params may be types or values, depending on the command
+		let result_loc (alloc int);
+		store 0 result_loc;
+		let i_loc (alloc int);
+		store 0 i_loc;
+
+		let init_cmp (cmp_ne b 0); // init_cmp has type (int 8)
+		cond_branch init_cmp loop_body end;
+	};
+	block loop_body
+	{
+		let current_sum (load result_loc);
+		let next_sum (add current_sum a);
+		store next_sum result_loc;
+		let current_i (load i_loc);
+		let next_i (add current_i 1);
+		store next_i i_loc;
+
+		let loop_cmp (cmp_ne next_i b);
+		cond_branch loop_cmp loop_body end;
+	};
+	block end
+	{
+		let result (load result_loc);
+		return result;
+	};
+};
+
+// returns a list (a a) (all nodes are encoded as integers)
+def m macro (a int) int
+{
+	block entry
+	{
+		// list_create does not have parameters
+		// the "()" are required
+		let result (list_create);
+		
+		// list_append has two parameters: a list and the appendee
+		// this call crashes, iff result is not a list (it is in this example)
+		list_push result a;
+		list_push result a;
+		
+		let list_size (list_size result);
+		let first_element (list_index result 0);
+		let second_element (list_index result 1);
+		// first_element != second_element because symbols have value semantics
+		// this won't create a cycle
+		list_push result result;
+		// result is now (a a (a a))
+		list_pop result; // fails if result is empty
+		// result is now (a a) 
+		
+		let lit (literal_create);
+		// literals behave like lists with (int 8) elements:
+		literal_push lit 5;
+		let some_character (literal_index lit 0);
+		literal_pop lit;
+
+		let ref (reference_create);
+		reference_set_referee ref result;
+		reference_set_identifier ref asdfasdf; // set identifier of ref to "asdfasdf"
+		(reference_get_referee ref);
+
+		return result;
+	};
+};
