@@ -1,60 +1,74 @@
 
 
 // calculates a * b (badly, a * b = a + a + ... + a)
-def f procedure (a int, b int) int
+def f procedure (a (int 64), b (int 64)) int
 {
 	block entry
 	{
-		// syntax for variable names:
-		// let <variable name> <initializer>
-		// types of variables are infered from their initializers
-		// syntax for built-in commands (initializers are commands with a result, e.g. alloc)
-		// <command name> [params*]
-		// params may be types or values, depending on the command
-		let result_loc (alloc int);
-		store 0 result_loc;
-		let i_loc (alloc int);
-		store 0 i_loc;
+		// syntax for intrinsic instruction:
+		// 		<typed_intrinsic> <param1> <param2> ...
+		// 
+		// typed intrinsic has the form
+		// 		(<intrinsic> <type_param1> <type_param2> ...)
+		//
+		// type has the form
+		//		(<type> <param1> <param2> ...)
+		// a statement may be
+		// 		<intrinsic instruction>
+		// or
+		// 		let <variable_name> <intrinsic_instruction>
+		//
+		// every parameterized intrinsic instruction has unique signature
+		// type parameters are not the pointer type if possible
+		// if an intrinsic does not have parameters, "()" may be omitted
+		//
+		// variable names are available in the same block after their definition
+		// variables in the function parameter or the first block are available in all other blocks
 
-		let init_cmp (cmp_ne b 0); // init_cmp has type (int 8)
-		cond_branch init_cmp loop_body end;
+		let result_loc (alloc (int 64));
+		(store (int 64)) 0 result_loc;
+		let i_loc (alloc (int 64));
+		(store (int 64)) 0 i_loc;
+
+		let init_cmp (cmp_ne (int 64)) b 0; // init_cmp has type (int 1)
+		(cond_branch (int 1)) init_cmp loop_body end;
 	};
 	block loop_body
 	{
-		let current_sum (load result_loc);
-		let next_sum (add current_sum a);
-		store next_sum result_loc;
-		let current_i (load i_loc);
-		let next_i (add current_i 1);
-		store next_i i_loc;
+		let current_sum (load (int 64)) result_loc;
+		let next_sum (add (int 64)) current_sum a;
+		(store (int 64)) next_sum result_loc;
+		let current_i (load (int 64)) i_loc;
+		let next_i (add (int 64)) current_i 1;
+		(store (int 64)) next_i i_loc;
 
-		let loop_cmp (cmp_ne next_i b);
-		cond_branch loop_cmp loop_body end;
+		let loop_cmp (cmp_ne (int 64)) next_i b;
+		(cond_branch (int 1)) loop_cmp loop_body end;
 	};
 	block end
 	{
-		let result (load result_loc);
-		return result;
+		let result (load (int 64)) result_loc;
+		(return (int 64)) result;
 	};
 };
 
 // returns a list (a a) (all nodes are encoded as integers)
-def m macro (a int) int
+def m macro (a (int 64)) int
 {
 	block entry
 	{
 		// list_create does not have parameters
 		// the "()" are required
-		let result (list_create);
+		let result list_create;
 		
 		// list_append has two parameters: a list and the appendee
-		// this call crashes, iff result is not a list (it is in this example)
+		// this call crashes, if result is not a list (it is in this example)
 		list_push result a;
 		list_push result a;
 		
-		let list_size (list_size result);
-		let first_element (list_index result 0);
-		let second_element (list_index result 1);
+		let list_size list_size result;
+		let first_element list_index result 0;
+		let second_element list_index result 1;
 		// first_element != second_element because symbols have value semantics
 		// this won't create a cycle
 		list_push result result;
@@ -62,17 +76,17 @@ def m macro (a int) int
 		list_pop result; // fails if result is empty
 		// result is now (a a) 
 		
-		let lit (literal_create);
-		// literals behave like lists with (int 8) elements:
+		let lit literal_create;
+		// literals behave like lists with (int 8) elements (currently only ascii, in the long run utf-8)
 		literal_push lit 5;
-		let some_character (literal_index lit 0);
+		let some_character literal_index lit 0;
 		literal_pop lit;
 
-		let ref (reference_create);
+		let ref reference_create;
 		reference_set_referee ref result;
 		reference_set_identifier ref asdfasdf; // set identifier of ref to "asdfasdf"
-		(reference_get_referee ref);
+		reference_get_referee ref;
 
-		return result;
+		(return (int 64)) result;
 	};
 };
