@@ -1,0 +1,146 @@
+
+// macro for generating a 'times three' procedure from a primitive type, e.g.
+// 
+//    def times_3_32 gen_times_3 (int 32);
+//
+// no input sanity checks are done
+def gen_times_3 macro (arg_list (int 64)) (int 64)
+{
+	block entry
+	{
+		// extract first argument (crashes if there is none):
+		let type_node list_index arg_list 0;
+		
+		// proc_definition will be the source code for the newly created procedure:
+		let proc_definition list_create;
+		// proc_defintion will be
+		// (((x <type_param>)) <type_param>
+		// {
+		//     block entry
+		//     {
+		//         let tmp (mul <type_param>) x 3;
+		//		   (return <type_param>) tmp;
+		//     };
+		// };)
+		//
+		// create name for variable name (empty reference node)
+		// and create node representing the first (and only) argument for the result procedure:
+		let arg_name reference_create x;
+		// first_parameter will be (x <type_param>):
+		let first_parameter list_create;
+		list_push first_parameter arg_name;
+		list_push first_paramter type_node;
+		
+		// create paramter list for result procedure:
+		let proc_arguments list_create;
+		list_push proc_arguments first_parameter;
+		// argument list only has on element (see above)
+		
+		// add proc arguments and <type_param> to proc_defintion:
+		list_push proc_definition proc_arguments;
+		list_push proc_definition type_node;
+		// proc_defintion is now
+		// (((x <type_param)) <type_param>)
+		// need to create body of procedure:
+		let proc_body list_create;
+		let first_block list_create;
+		
+		// first_block will be (block entry <block_body>)
+		// block_body is generated later on
+		let block_identifier reference_create block;
+		list_push first_block block_identifier;
+
+		let block_name reference_create entry;
+		list_push first_block block_name;
+		
+		let block_body list_create;
+
+		// create statement for computing "x * 3":
+		// first_statement will be
+		// (let tmp (mul <type_param>) x 3)
+		let first_statement list_create;
+		
+		// first node in the statement is ref'let':
+		let let_statement reference_create let;
+		list_push first_statement let_statement;
+		// first_statement is now
+		// (let)
+		
+		// second node is a temporary variable name:
+		let tmp_var reference_create tmp;
+		list_push first_statement tmp_var;
+		// first_statement is now
+		// (let tmp)
+		
+		// third node is the instruction type:
+		let mul_instruction list_create;
+		let instruction_constructor reference_create mul;
+		list_push mul_instruction instruction_constructor;
+		list_push mul_instruction type_param;
+		// mul_instruction is now
+		// (mul <type_param>)
+		list_push first_statement mul_instruction
+		// first_statement is now
+		// (let tmp (mul <type_param>))
+
+		// fourth node is the first parameter for mul, x:
+		list_push first_statement arg_name;
+		// first_statement is now
+		// (let tmp (mul <type_param>) x)
+
+		// fifth node is a constant "3":
+		let literal_3 literal_create;
+		literal_push literal_3 "3"; // equivalent to literal_push literal_3 3; because numbers are interpreted as literals
+		list_push first_statement literal_3;
+		// first_statement is now
+		// (let tmp (mul <type_param>) x 3)
+		
+		// first statement is complete:
+		list_push block_body first_statement;
+		
+		// generate second statement: has to be
+		// ((return <type_param>) tmp)
+		let second_statement list_create;
+		let return_instruction list_create;
+		let return_statement reference_create return;
+		list_push return_instruction return_statement;
+		list_push return_instruction type_param;
+		list_push second_statement return_instruction;
+		// second_statement is now
+		// ((return <type_param>))
+
+		list_push second_statement tmp_var;
+		// second statement is now
+		// ((return <type_param>) tmp)
+		
+		// second statement is complete:
+		list_push block_body second_statement;
+		
+		// block body is complete:
+		list_push first_block block_body;
+		
+		// first_block is complete:
+		list_push proc_body first_block;
+		
+		// proc_body only contains a single block, so proc_body is also complete:
+		list_push proc_definition proc_body;
+
+		// proc_definition is complete! now generate procedure from defintion:
+		let procedure_node call procedure proc_definition;
+
+		// procedure_node is now the compiled procedure
+		(return (int 64)) procedure_node;
+	};
+};
+
+// usage:
+def times_3_50 gen_times_3 (int 50);
+// is equivalent to
+def times_3_50_by_hand procedure ((x (int 50))) (int 50)
+{
+	block entry
+	{
+		let tmp (mul (int 50)) x 3;
+		(return (int 50)) tmp;
+	};
+};
