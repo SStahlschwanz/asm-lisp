@@ -1,95 +1,72 @@
-#include <parse.hpp>
-#include <parse.hpp>
+#define BOOST_TEST_MODULE parse
+#include <boost/test/included/unit_test.hpp>
 
-#include <parse_state.hpp>
+#include "../src/parse.hpp"
 
-using namespace std;
+#include "symbol_building.hpp"
+#include "state_utils.hpp"
 
-int main()
+using boost::optional;
+
+BOOST_AUTO_TEST_CASE(identifier_test)
 {
-    typedef parse_state<string::iterator> state;
-    {
-        string str = "abcd efg";
-        state state(str.begin(), str.end());
-        symbol result = *parse_node(state);
-        assert(boost::get<symbol::reference>(result.content).identifier == "abcd");
-        assert(remaining(state) == " efg");
-    }
-    {
-        string str = "\"abcd\" efg";
-        state state(str.begin(), str.end());
-        symbol result = *parse_node(state);
-        assert(boost::get<symbol::literal>(result.content) == "abcd");
-        assert(remaining(state) == " efg");
-    }
-    {
-        string str = "{ abc; \"fff\" def; ; } efg";
-        state state(str.begin(), str.end());
-        symbol result = *parse_node(state);
-        assert(remaining(state) == " efg");
+    state s = make_state("abcd efg");
 
-        symbol::list content = boost::get<symbol::list>(result.content);
-        assert(content.size() == 3);
+    optional<symbol> got = parse_node(s);
+    BOOST_CHECK(got);
+    symbol expected = sref("abcd");
+    
+    BOOST_CHECK(*got == expected);
+    BOOST_CHECK(remaining(s) == " efg");
+}
 
-        symbol::list first_content = boost::get<symbol::list>(content[0].content);
-        symbol::list second_content = boost::get<symbol::list>(content[1].content);
-        symbol::list third_content = boost::get<symbol::list>(content[2].content);
-        assert(first_content.size() == 1);
-        assert(second_content.size() == 2);
-        assert(third_content.size() == 0);
-        assert(boost::get<symbol::reference>(first_content[0].content).identifier == "abc");
-        
-        assert(boost::get<symbol::literal>(second_content[0].content) == "fff");
-        assert(boost::get<symbol::reference>(second_content[1].content).identifier == "def");
+BOOST_AUTO_TEST_CASE(literal_test)
+{
+    state s = make_state("\"abcd\" efg");
 
-    }
-    {
-        string str = "[ef ak, [a ], [ ] ,]";
-        state state(str.begin(), str.end());
-        symbol result = *parse_node(state);
-        assert(remaining(state) == "");
+    optional<symbol> got = parse_node(s);
+    BOOST_CHECK(got);
+    symbol expected = lit("abcd");
 
-        symbol::list content = boost::get<symbol::list>(result.content);
-        assert(content.size() == 4);
+    BOOST_CHECK(*got == expected);
+    BOOST_CHECK(remaining(s) == " efg");
+}
 
-        symbol::list first_content = boost::get<symbol::list>(content[0].content);
-        symbol::list second_content = boost::get<symbol::list>(content[1].content);
-        symbol::list third_content = boost::get<symbol::list>(content[2].content);
-        symbol::list fourth_content = boost::get<symbol::list>(content[3].content);
-        assert(first_content.size() == 2);
-        assert(second_content.size() == 1);
-        assert(third_content.size() == 1);
-        assert(fourth_content.size() == 0);
-        assert(boost::get<symbol::reference>(first_content[0].content).identifier == "ef");
-        assert(boost::get<symbol::reference>(first_content[1].content).identifier == "ak");
-        
-        assert(boost::get<symbol::list>(second_content[0].content).size() == 1);
-        assert(boost::get<symbol::list>(third_content[0].content).size() == 1);
-    }
-    {
-        string str = "( ff, aa (a b) , (),)";
-        state state(str.begin(), str.end());
-        symbol result = *parse_node(state);
-        assert(remaining(state) == "");
+BOOST_AUTO_TEST_CASE(curly_list_test)
+{
+    state s = make_state("{ abc; \"fff\" def; ; } efg");
 
-        symbol::list content = boost::get<symbol::list>(result.content);
-        assert(content.size() == 4);
+    optional<symbol> got = parse_node(s);
+    BOOST_CHECK(got);
+    symbol expected = list(list(sref("abc")), list(lit("fff"), sref("def")), list());
 
-        symbol::list first_content = boost::get<symbol::list>(content[0].content);
-        symbol::list second_content = boost::get<symbol::list>(content[1].content);
-        symbol::list third_content = boost::get<symbol::list>(content[2].content);
-        symbol::list fourth_content = boost::get<symbol::list>(content[3].content);
-        assert(first_content.size() == 1);
-        assert(second_content.size() == 2);
-        assert(third_content.size() == 1);
-        assert(fourth_content.size() == 0);
-        assert(boost::get<symbol::reference>(first_content[0].content).identifier == "ff");
-        
-        assert(boost::get<symbol::reference>(second_content[0].content).identifier == "aa");
-        assert(boost::get<symbol::list>(second_content[1].content).size() == 2);
-        
-        assert(boost::get<symbol::list>(third_content[0].content).size() == 0);
-    }
+    BOOST_CHECK(*got == expected);
+    BOOST_CHECK(remaining(s) == " efg");
+}
 
+BOOST_AUTO_TEST_CASE(square_list_test)
+{
+    state s = make_state("[ef ak, [a ], [ ] ,] ff");
+
+    optional<symbol> got = parse_node(s);
+    BOOST_CHECK(got);
+    symbol expected = list(list(sref("ef"), sref("ak")), 
+            list(list(list(sref("a")))), list(list(list())), list());
+
+    BOOST_CHECK(*got == expected);
+    BOOST_CHECK(remaining(s) == " ff");
+}
+
+BOOST_AUTO_TEST_CASE(round_list_test)
+{
+    state s = make_state("( ff, aa (a b) , (),) ff");
+
+    optional<symbol> got = parse_node(s);
+    BOOST_CHECK(got);
+    symbol expected = list(list(sref("ff")), list(sref("aa"), list(sref("a"), sref("b"))),
+            list(list()), list());
+
+    BOOST_CHECK(*got == expected);
+    BOOST_CHECK(remaining(s) == " ff");
 }
 

@@ -1,53 +1,83 @@
-#include <parse_reference.hpp>
-#include <parse_reference.hpp>
+#define BOOST_TEST_MODULE parse_reference
+#include <boost/test/included/unit_test.hpp>
 
-#include <parse_state.hpp>
+#include "../src/parse_reference.hpp"
+#include "../src/parse_reference.hpp"
 
-#include <string>
+#include "symbol_building.hpp"
+#include "state_utils.hpp"
 
-using namespace std;
+using boost::optional;
 
-int main()
+BOOST_AUTO_TEST_CASE(letters)
 {
-    typedef parse_state<string::iterator> state;
-    {
-        string str = "abc9";
-        state state(str.begin(), str.end());
+    state s = make_state("abc");
 
-        symbol result = *parse_reference(state);
-        assert(boost::get<symbol::reference>(result.content).identifier == str);
-        assert(state.empty());
-    }
-    {
-        string str = "abc";
-        state state(str.begin(), str.end());
+    optional<symbol> got = parse_reference(s);
+    BOOST_CHECK(got);
+    symbol expected = sref("abc");
 
-        symbol result = *parse_reference(state);
-        assert(boost::get<symbol::reference>(result.content).identifier == "abc");
-        assert(state.empty());
-    }
-    {
-        string str = "ab[cd";
-        state state(str.begin(), str.end());
+    BOOST_CHECK(*got == expected);
+    BOOST_CHECK(remaining(s) == "");
+}
 
-        symbol result = *parse_reference(state);
-        assert(boost::get<symbol::reference>(result.content).identifier == "ab");
-        assert(remaining(state) == "[cd");
-    }
-    {
-        string str = "9abc";
-        state state(str.begin(), str.end());
-        
-        assert(!parse_reference(state));
-        assert(remaining(state) == str);
-    }
-    {
-        string str = "{abc";
-        state state(str.begin(), str.end());
+BOOST_AUTO_TEST_CASE(digit_at_end)
+{
+    state s = make_state("abc9");
 
-        assert(!parse_reference(state));
-        assert(remaining(state) == str);
-    }
+    optional<symbol> got = parse_reference(s);
+    BOOST_CHECK(got);
+    symbol expected = sref("abc9");
+
+    BOOST_CHECK(*got == expected);
+    BOOST_CHECK(remaining(s) == "");
+}
+
+BOOST_AUTO_TEST_CASE(operator_terminated)
+{
+    state s = make_state("ab[cd");
+
+    optional<symbol> got = parse_reference(s);
+    BOOST_CHECK(got);
+    symbol expected = sref("ab");
+
+    BOOST_CHECK(*got == expected);
+    BOOST_CHECK(remaining(s) == "[cd");
+}
+
+BOOST_AUTO_TEST_CASE(digit_at_begin)
+{
+    state s = make_state("9abc");
+
+    optional<symbol> got = parse_reference(s);
+    BOOST_CHECK(!got);
+
+    BOOST_CHECK(remaining(s) == "9abc");
+}
+
+BOOST_AUTO_TEST_CASE(brace_at_begin)
+{
+    state s = make_state("{abc");
+
+    optional<symbol> got = parse_reference(s);
+    BOOST_CHECK(!got);
+
+    BOOST_CHECK(remaining(s) == "{abc");
+}
+
+BOOST_AUTO_TEST_CASE(operators)
+{
+    state s = make_state("$*&%<fw");
+
+    optional<symbol> got = parse_reference(s);
+    BOOST_CHECK(got);
+    symbol expected = sref("$*&%<");
+
+    BOOST_CHECK(*got == expected);
+    BOOST_CHECK(remaining(s) == "fw");
+}
+
+/*
     {
         string str = "$*&%<fw";
         state state(str.begin(), str.end());
@@ -57,3 +87,4 @@ int main()
         assert(remaining(state) == "fw");
     }
 }
+*/

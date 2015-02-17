@@ -1,54 +1,58 @@
+#define BOOST_TEST_MODULE parse_literal
+#include <boost/test/included/unit_test.hpp>
+
 #include "../src/parse_literal.hpp"
 #include "../src/parse_literal.hpp"
 
-#include "../src/parse_state.hpp"
+#include "symbol_building.hpp"
+#include "state_utils.hpp"
 
-#include <cassert>
+using boost::optional;
 
-using namespace std;
-
-int main()
+BOOST_AUTO_TEST_CASE(standard)
 {
-    typedef parse_state<string::iterator> state;
+    state s = make_state("\"abc\"");
+
+    optional<symbol> got = parse_literal(s);
+    BOOST_CHECK(got);
+    symbol expected = lit("abc");
     
-    {
-        string str = "\"abc\"";
-        state state(begin(str), end(str));
-        symbol symbol = *parse_literal(state);
-        assert(boost::get<symbol::literal>(symbol.content) == "abc");
-        assert(state.empty());
-    }
-    {
-        string str = "912fas31";
-        state state(begin(str), end(str));
-        symbol symbol = *parse_literal(state);
-        assert(boost::get<symbol::literal>(symbol.content) == "912");
-        assert(remaining(state) == "fas31");
-    }
-    {
-        string str = "\"fsd";
-        state state(begin(str), end(str));
-        try
-        {
-            parse_literal(state);
-            assert(false);
-        } catch(const parse_exception&)
-        {}
-    }
-    {
-        string str = "f\"91";
-        state state(begin(str), end(str));
-        assert(!parse_literal(state));
-        assert(remaining(state) == str);
-    }
-    {
-        string str = "\"asdfasdf\nasdf";
-        state state(begin(str), end(str));
-        try
-        {
-            parse_literal(state);
-            assert(false);
-        } catch(const parse_exception&)
-        {}
-    }
+    BOOST_CHECK(*got == expected);
+    BOOST_CHECK(remaining(s) == "");
 }
+
+BOOST_AUTO_TEST_CASE(digits)
+{
+    state s = make_state("912fas31");
+
+    optional<symbol> got = parse_literal(s);
+    BOOST_CHECK(got);
+    symbol expected = lit("912");
+    
+    BOOST_CHECK(*got == expected);
+    BOOST_CHECK(remaining(s) == "fas31");
+}
+
+BOOST_AUTO_TEST_CASE(unterminated_quote)
+{
+    state s = make_state("\"abc");
+    
+    BOOST_CHECK_THROW(parse_literal(s), parse_exception);
+}
+
+BOOST_AUTO_TEST_CASE(quote_terminated_next_line)
+{
+    state s = make_state("\"abc\nasdf\"");
+    
+    BOOST_CHECK_THROW(parse_literal(s), parse_exception);
+}
+
+BOOST_AUTO_TEST_CASE(no_literal)
+{
+    state s = make_state("abc");
+
+    optional<symbol> got = parse_literal(s);
+    BOOST_CHECK(!got);
+    BOOST_CHECK(remaining(s) == "abc");
+}
+

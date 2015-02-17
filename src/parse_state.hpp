@@ -68,7 +68,7 @@ public:
         return file_name;
     }
 };
-
+/*
 template <class Iterator>
 std::string remaining(parse_state<Iterator> state)
 {
@@ -80,6 +80,7 @@ std::string remaining(parse_state<Iterator> state)
     }
     return result;
 }
+*/
 
 #endif
 

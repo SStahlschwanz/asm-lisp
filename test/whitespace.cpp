@@ -1,32 +1,37 @@
-#include <whitespace.hpp>
-#include <whitespace.hpp>
+#define BOOST_TEST_MODULE whitespace
+#include <boost/test/included/unit_test.hpp>
 
-#include <parse_state.hpp>
+#include "../src/whitespace.hpp"
+#include "../src/whitespace.hpp"
+
+#include "state_utils.hpp"
+#include "symbol_building.hpp"
 
 #include <cassert>
 #include <string>
 
-using namespace std;
 
-int main()
+BOOST_AUTO_TEST_CASE(standard)
 {
-    typedef parse_state<string::iterator> state;
-    {
-        string str = " \n\t";
-        state state(begin(str), end(str));
-        assert(whitespace(state));
-        assert(state.empty());
-    }
-    {
-        string str = "f \n\t";
-        state state(begin(str), end(str));
-        assert(!whitespace(state));
-        assert(remaining(state) == str);
-    }
-    {
-        string str = "  f ";
-        state state(begin(str), end(str));
-        assert(whitespace(state));
-        assert(remaining(state) == "f ");
-    }
+    state s = make_state(" \n\t");
+    
+    BOOST_CHECK(whitespace(s));
+    BOOST_CHECK(remaining(s) == "");
 }
+
+BOOST_AUTO_TEST_CASE(letter_at_begin)
+{
+    state s = make_state("f \n\t");
+    
+    BOOST_CHECK(!whitespace(s));
+    BOOST_CHECK(remaining(s) == "f \n\t");
+}
+
+BOOST_AUTO_TEST_CASE(letter_in_middle)
+{
+    state s = make_state("   f ");
+    
+    BOOST_CHECK(whitespace(s));
+    BOOST_CHECK(remaining(s) == "f ");
+}
+
