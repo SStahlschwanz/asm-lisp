@@ -27,9 +27,9 @@ public:
         file_name(0)
     {}
     parse_state(Iterator begin, Iterator end, const char* file_name)
-      : parse_state(begin, end),
-        file_name(file_name)
+      : parse_state(begin, end)
     {
+        this->file_name = file_name;
     }
     
     bool empty() const
