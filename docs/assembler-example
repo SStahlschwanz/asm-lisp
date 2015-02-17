@@ -1,7 +1,7 @@
 
 
 // calculates a * b (badly, a * b = a + a + ... + a)
-def f procedure (a (int 64), b (int 64)) int
+def f procedure (a (int 64), b (int 64)) (int 64)
 {
 	block entry
 	{
@@ -42,7 +42,7 @@ def f procedure (a (int 64), b (int 64)) int
 		let next_i (add (int 64)) current_i 1;
 		(store (int 64)) next_i i_loc;
 
-		let loop_cmp (cmp_ne (int 64)) next_i b;
+		let loop_cmp (cmp_ne (int 64)) b next_i;
 		(cond_branch (int 1)) loop_cmp loop_body end;
 	};
 	block end
@@ -53,7 +53,7 @@ def f procedure (a (int 64), b (int 64)) int
 };
 
 // returns a list (a a) (all nodes are encoded as integers)
-def m macro (a (int 64)) int
+def m macro (a (int 64)) (int 64)
 {
 	block entry
 	{
