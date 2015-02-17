@@ -2,9 +2,13 @@
 #define PARSE_STATE_HPP_
 
 #include "source_location.hpp"
+#include "error/parse_error.hpp"
 
 #include <string>
 #include <cassert>
+#include <iostream>
+#include <exception>
+
 
 template <class Iterator>
 class parse_state

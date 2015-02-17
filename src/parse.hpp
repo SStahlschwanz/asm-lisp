@@ -2,7 +2,6 @@
 #define PARSE_HPP_
 
 #include "symbol.hpp"
-#include "parse_error.hpp"
 #include "parse_literal.hpp"
 #include "parse_reference.hpp"
 #include "whitespace.hpp"
@@ -12,13 +11,15 @@
 template <class State>
 boost::optional<symbol> parse_node(State& state);
 
+// parse 
+//     {node, whitespace}
+// and return list of nodes
 template <class State>
 typename symbol::list parse_nodes(State& state)
 {
-    typename symbol::list result;
+    symbol::list result;
 
-    boost::optional<symbol> parse_result;
-    while( (parse_result = parse_node(state)) )
+    while(boost::optional<symbol> parse_result = parse_node(state))
     {
         result.push_back(std::move(*parse_result));
         whitespace(state);
@@ -26,6 +27,9 @@ typename symbol::list parse_nodes(State& state)
     return result;
 }
 
+// parse
+//     {node, whitespace}, ";"
+// and return list of nodes
 template <class State>
 boost::optional<symbol> parse_semicolon_list(State& state)
 {
@@ -45,9 +49,9 @@ boost::optional<symbol> parse_semicolon_list(State& state)
         if(state.empty() || state.front() != ';')
         {
             if(result.empty())
-                return boost::none;
+                return boost::none; // nothing was parsed -> this is not a semicolon list
             else
-                throw parse_error("expected \";\"", state.position(), state.file());
+                throw parse_exception(state.position(), parse_error::UNTERMINATED_SEMICOLON_LIST);
         }
         else
         {
@@ -57,6 +61,9 @@ boost::optional<symbol> parse_semicolon_list(State& state)
     }
 }
 
+// parse
+//     "{", {whitespace, semicolon_list}, "}"
+// and return list of list of nodes
 template <class State>
 boost::optional<symbol> parse_curly_list(State& state)
 {
@@ -76,7 +83,7 @@ boost::optional<symbol> parse_curly_list(State& state)
         }
         
         if(state.empty() || state.front() != '}')
-            throw parse_error("umatched \"{\"", begin, state.file());
+            throw parse_exception(begin, parse_error::UNMATCHED_CURLY_BRACE);
         else
         {
             state.pop_front();
@@ -85,6 +92,9 @@ boost::optional<symbol> parse_curly_list(State& state)
     }
 }
 
+// parse
+//     "[", whitespace, nodes, {",", whitespace, nodes}, "]"
+// and return list of list of nodes
 template <class State>
 boost::optional<symbol> parse_square_list(State& state)
 {
@@ -106,7 +116,7 @@ boost::optional<symbol> parse_square_list(State& state)
         } while(!state.empty() && state.front() == ',');
         
         if(state.empty() || state.front() != ']')
-            throw parse_error("unmatched \"[\"", begin, state.file());
+            throw parse_exception(begin, parse_error::UNMATCHED_SQUARE_BRACE); 
         else
         {
             state.pop_front();
@@ -115,6 +125,7 @@ boost::optional<symbol> parse_square_list(State& state)
     }
 }
 
+// parse round_list or round_comma_list
 template <class State>
 boost::optional<symbol> parse_round_list(State& state)
 {
@@ -130,7 +141,7 @@ boost::optional<symbol> parse_round_list(State& state)
         symbol::list first_list = parse_nodes(state);
 
         if(state.empty())
-            throw parse_error("unmatched \"(\"", begin, state.file());
+            throw parse_exception(begin, parse_error::UNMATCHED_ROUND_BRACE);
         else if(state.front() == ')')
         {
             state.pop_front();
@@ -150,7 +161,7 @@ boost::optional<symbol> parse_round_list(State& state)
             } while(!state.empty() && state.front() == ',');
             
             if(state.empty() || state.front() != ')')
-                throw parse_error("unmatched \"(\"", begin, state.file());
+                throw parse_exception(begin, parse_error::UNMATCHED_ROUND_BRACE);
             else
             {
                 state.pop_front();
@@ -158,7 +169,7 @@ boost::optional<symbol> parse_round_list(State& state)
             }
         }
         else
-            throw parse_error("unmatched \"(\"", begin, state.file());
+            throw parse_exception(begin, parse_error::UNMATCHED_ROUND_BRACE);
     }
 }
 
@@ -192,7 +203,7 @@ symbol::list parse_file(State& state)
         whitespace(state);
     }
     if(!state.empty())
-        throw parse_error("invalid token after input", state.position(), state.file());
+        throw parse_exception(state.position(), parse_error::INVALID_CHARACTER);
     else
         return result;
 }

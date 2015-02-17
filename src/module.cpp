@@ -8,6 +8,7 @@
 #include <fstream>
 #include <stdexcept>
 #include <stack>
+#include <sstream>
 
 using namespace std;
 
@@ -24,7 +25,7 @@ boost::optional<std::vector<std::string>> parse_import_statement(const symbol::l
     if(statement.size() == 1)
     {
         std::ostringstream error_builder;
-        error_builder << boost::get<source_range>(statement[0].source) << ": empty import statement";
+        //error_builder << boost::get<source_range>(statement[0].source) << ": empty import statement";
         throw import_error(error_builder.str());
     }
 
@@ -35,7 +36,7 @@ boost::optional<std::vector<std::string>> parse_import_statement(const symbol::l
         if(!module_name)
         {
             std::ostringstream error_builder;
-            error_builder << boost::get<source_range>(it->source) << ": invalid argument for 'import' statement";
+            //error_builder << boost::get<source_range>(it->source) << ": invalid argument for 'import' statement";
             throw import_error(error_builder.str());
         }
         result.push_back(module_name->identifier);

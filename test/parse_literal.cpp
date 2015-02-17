@@ -1,7 +1,7 @@
-#include <parse_literal.hpp>
-#include <parse_literal.hpp>
+#include "../src/parse_literal.hpp"
+#include "../src/parse_literal.hpp"
 
-#include <parse_state.hpp>
+#include "../src/parse_state.hpp"
 
 #include <cassert>
 
@@ -32,7 +32,7 @@ int main()
         {
             parse_literal(state);
             assert(false);
-        } catch(const parse_error&)
+        } catch(const parse_exception&)
         {}
     }
     {
@@ -48,7 +48,7 @@ int main()
         {
             parse_literal(state);
             assert(false);
-        } catch(const parse_error&)
+        } catch(const parse_exception&)
         {}
     }
 }
