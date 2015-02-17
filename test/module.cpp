@@ -1,4 +1,6 @@
-#include <module.hpp>
+#include "../src/module.hpp"
+
+#include "symbol_building.hpp"
 
 #include <cassert>
 #include <fstream>
@@ -7,7 +9,6 @@
 #include <string>
 
 using namespace std;
-using namespace symbol_building;
 
 stringstream source1(
 R"(

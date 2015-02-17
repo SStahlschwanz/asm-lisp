@@ -43,7 +43,7 @@ boost::optional<symbol> parse_reference(State& state)
         }
         
         source_position end = state.position();
-        return symbol{source_range{begin, end, state.file()}, std::move(result)};
+        return symbol{std::move(result), source_range{begin, end, state.file()}};
     }
     else if(is_operator(state.front()))
     {
@@ -57,7 +57,7 @@ boost::optional<symbol> parse_reference(State& state)
         }
 
         source_position end = state.position();
-        return symbol{source_range{begin, end, state.file()}, std::move(result)};
+        return symbol{std::move(result), source_range{begin, end, state.file()}};
     }
     else
         return boost::none;

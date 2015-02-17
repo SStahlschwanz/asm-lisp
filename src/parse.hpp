@@ -35,7 +35,7 @@ boost::optional<symbol> parse_semicolon_list(State& state)
     {
         source_position begin = state.position();
         state.pop_front();
-        return symbol{source_range{begin, state.position(), state.file()}, typename symbol::list()};
+        return symbol{symbol::list(), source_range{begin, state.position(), state.file()}};
     }
     else
     {
@@ -52,7 +52,7 @@ boost::optional<symbol> parse_semicolon_list(State& state)
         else
         {
             state.pop_front();
-            return symbol{source_range{begin, state.position(), state.file()}, std::move(result)};
+            return symbol{std::move(result), source_range{begin, state.position(), state.file()}};
         }
     }
 }
@@ -80,7 +80,7 @@ boost::optional<symbol> parse_curly_list(State& state)
         else
         {
             state.pop_front();
-            return symbol{source_range{begin, state.position(), state.file()}, std::move(result)};
+            return symbol{std::move(result), source_range{begin, state.position(), state.file()}};
         }
     }
 }
@@ -102,7 +102,7 @@ boost::optional<symbol> parse_square_list(State& state)
             source_position before_nodes = state.position();
             
             symbol::list current_list = parse_nodes(state);
-            result.push_back(symbol{source_range{before_nodes, state.position(), state.file()}, std::move(current_list)});
+            result.push_back(symbol{std::move(current_list), source_range{before_nodes, state.position(), state.file()}});
         } while(!state.empty() && state.front() == ',');
         
         if(state.empty() || state.front() != ']')
@@ -110,7 +110,7 @@ boost::optional<symbol> parse_square_list(State& state)
         else
         {
             state.pop_front();
-            return symbol{source_range{begin, state.position(), state.file()}, std::move(result)};
+            return symbol{std::move(result), source_range{begin, state.position(), state.file()}};
         }
     }
 }
@@ -134,19 +134,19 @@ boost::optional<symbol> parse_round_list(State& state)
         else if(state.front() == ')')
         {
             state.pop_front();
-            return symbol{source_range{begin, state.position(), state.file()}, std::move(first_list)};
+            return symbol{std::move(first_list), source_range{begin, state.position(), state.file()}};
         }
         else if(state.front() == ',')
         {
             symbol::list result;
-            result.push_back(symbol{source_range{first_begin, state.position(), state.file()}, std::move(first_list)});
+            result.push_back(symbol{std::move(first_list), source_range{first_begin, state.position(), state.file()}});
             do
             {
                 state.pop_front();
                 whitespace(state);
                 source_position before = state.position();
                 symbol::list current_list = parse_nodes(state);
-                result.push_back(symbol{source_range{before, state.position(), state.file()}, std::move(current_list)});
+                result.push_back(symbol{std::move(current_list), source_range{before, state.position(), state.file()}});
             } while(!state.empty() && state.front() == ',');
             
             if(state.empty() || state.front() != ')')
@@ -154,7 +154,7 @@ boost::optional<symbol> parse_round_list(State& state)
             else
             {
                 state.pop_front();
-                return symbol{source_range{begin, state.position(), state.file()}, std::move(result)};
+                return symbol{std::move(result), source_range{begin, state.position(), state.file()}};
             }
         }
         else

@@ -6,6 +6,7 @@
 #include <boost/variant.hpp>
 
 #include <functional>
+#include <vector>
 
 class symbol
 {
@@ -41,10 +42,11 @@ public:
         }
     };
     
-    typedef boost::variant<boost::blank, source_range> source_type;
-    source_type source;
     typedef boost::variant<literal, reference, list, macro> content_type;
     content_type content;
+    
+    typedef boost::variant<boost::blank, source_range> source_type;
+    source_type source;
     
     literal* cast_literal()
     {
@@ -89,26 +91,6 @@ public:
         return !(*this == that);
     }
 };
-
-namespace symbol_building
-{
-
-inline symbol lit(std::string str)
-{
-    return symbol{boost::blank(), std::move(str)};
-}
-inline symbol sref(std::string identifier, const symbol* refered = nullptr)
-{
-    return symbol{boost::blank(), symbol::reference(std::move(identifier), refered)};
-}
-
-template<class... Symbols>
-symbol list(Symbols&&... symbols)
-{
-    return symbol{boost::blank(), symbol::list({std::forward<Symbols>(symbols)...})};
-}
-
-}
 
 #endif
 

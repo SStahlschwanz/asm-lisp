@@ -1,7 +1,5 @@
-#include <symbol.hpp>
+#include "symbol_building.hpp"
 
-
-using namespace symbol_building;
 
 int main()
 {

@@ -45,7 +45,7 @@ boost::optional<symbol> parse_literal(State& state)
         state.pop_front();
         
         source_position end = state.position();
-        return symbol{source_range{begin, end, state.file()}, result};
+        return symbol{result, source_range{begin, end, state.file()}};
     }
     else if(is_digit(state.front()))
     {
@@ -60,7 +60,7 @@ boost::optional<symbol> parse_literal(State& state)
             state.pop_front();
         }
         source_position end = state.position();
-        return symbol{source_range{begin, end, state.file()}, result};
+        return symbol{result, source_range{begin, end, state.file()}};
     }
     else
         return boost::none;
