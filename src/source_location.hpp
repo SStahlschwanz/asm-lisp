@@ -1,7 +1,7 @@
 #ifndef SOURCE_LOCATION_HPP_
 #define SOURCE_LOCATION_HPP_
 
-#include <stddef.h>
+#include <cstddef>
 #include <ostream>
 
 struct source_position
