@@ -53,7 +53,10 @@ def f procedure (a (int 64), b (int 64)) (int 64)
 };
 
 // returns a list (a a) (all nodes are encoded as integers)
-def m macro (a (int 64)) (int 64)
+// need the outer braces in 
+// ((a (int 64))) 
+// because the signature expects a list of arguments (which has just one entry for macros)
+def m macro ((a (int 64))) (int 64)
 {
 	block entry
 	{
