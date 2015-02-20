@@ -2,161 +2,224 @@
 
 #include "parse_state.hpp"
 #include "parse.hpp"
-#include "import_error.hpp"
+#include "error/import_error.hpp"
+#include "error/eval_error.hpp"
 #include "define_error.hpp"
 
-#include <fstream>
-#include <stdexcept>
-#include <stack>
-#include <sstream>
+#include <boost/optional.hpp>
 
-using namespace std;
+#include <utility>
+#include <string>
+#include <vector>
+#include <iterator>
+#include <algorithm>
+#include <cstring>
 
-boost::optional<std::vector<std::string>> parse_import_statement(const symbol::list& statement)
+using boost::optional;
+using boost:none;
+
+using std::vector;
+using std::string;
+using std::strcmp;
+using std::istream_iterator;
+using std::unordered_map;
+using std::pair;
+using std::sort;
+using std::unique;
+using std::strcmp;
+
+void sort_and_unique(vector<module::import_entry>& imports)
+{
+    // TODO: inefficient
+    sort(imports.begin(), imports.end(), [](auto& lhs, auto& rhs)
+    {
+        return strcmp(lhs.module, rhs.module) < 0 || strcmp(lhs.identifier, rhs.identifier) < 0;
+    });
+
+    imports.erase(unique(imports.begin(), imports.end(), [](auto& lhs, auto& rhs)
+    {
+        return strcmp(lhs.module, rhs.module) == 0 && strcmp(lhs.identifier, rhs.identifier) == 0;
+    }), imports.end());
+}
+
+bool is_export_statement(const symbol::list& statement)
 {
     if(statement.empty())
-        return boost::none;
-
-    const symbol::reference* import_symbol = statement[0].cast_reference();
-    
-    if(import_symbol == nullptr || import_symbol->identifier != "import")
-        return boost::none;
-    
-    if(statement.size() == 1)
+        return false;
+    if(const symbol::reference* identifier = statement.front().cast_reference())
     {
-        std::ostringstream error_builder;
-        //error_builder << boost::get<source_range>(statement[0].source) << ": empty import statement";
-        throw import_error(error_builder.str());
+        if(identifier->identifier == "export")
+            return true;
     }
 
-    std::vector<std::string> result;
-    for(auto it = statement.begin() + 1; it != statement.end(); ++it)
+    return false;
+}
+
+optional<vector<const symbol::reference*>> parse_export_statement(const symbol& statement)
+{
+    const symbol::list* l = statement.cast_list();
+    if(l == nullptr || l->empty())
+        return none;
+    
+    const symbol::reference* export_identifier = (*l)[0].cast_reference();
+    if(export_identifier == nullptr)
+        return none;
+
+    vector<const symbol::reference*> result;
+    for(auto it = l->begin() + 1; it != l->end(); ++it)
     {
-        const symbol::reference* module_name = it->cast_reference();
-        if(!module_name)
-        {
-            std::ostringstream error_builder;
-            //error_builder << boost::get<source_range>(it->source) << ": invalid argument for 'import' statement";
-            throw import_error(error_builder.str());
-        }
-        result.push_back(module_name->identifier);
+        const symbol::reference* exported = it->cast_reference();
+        if(exported == nullptr)
+            throw import_exception(it->source, import_error::INVALID_EXPORT_IDENTIFIER);
+        result.push_back(exported);
     }
     return result;
 }
 
-vector<string> required_modules(const symbol::list& parsed_file)
+optional<pair<const symbol::reference*, vector<const symbol::reference*>>> parse_import_statement(const symbol& statement)
 {
-    vector<string> result;
-    for(const symbol& s : parsed_file)
+    const symbol::list* l = statement.cast_list();
+    if(l == nullptr || l->empty())
+        return none;
+    
+    const symbol::reference* import_identifier = (*l)[0].cast_reference();
+    if(import_identifier == nullptr)
+        return none;
+    
+    if((*l).size() != 4)
+        throw import_exception{(*l)[0].source , import_error::INVALID_ARGUMENT_NUMBER};
+
+    const symbol::list* import_list = (*l)[1].cast_list();
+    if(import_list == nullptr)
+        throw import_exception{(*l)[1].source, import_error::INVALID_IMPORT_LIST};
+
+    const symbol::reference* from_identifier = (*l)[2].cast_reference();
+    if(from_identifier == nullptr)
+        throw import_exception{(*l)[2].source, import_error::MISSING_FROM_IDENTIFIER};
+
+    const symbol::reference* module_name = (*l)[3].cast_reference();
+    if(module_name == nullptr)
+        throw import_exception{(*l)[3].source, import_error::INVALID_MODULE_NAME};
+    
+    pair<const symbol::reference*, vector<const symbol::reference*>> result;
+    result.first = module_name;
+    for(const symbol& s : *import_list)
     {
-        const symbol::list* l = s.cast_list();
-
-        assert(l != nullptr);
-        boost::optional<vector<string>> import_parse_result = parse_import_statement(*l);
-        if(import_parse_result)
-            result.insert(result.end(), import_parse_result->begin(), import_parse_result->end());
+        const symbol::reference* import = s.cast_reference();
+        if(import == nullptr)
+            throw import_exception{s.source, import_error::INVALID_IMPORT_IDENTIFIER};
+        result.second.push_back(import);
     }
-    
-    // remove duplicates
-    sort(result.begin(), result.end());
-    result.erase(unique(result.begin(), result.end()), result.end());
-    
-    return result;
-}
-
-module read_module(std::istream& stream)
-{
-    istreambuf_iterator<char> begin(stream);
-    istreambuf_iterator<char> end;
-    
-    module result;
-    
-    parse_state<istreambuf_iterator<char>> state(begin, end);
-    result.syntax_tree = parse_file(state);
-    
-    result.required_modules = required_modules(result.syntax_tree);
 
     return result;
 }
 
-template<class LookupFunctor>
-void dispatch_references(symbol& root_node, LookupFunctor&& lookup)
+unordered_map<string, symbol::source_type> module::get_imported_modules() const
 {
-    if(symbol::reference* r = root_node.cast_reference())
-        r->refered = lookup(r->identifier);
-    else if(symbol::list* l = root_node.cast_list())
+    unordered_map<string, const module*> imported_modules;
+    for(const symbol& statement : syntax_tree)
+    {
+    }
+
+    return imported_modules;
+}
+
+void dispatch_references(symbol& s, unordered_map<string, const symbol*>& symbol_table)
+{
+    if(symbol::list* l = s.cast_list())
     {
         for(symbol& child : *l)
-        {
-            dispatch_references(child, lookup);
-        }
+            dispatch_references(child, symbol_table);
     }
-    // ignore literal, nothing to dispatch
+    else if(symbol::reference* l = s.cast_reference())
+    {
+        auto symbol_it = symbol_table.find(l->identifier);
+        if(symbol_it != symbol_table.end())
+            l->refered = symbol_it->second;
+    }
 }
 
-void dispatch_and_eval(module& m, const std::vector<const std::unordered_map<std::string, symbol>*>& symbol_tables)
+void module::evaluate_exports(const unordered_map<string, const module::export_table*>& imported_tables)
 {
-    auto lookup_symbol = [&](const string& identifier) -> const symbol*
+    // initialize temporary symbol table for symbols in this module
+    // (not necessarily exported)
+    unordered_map<string, const symbol*> symbol_table;
+    for(const import_entry& import : imports)
     {
-        const symbol* result = nullptr;
-        auto it = m.defined_symbols.find(identifier);
-        if(it != m.defined_symbols.end())
-            result = &it->second;
+        const auto& imported_table = imported_tables.at(import.module);
         
-        for(const unordered_map<string, symbol>* table : symbol_tables)
-        {
-            auto it = table->find(identifier);
-            if(it != table->end())
-            {
-                if(result != nullptr)
-                    throw import_error("reference is ambiguous: " + identifier);
-                else if(result != nullptr)
-                    result = &it->second;
-            }
-        }
-
-        return result;
-    };
+        auto symbol_it = imported_table->find(import.identifier);
+        if(symbol_it == imported_table->end())
+            throw import_exception{boost::blank(), import_error::SYMBOL_NOT_FOUND};
+            // TODO: no source location
+        
+        symbol_table[import.identifier] = &symbol_it->second;
+        
+        // insert import immediately in exports, if it is also exported
+        auto exports_it = exports.find(import.identifier);
+        if(exports_it != exports.end())
+            exports_it->second = symbol_it->second; // TODO: expensive copy
+    }
     
-    for(symbol& s : m.syntax_tree)
+
+    bool import_exports_read = false;
+    for(symbol& s : syntax_tree)
     {
-        symbol::list* l = s.cast_list();
-        assert(l != nullptr);
-        symbol::reference* command = nullptr;
-        if(!l->empty() && (command = l->front().cast_reference()))
+        symbol::list* statement = s.cast_list();
+        assert(statement != nullptr);
+        
+        if(is_import_export(*statement))
         {
-            if(command->identifier == "def")
-            {
-                if(l->size() < 3)
-                    throw define_error("\"def\" needs as least 3 arguments");
-                symbol::reference* arg1 = (*l)[1].cast_reference();
-                if(arg1 == nullptr)
-                    throw define_error("\"def\": first argument is not identifier");
-                if(m.defined_symbols.find(arg1->identifier) != m.defined_symbols.end())
-                    throw define_error("\"def\": redefinition of symbol");
-                if(arg1->identifier == "def")
-                    throw define_error("\"def\": forbidden identifier \"def\"");
-                
-                for(auto it = l->begin() + 2; it != l->end(); ++it)
-                    dispatch_references(*it, lookup_symbol);
-                
-                if(l->size() == 3)
-                    m.defined_symbols[arg1->identifier] = (*l)[2];
-                else // l->size() > 3
-                {
-                    symbol::reference* macro_ref = (*l)[2].cast_reference();
-                    if(macro_ref == nullptr)
-                        throw define_error("\"def\": need identifier here");
-                    if(macro_ref->refered == nullptr)
-                        throw define_error("\"def\":  use of undefined macro");
-                    const symbol::macro* macro = macro_ref->refered->cast_macro();
-                    if(macro == nullptr)
-                        throw define_error("\"def\": got something else than macro here");
-                    
-                    symbol::list argument_list(l->begin() + 3, l->end());
-                    m.defined_symbols[arg1->identifier] = macro->f(argument_list);
-                }
-            }
+            if(import_exports_read)
+                throw import_exception{s.source, import_error::IMPORT_EXPORT_NOT_AT_BEGIN};
+            else
+                continue;
         }
+        import_exports_read = true;
+
+        if(statement->empty())
+            throw eval_exception{s.source, eval_error::EMPTY_STATEMENT};
+
+        symbol::reference* command = (*statement)[0].cast_reference();
+        if(command == nullptr)
+            throw eval_exception{(*statement)[0].source, eval_error::INVALID_COMMAND};
+        if(command->identifier == "def")
+        {
+            if(statement->size() < 3)
+                throw eval_exception{s.source, eval_error::DEF_TOO_FEW_ARGUMENTS};
+            
+            symbol::reference* defined_identifier = (*statement)[1].cast_reference();
+            if(defined_identifier == nullptr)
+                throw eval_exception{(*statement)[1].source, eval_error::INVALID_DEFINED};
+            
+            auto insertion_result = symbol_table.insert({defined_identifier->identifier, 0});
+            if(!insertion_result.second) // no insertion took place, was already there
+                throw eval_exception{(*statement)[1].source, eval_error::ALREADY_DEFINED};
+
+            for(auto it = statement->begin() + 2; it != statement->end(); ++it)
+                dispatch_references(*it, symbol_table);
+            
+            const symbol*& definition = insertion_result.first->second;
+            if(statement->size() == 3)
+                definition = &(*statement)[2];
+            else // statement->size() > 3
+            {
+                assert(false); // macros not supported yet
+            }
+
+            auto exports_it = exports.find(defined_identifier->identifier);
+            if(exports_it != exports.end())
+                exports_it->second = *definition;
+        }
+        else
+            assert(false); // not supported yet
+    }
+
+    // check whether all exports were defined
+    for(auto& export_pair : exports)
+    {
+        if(!symbol_table.count(export_pair.first))
+            throw import_exception{boost::blank(), import_error::EXPORT_UNDEFINED};
     }
 }
+

@@ -1,80 +1,88 @@
+#define BOOST_TEST_MODULE module
+#include <boost/test/included/unit_test.hpp>
+
 #include "../src/module.hpp"
 
+
+#include "state_utils.hpp"
 #include "symbol_building.hpp"
 
-#include <cassert>
-#include <fstream>
-#include <iterator>
-#include <sstream>
+#include <vector>
 #include <string>
+#include <utility>
+#include <set>
 
-using namespace std;
+using std::vector;
+using std::string;
+using std::pair;
+using std::set;
+using std::unordered_map;
 
-stringstream source1(
-R"(
-{};
-
-"asdf" asdfa f;
-import fff;
-ff;
-ff;
-import aa
-bb;
-import aa;
-)");
-
-symbol::list source1_syntax = 
+vector<pair<string, string>> imports_to_strings(const vector<module::import_entry>& imports)
 {
-    list(list()),
-    list(lit("asdf"), sref("asdfa"), sref("f")),
-    list(sref("import"), sref("fff")),
-    list(sref("ff")),
-    list(sref("ff")),
-    list(sref("import"), sref("aa"), sref("bb")),
-    list(sref("import"), sref("aa"))
-};
+    vector<pair<string, string>> result;
+    for(const module::import_entry& entry : imports)
+        result.push_back({entry.module, entry.identifier});
+    return result;
 
-vector<string> source1_imports = {"fff", "aa", "bb"};
-
-
-stringstream source2(
-R"(def a {};
-def b "asdf";
-def c x;
-def d b;
-)");
-
-symbol::list source2_syntax =
-{
-    list(sref("def"), sref("a"), list()),
-    list(sref("def"), sref("b"), lit("asdf")),
-    list(sref("def"), sref("c"), sref("x")),
-    list(sref("def"), sref("d"), sref("b"))
-};
-
-vector<string> source2_imports = {};
-
-module verify(stringstream& source, const symbol::list& syntax_tree, vector<string> imports)
-{
-    module mod = read_module(source);
-    assert(mod.syntax_tree == syntax_tree);
-    sort(imports.begin(), imports.end());
-    assert(mod.required_modules == imports);
-    return mod;
 }
 
-int main()
+set<string> exports_to_set(const unordered_map<string, symbol>& exports)
 {
-    verify(source1, source1_syntax, source1_imports);
-    module m2 = verify(source2, source2_syntax, source2_imports);
-    dispatch_and_eval(m2, {});
-    symbol a_def = list() ;
-    symbol b_def = lit("asdf");
-    symbol c_def = sref("x");
-    symbol d_def = sref("b", &b_def);
-    assert(m2.defined_symbols.size() == 4);
-    assert(a_def == m2.defined_symbols["a"]);
-    assert(b_def == m2.defined_symbols["b"]);
-    assert(c_def == m2.defined_symbols["c"]);
-    assert(d_def == m2.defined_symbols["d"]);
+    set<string> result;
+    for(const auto& v : exports)
+        result.insert(v.first);
+    return result;
+}
+
+
+
+const state src_1 = make_state(
+R"(
+import asdf (ggg asdf asdf);
+export ff ss;
+def ff (());
+def ss {};
+)");
+
+BOOST_AUTO_TEST_CASE(import_output_test)
+{
+    state s = src_1;
+    module m = module::read(s);
+    auto got_imports = imports_to_strings(m.imports);
+    vector<pair<string, string>> expected_imports{{"asdf", "asdf"}, {"asdf", "ggg"}};
+    BOOST_CHECK(got_imports == expected_imports);
+
+    auto got_exports = exports_to_set(m.exports);
+    set<string> expected_exports = {"ff", "ss"};
+    BOOST_CHECK(got_exports == expected_exports);
+}
+
+const state src_2 = make_state(
+R"(
+export ggg asdf;
+
+def ggg ();
+def asdf ();
+)");
+BOOST_AUTO_TEST_CASE(define_test)
+//int main(int argc, char** argv)
+{
+    state s1 = src_1;
+    state s2 = src_2;
+
+    module m1 = module::read(s1);
+    module m2 = module::read(s2);
+    
+    unordered_map<string, const module::export_table*> export_tables;
+    m2.evaluate_exports(export_tables);
+    unordered_map<string, symbol> expected_m2_exports =
+    {
+        {"gg", list()},
+        {"asdf", list()}
+    };
+    BOOST_CHECK(m2.exports == expected_m2_exports);
+    export_tables["asdf"] = &m2.exports;
+    
+    m1.evaluate_exports(export_tables);
 }

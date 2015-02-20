@@ -4,7 +4,8 @@
 
 #include <unordered_set>
 #include <fstream>
-
+#include <iterator>
+/*
 using namespace std;
 
 vector<string> compilation_order(const unordered_map<string, module> modules)
@@ -58,7 +59,12 @@ compilation_unit compile(const vector<string>& files)
     {
         ifstream stream(file_name);
         if(stream)
-            unit.modules[file_name] = read_module(stream);
+        {
+            istream_iterator<char> begin{stream};
+            istream_iterator<char> end{};
+            parse_state<istream_iterator<char>> state{begin, end};
+            unit.modules[file_name] = read_module(state);
+        }
         else
             throw std::runtime_error("error reading file: " + file_name);
     }
@@ -86,4 +92,4 @@ compilation_unit compile(const vector<string>& files)
 
     return unit;
 }
-
+*/

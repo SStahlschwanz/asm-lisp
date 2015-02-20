@@ -4,8 +4,6 @@
 #include "../source_location.hpp"
 
 #include <exception>
-#include <string>
-#include <sstream>
 
 enum class parse_error
   : unsigned int
@@ -38,7 +36,7 @@ public:
     {}
     const char* what() const noexcept override
     {
-        return "parse error";
+        return "parse exception";
     }
 
     source_position pos;
