@@ -257,6 +257,10 @@ public:
     {
         s.pop_back();
     }
+    bool empty() const
+    {
+        return s.empty();
+    }
 
     bool operator==(const lit_symbol& that) const
     {
@@ -339,6 +343,10 @@ public:
     {
         s.pop_back();
     }
+    bool empty() const
+    {
+        return s.empty();
+    }
 
     const symbol* refered() const
     {
@@ -415,6 +423,10 @@ public:
     void pop_back()
     {
         v.pop_back();
+    }
+    bool empty() const
+    {
+        return v.empty();
     }
 
     bool operator==(const list_symbol& that) const
