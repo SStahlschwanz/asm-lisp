@@ -5,7 +5,6 @@
 #include "../src/whitespace.hpp"
 
 #include "state_utils.hpp"
-#include "symbol_building.hpp"
 
 #include <cassert>
 #include <string>
