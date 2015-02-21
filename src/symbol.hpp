@@ -38,6 +38,7 @@ public:
         return const_cast<symbol*>(this)->cast_none();
     }
     
+    bool is_lit() const;
     lit_symbol& lit();
     const lit_symbol& lit() const
     {
@@ -55,6 +56,7 @@ public:
         return const_cast<symbol*>(this)->lit_else(exc);
     }
 
+    bool is_ref() const;
     ref_symbol& ref();
     const ref_symbol& ref() const
     {
@@ -71,7 +73,8 @@ public:
     {
         return const_cast<symbol*>(this)->ref_else(exc);
     }
-
+    
+    bool is_list() const;
     list_symbol& list();
     const list_symbol& list() const
     {
@@ -474,19 +477,31 @@ inline none_symbol& symbol::cast_none()
     assert(impl().type_id == NONE);
     return *static_cast<none_symbol*>(this);
 }
+inline bool symbol::is_lit() const
+{
+    return impl().type_id == LITERAL;
+}
 inline lit_symbol& symbol::lit()
 {
-    assert(impl().type_id == LITERAL);
+    assert(is_lit());
     return *static_cast<lit_symbol*>(this);
+}
+inline bool symbol::is_ref() const
+{
+    return impl().type_id == REFERENCE;
 }
 inline ref_symbol& symbol::ref()
 {
-    assert(impl().type_id == REFERENCE);
+    assert(is_ref());
     return *static_cast<ref_symbol*>(this);
+}
+inline bool symbol::is_list() const
+{
+    return impl().type_id == LIST;
 }
 inline list_symbol& symbol::list()
 {
-    assert(impl().type_id == LIST);
+    assert(is_list());
     return *static_cast<list_symbol*>(this);
 }
 
