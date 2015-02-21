@@ -3,10 +3,11 @@
 
 #include <algorithm>
 
+#include "../src/symbol.hpp"
+ 
 using std::equal;
 using std::begin;
 
-#include "symbol_building.hpp"
 
 BOOST_AUTO_TEST_CASE(none_test)
 {

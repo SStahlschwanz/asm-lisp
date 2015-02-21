@@ -1,14 +1,14 @@
 #ifndef SYMBOL_HPP_
 #define SYMBOL_HPP_
 
-#include "source_location.hpp"
-
 #include <boost/variant.hpp>
 
 #include <vector>
 #include <exception>
 #include <initializer_list>
 
+struct symbol_source
+{};
 
 class none_symbol;
 class lit_symbol;
