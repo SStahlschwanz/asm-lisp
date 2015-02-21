@@ -1,7 +1,7 @@
 #ifndef PARSE_ERRORS_HPP_
 #define PARSE_ERRORS_HPP_
 
-#include "../source_location.hpp"
+#include "../symbol_source.hpp"
 
 #include <exception>
 
@@ -30,7 +30,7 @@ class parse_exception
   : public std::exception
 {
 public:
-    parse_exception(const source_position& pos, parse_error error)
+    parse_exception(const file_position& pos, parse_error error)
       : pos(pos),
         error(error)
     {}
@@ -39,7 +39,7 @@ public:
         return "parse exception";
     }
 
-    source_position pos;
+    file_position pos;
     parse_error error;
 };
 

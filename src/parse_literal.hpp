@@ -17,7 +17,7 @@ inline bool is_digit(char c)
 }
 
 template <class State>
-boost::optional<symbol> parse_literal(State& state)
+boost::optional<lit_symbol> parse_literal(State& state)
 {
     using namespace parse_literal_detail;
     
@@ -25,8 +25,8 @@ boost::optional<symbol> parse_literal(State& state)
         return boost::none;
     else if(state.front() == '"')
     {
-        source_position begin = state.position();
-        symbol::literal result; // std::string
+        file_position begin = state.position();
+        lit_symbol result;
         
         state.pop_front();
         while(true)
@@ -37,30 +37,32 @@ boost::optional<symbol> parse_literal(State& state)
                 break;
             else
             {
-                result += state.front();
+                result.push_back(state.front());
                 state.pop_front();
             }
         }
         
         state.pop_front();
         
-        source_position end = state.position();
-        return symbol{std::move(result), source_range{begin, end, state.file()}};
+        file_position end = state.position();
+        result.source(file_source{begin, end, state.file()});
+        return result;
     }
     else if(is_digit(state.front()))
     {
-        source_position begin = state.position();
-        symbol::literal result; // std::string
-        result += state.front();
+        file_position begin = state.position();
+        lit_symbol result;
+        result.push_back(state.front());
         
         state.pop_front();
         while(!state.empty() && is_digit(state.front()))
         {
-            result += state.front();
+            result.push_back(state.front());
             state.pop_front();
         }
-        source_position end = state.position();
-        return symbol{std::move(result), source_range{begin, end, state.file()}};
+        file_position end = state.position();
+        result.source(file_source{begin, end, state.file()});
+        return result;
     }
     else
         return boost::none;

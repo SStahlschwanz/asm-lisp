@@ -4,7 +4,6 @@
 #include "../src/parse_literal.hpp"
 #include "../src/parse_literal.hpp"
 
-#include "symbol_building.hpp"
 #include "state_utils.hpp"
 
 using boost::optional;
@@ -13,9 +12,9 @@ BOOST_AUTO_TEST_CASE(standard)
 {
     state s = make_state("\"abc\"");
 
-    optional<symbol> got = parse_literal(s);
+    optional<lit_symbol> got = parse_literal(s);
     BOOST_CHECK(got);
-    symbol expected = lit("abc");
+    lit_symbol expected = lit_symbol("abc");
     
     BOOST_CHECK(*got == expected);
     BOOST_CHECK(remaining(s) == "");
@@ -25,9 +24,9 @@ BOOST_AUTO_TEST_CASE(digits)
 {
     state s = make_state("912fas31");
 
-    optional<symbol> got = parse_literal(s);
+    optional<lit_symbol> got = parse_literal(s);
     BOOST_CHECK(got);
-    symbol expected = lit("912");
+    lit_symbol expected = lit_symbol("912");
     
     BOOST_CHECK(*got == expected);
     BOOST_CHECK(remaining(s) == "fas31");
@@ -51,7 +50,7 @@ BOOST_AUTO_TEST_CASE(no_literal)
 {
     state s = make_state("abc");
 
-    optional<symbol> got = parse_literal(s);
+    optional<lit_symbol> got = parse_literal(s);
     BOOST_CHECK(!got);
     BOOST_CHECK(remaining(s) == "abc");
 }
