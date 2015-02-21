@@ -1,36 +1,29 @@
 #ifndef PARSE_STATE_HPP_
 #define PARSE_STATE_HPP_
 
-#include "source_location.hpp"
-#include "error/parse_error.hpp"
+#include "symbol_source.hpp"
 
 #include <string>
 #include <cassert>
 #include <iostream>
 #include <exception>
 
-
-template <class Iterator>
+template<class Iterator>
 class parse_state
 {
 private:
     Iterator pos;
     Iterator end;
     
-    source_position source_pos;
-    const char* file_name;
+    file_position file_pos;
+    size_t file_id;
 public:
-    parse_state(Iterator begin, Iterator end)
-      : pos(begin),
-        end(end),
-        source_pos(),
-        file_name(0)
+    parse_state(Iterator begin, Iterator end, size_t file_id)
+      : pos{begin},
+        end{end},
+        file_pos{0, 0},
+        file_id{file_id}
     {}
-    parse_state(Iterator begin, Iterator end, const char* file_name)
-      : parse_state(begin, end)
-    {
-        this->file_name = file_name;
-    }
     
     bool empty() const
     {
@@ -48,39 +41,26 @@ public:
         
         if(front() == '\n')
         {
-            source_pos.line_position = 0;
-            ++source_pos.line;
+            file_pos.line_pos = 0;
+            ++file_pos.line;
         }
         else
         {
-            ++source_pos.line_position;
+            ++file_pos.line_pos;
         }
         
         ++pos;
     }
     
-    const source_position& position() const
+    const file_position& position() const
     {
-        return source_pos;
+        return file_pos;
     }
-    const char* file() const
+    size_t file() const
     {
-        return file_name;
+        return file_id;
     }
 };
-/*
-template <class Iterator>
-std::string remaining(parse_state<Iterator> state)
-{
-    std::string result;
-    while(!state.empty())
-    {
-        result += state.front();
-        state.pop_front();
-    }
-    return result;
-}
-*/
 
 #endif
 

@@ -18,16 +18,15 @@ std::string remaining(state s)
     return result;
 }
 
+constexpr size_t default_file_id = 123;
 state make_state(const char* str)
 {
     const char* begin = str;
     const char* end = str;
     while(*end != 0)
         ++end;
-    return state{begin, end};
+    return state{begin, end, default_file_id};
 }
-
-
 
 #endif
 

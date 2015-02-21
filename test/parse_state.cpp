@@ -1,43 +1,46 @@
-#include <parse_state.hpp>
-#include <parse_state.hpp>
+#define BOOST_TEST_MODULE symbol
+#include <boost/test/included/unit_test.hpp>
 
+#include "../src/parse_state.hpp"
+#include "../src/parse_state.hpp"
 
-int main()
+#include "state_utils.hpp"
+
+BOOST_AUTO_TEST_CASE(state_test)
 {
-    std::string str = "as\ndf";
-    parse_state<std::string::iterator> state(str.begin(), str.end());
-
+    state s = make_state("as\ndf");
     
-    assert(!str.empty());
-    assert(state.position().line_position == 0);
-    assert(state.position().line == 0);
-    assert(state.front() == 'a');
-    
-    state.pop_front();
-    
-    assert(!state.empty());
-    assert(state.position().line_position == 1);
-    assert(state.position().line == 0);
-    assert(state.front() == 's');
+    BOOST_CHECK(s.file() == default_file_id);
 
-    state.pop_front();
-    assert(!state.empty());
-    assert(state.position().line_position == 2);
-    assert(state.position().line == 0);
-    assert(state.front() == '\n');
-
-    state.pop_front();
-    assert(!state.empty());
-    assert(state.position().line_position == 0);
-    assert(state.position().line == 1);
-    assert(state.front() == 'd');
-
-    state.pop_front();
-    assert(!state.empty());
-    assert(state.position().line_position == 1);
-    assert(state.position().line == 1);
-    assert(state.front() == 'f');
+    BOOST_CHECK(!s.empty());
+    BOOST_CHECK_EQUAL(s.position().line, 0);
+    BOOST_CHECK_EQUAL(s.position().line_pos, 0);
+    BOOST_CHECK_EQUAL(s.front(), 'a');
     
-    state.pop_front();
-    assert(state.empty());
+    s.pop_front();
+    BOOST_CHECK(!s.empty());
+    BOOST_CHECK_EQUAL(s.position().line, 0);
+    BOOST_CHECK_EQUAL(s.position().line_pos, 1);
+    BOOST_CHECK_EQUAL(s.front(), 's');
+
+    s.pop_front();
+    BOOST_CHECK(!s.empty());
+    BOOST_CHECK_EQUAL(s.position().line, 0);
+    BOOST_CHECK_EQUAL(s.position().line_pos, 2);
+    BOOST_CHECK_EQUAL(s.front(), '\n');
+    
+    s.pop_front();
+    BOOST_CHECK(!s.empty());
+    BOOST_CHECK_EQUAL(s.position().line, 1);
+    BOOST_CHECK_EQUAL(s.position().line_pos, 0);
+    BOOST_CHECK_EQUAL(s.front(), 'd');
+
+    s.pop_front();
+    BOOST_CHECK(!s.empty());
+    BOOST_CHECK_EQUAL(s.position().line, 1);
+    BOOST_CHECK_EQUAL(s.position().line_pos, 1);
+    BOOST_CHECK_EQUAL(s.front(), 'f');
+
+    s.pop_front();
+    BOOST_CHECK(s.empty());
 }
