@@ -589,12 +589,16 @@ public:
     {
         return *const_cast<any_symbol*>(this);
     }
-/*
+
     symbol::type_value type() const
     {
         return symbol::NONE;
     }
-
+    
+    bool is_lit() const
+    {
+        return static_cast<const symbol&>(*this).is_lit();
+    }
     lit_symbol& lit()
     {
         return static_cast<symbol&>(*this).lit();
@@ -612,6 +616,10 @@ public:
         return static_cast<const symbol&>(*this).lit_else(exc);
     }
 
+    bool is_ref() const
+    {
+        return static_cast<const symbol&>(*this).is_ref();
+    }
     ref_symbol& ref()
     {
         return static_cast<symbol&>(*this).ref();
@@ -629,6 +637,10 @@ public:
         return static_cast<const symbol&>(*this).ref_else(exc);
     }
 
+    bool is_list() const
+    {
+        return static_cast<const symbol&>(*this).is_list();
+    }
     list_symbol& list()
     {
         return static_cast<symbol&>(*this).list();
@@ -666,7 +678,6 @@ public:
     {
         static_cast<const symbol&>(*this).visit(visitor);
     }
-*/
 private:
     boost::variant<none_symbol, lit_symbol, ref_symbol, list_symbol> content;
 };
