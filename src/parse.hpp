@@ -159,7 +159,7 @@ boost::optional<list_symbol> parse_round_list(State& state)
         else if(state.front() == ',')
         {
             list_symbol result;
-            first_list.source(file_source{begin, state.position(), state.file()});
+            first_list.source(file_source{first_begin, state.position(), state.file()});
             result.push_back(std::move(first_list));
             do
             {
