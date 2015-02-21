@@ -26,38 +26,40 @@ inline bool is_operator(char c)
 }
 
 template <class State>
-boost::optional<symbol> parse_reference(State& state)
+boost::optional<ref_symbol> parse_reference(State& state)
 {
     using namespace parse_reference_detail;
     if(state.empty())
         return boost::none;
     else if(is_letter(state.front()))
     {
-        symbol::reference result;
-        source_position begin = state.position();
+        ref_symbol result;
+        file_position begin = state.position();
 
         while(!state.empty() && is_alpha_numeric(state.front()))
         {
-            result.identifier += state.front();
+            result.push_back(state.front());
             state.pop_front();
         }
         
-        source_position end = state.position();
-        return symbol{std::move(result), source_range{begin, end, state.file()}};
+        file_position end = state.position();
+        result.source(file_source{begin, end, state.file()});
+        return result;
     }
     else if(is_operator(state.front()))
     {
-        symbol::reference result;
-        source_position begin = state.position();
+        ref_symbol result;
+        file_position begin = state.position();
 
         while(!state.empty() && is_operator(state.front()))
         {
-            result.identifier += state.front();
+            result.push_back(state.front());
             state.pop_front();
         }
 
-        source_position end = state.position();
-        return symbol{std::move(result), source_range{begin, end, state.file()}};
+        file_position end = state.position();
+        result.source(file_source{begin, end, state.file()});
+        return result;
     }
     else
         return boost::none;
