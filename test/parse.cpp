@@ -73,3 +73,21 @@ BOOST_AUTO_TEST_CASE(round_list_test)
     BOOST_CHECK(remaining(s) == " ff");
 }
 
+const state mod1 = make_state(
+R"(abcde {} fer;
+fj;
++-* 123;)");
+
+BOOST_AUTO_TEST_CASE(parse_file_test)
+{
+    state s{mod1};
+    optional<list_symbol> got = parse_file(s);
+    BOOST_CHECK(got);
+    any_symbol expected = list{
+        list{ref{"abcde"}, list{}, ref{"fer"}},
+        list{ref{"fj"}},
+        list{ref{"+-*"}, lit{"123"}}};
+    
+    BOOST_CHECK(*got == expected);
+}
+

@@ -398,6 +398,10 @@ public:
     {
         v.pop_back();
     }
+    size_t size() const
+    {
+        return v.size();
+    }
     bool empty() const
     {
         return v.empty();
@@ -564,6 +568,14 @@ public:
     symbol::type_value type() const
     {
         return symbol::NONE;
+    }
+    const symbol_source& source() const
+    {
+        return static_cast<const symbol&>(*this).source();
+    }
+    void source(const symbol_source& new_source)
+    {
+        return static_cast<symbol&>(*this).source(new_source);
     }
     
     bool is_lit() const
