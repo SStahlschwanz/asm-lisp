@@ -7,8 +7,7 @@
 #include <exception>
 #include <initializer_list>
 
-struct symbol_source
-{};
+#include "symbol_source.hpp"
 
 class none_symbol;
 class lit_symbol;
