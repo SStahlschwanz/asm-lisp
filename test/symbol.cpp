@@ -43,14 +43,13 @@ BOOST_AUTO_TEST_CASE(ref_test)
     ref_symbol ref3{"abcde", &ref1};
     ref_symbol ref4{"asdff", &ref1};
     
-    BOOST_CHECK(std::equal(ref1.begin(), ref1.end(), "abcde"));
-    BOOST_CHECK(std::equal(ref2.begin(), ref2.end(), "abcde"));
-    BOOST_CHECK(std::equal(ref3.begin(), ref3.end(), "abcde"));
-    BOOST_CHECK(std::equal(ref4.begin(), ref4.end(), "asdff"));
-
-    BOOST_CHECK(ref1[3] == 'd');
-    ref4[3] = 'g';
-    BOOST_CHECK(std::equal(ref4.begin(), ref4.end(), "asdgf"));
+    BOOST_CHECK_EQUAL(ref1.identifier(), "abcde");
+    BOOST_CHECK_EQUAL(ref2.identifier(), "abcde");
+    BOOST_CHECK_EQUAL(ref3.identifier(), "abcde");
+    BOOST_CHECK_EQUAL(ref4.identifier(), "asdff");
+    
+    BOOST_CHECK_EQUAL(ref3.refered(), &ref1);
+    BOOST_CHECK_EQUAL(ref4.refered(), &ref1);
 
     BOOST_CHECK(ref1 == ref2);
     BOOST_CHECK(ref2 != ref3);

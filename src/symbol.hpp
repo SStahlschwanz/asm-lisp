@@ -273,6 +273,7 @@ public:
     {
         return !(*this == that);
     }
+
 private:
     std::string s;
 };
@@ -312,45 +313,6 @@ public:
         return *this;
     }
     
-    typedef std::string::iterator iterator;
-    typedef std::string::const_iterator const_iterator;
-    iterator begin()
-    {
-        return s.begin();
-    }
-    iterator end()
-    {
-        return s.end();
-    }
-    const_iterator begin() const
-    {
-        return s.begin();
-    }
-    const_iterator end() const
-    {
-        return s.end();
-    }
-    char& operator[](size_t i)
-    {
-        return s[i];
-    }
-    const char& operator[](size_t i) const
-    {
-        return s[i];
-    }
-    void push_back(char c)
-    {
-        s.push_back(c);
-    }
-    void pop_back()
-    {
-        s.pop_back();
-    }
-    bool empty() const
-    {
-        return s.empty();
-    }
-
     const symbol* refered() const
     {
         return r;
@@ -358,6 +320,14 @@ public:
     void refered(const symbol* new_reference)
     {
         r = new_reference;
+    }
+    const std::string& identifier() const
+    {
+        return s;
+    }
+    void identifier(std::string new_identifier)
+    {
+        s = std::move(new_identifier);
     }
 
     bool operator==(const ref_symbol& that) const
@@ -368,6 +338,7 @@ public:
     {
         return !(*this == that);
     }
+
 private:
     std::string s;
     const symbol* r;

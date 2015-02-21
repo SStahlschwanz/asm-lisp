@@ -33,31 +33,33 @@ boost::optional<ref_symbol> parse_reference(State& state)
         return boost::none;
     else if(is_letter(state.front()))
     {
-        ref_symbol result;
+        std::string identifier;
         file_position begin = state.position();
 
         while(!state.empty() && is_alpha_numeric(state.front()))
         {
-            result.push_back(state.front());
+            identifier.push_back(state.front());
             state.pop_front();
         }
         
         file_position end = state.position();
+        ref_symbol result{std::move(identifier)};
         result.source(file_source{begin, end, state.file()});
         return result;
     }
     else if(is_operator(state.front()))
     {
-        ref_symbol result;
+        std::string identifier;
         file_position begin = state.position();
 
         while(!state.empty() && is_operator(state.front()))
         {
-            result.push_back(state.front());
+            identifier.push_back(state.front());
             state.pop_front();
         }
 
         file_position end = state.position();
+        ref_symbol result{std::move(identifier)};
         result.source(file_source{begin, end, state.file()});
         return result;
     }
