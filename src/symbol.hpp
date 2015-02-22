@@ -12,6 +12,7 @@
 class none_symbol;
 class lit_symbol;
 class ref_symbol;
+class mut_ref_symbol;
 class list_symbol;
 
 class symbol_impl;
@@ -23,6 +24,7 @@ public:
     {
         NONE,
         LITERAL,
+        MUTABLE_REFERENCE,
         REFERENCE,
         LIST
     };
@@ -54,6 +56,24 @@ public:
     const lit_symbol& lit_else(const std::exception& exc) const
     {
         return const_cast<symbol*>(this)->lit_else(exc);
+    }
+    
+    bool is_mut_ref() const;
+    mut_ref_symbol& mut_ref();
+    const mut_ref_symbol& mut_ref() const
+    {
+        return const_cast<symbol*>(this)->mut_ref();
+    }
+    mut_ref_symbol& mut_ref_else(const std::exception& exc)
+    {
+        if(type() == REFERENCE)
+            return mut_ref();
+        else
+            throw exc;
+    }
+    const mut_ref_symbol& mut_ref_else(const std::exception& exc) const
+    {
+        return const_cast<symbol*>(this)->mut_ref_else(exc);
     }
 
     bool is_ref() const;
@@ -171,6 +191,7 @@ private:
     friend class symbol;
     friend class none_symbol;
     friend class lit_symbol;
+    friend class mut_ref_symbol;
     friend class ref_symbol;
     friend class list_symbol;
 
@@ -279,6 +300,70 @@ private:
 };
 static_assert(std::is_nothrow_move_constructible<lit_symbol>::value, "");
 
+class mut_ref_symbol
+  : public symbol_impl
+{
+public:
+    mut_ref_symbol(std::string str, symbol* reference)
+      : s(std::move(str))
+    {
+        type_id = MUTABLE_REFERENCE;
+        r = reference;
+    }
+    mut_ref_symbol()
+      : mut_ref_symbol("", 0)
+    {}
+
+    mut_ref_symbol(const mut_ref_symbol&) = default;
+    mut_ref_symbol(mut_ref_symbol&& that) noexcept
+      : mut_ref_symbol(std::move(that.s), that.r)
+    {}
+
+    explicit mut_ref_symbol(std::string str)
+      : mut_ref_symbol(std::move(str), 0)
+    {}
+    explicit mut_ref_symbol(const char* str)
+      : mut_ref_symbol(std::string{str})
+    {}
+    
+    mut_ref_symbol& operator=(mut_ref_symbol that)
+    {
+        std::swap(s, that.s);
+        std::swap(r, that.r);
+        return *this;
+    }
+    
+    symbol* refered() const
+    {
+        return r;
+    }
+    void refered(symbol* new_reference)
+    {
+        r = new_reference;
+    }
+    const std::string& identifier() const
+    {
+        return s;
+    }
+    void identifier(std::string new_identifier)
+    {
+        s = std::move(new_identifier);
+    }
+
+    bool operator==(const mut_ref_symbol& that) const
+    {
+        return s == that.s && r == that.r;
+    }
+    bool operator!=(const mut_ref_symbol& that) const
+    {
+        return !(*this == that);
+    }
+
+private:
+    std::string s;
+    symbol* r;
+};
+static_assert(std::is_nothrow_move_constructible<mut_ref_symbol>::value, "");
 
 class ref_symbol
   : public symbol_impl
@@ -460,6 +545,15 @@ inline lit_symbol& symbol::lit()
 {
     assert(is_lit());
     return *static_cast<lit_symbol*>(this);
+}
+inline bool symbol::is_mut_ref() const
+{
+    return impl().type_id == MUTABLE_REFERENCE;
+}
+inline mut_ref_symbol& symbol::mut_ref()
+{
+    assert(is_mut_ref());
+    return *static_cast<mut_ref_symbol*>(this);
 }
 inline bool symbol::is_ref() const
 {
