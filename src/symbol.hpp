@@ -599,167 +599,6 @@ inline bool operator!=(const symbol& lhs, const symbol& rhs)
 }
 
 
-class any_symbol
-{
-public:
-    any_symbol()
-      : content(none_symbol{})
-    {}
-    any_symbol(lit_symbol literal)
-      : content(std::move(literal))
-    {}
-    any_symbol(ref_symbol reference)
-      : content(std::move(reference))
-    {}
-    any_symbol(list_symbol list)
-      : content(std::move(list))
-    {}
-    any_symbol(symbol&& s)
-    {
-        s.visit_none([&](auto& obj)
-        {
-            content = std::move(obj);
-        });
-    }
-    any_symbol(const symbol& s)
-    {
-        s.visit_none([&](auto obj)
-        {
-            content = std::move(obj);
-        });
-    }
-private:
-    struct address_getter_type
-        : boost::static_visitor<>
-    {
-        typedef symbol* result_type;
-        template<class T>
-        symbol* operator()(T& obj) const
-        {
-            return &obj;
-        }
-    };
-public:
-    /*
-    symbol* operator&()
-    {
-        return boost::apply_visitor(address_getter_type(), content);
-    }
-    const symbol* operator&() const
-    {
-        return &(*const_cast<any_symbol*>(this));
-    }
-    */
-    operator symbol&()
-    {
-        return *boost::apply_visitor(address_getter_type(), content);
-    }
-    operator const symbol&() const
-    {
-        return *const_cast<any_symbol*>(this);
-    }
-
-    symbol::type_value type() const
-    {
-        return symbol::NONE;
-    }
-    const symbol_source& source() const
-    {
-        return static_cast<const symbol&>(*this).source();
-    }
-    void source(const symbol_source& new_source)
-    {
-        return static_cast<symbol&>(*this).source(new_source);
-    }
-    
-    bool is_lit() const
-    {
-        return static_cast<const symbol&>(*this).is_lit();
-    }
-    lit_symbol& lit()
-    {
-        return static_cast<symbol&>(*this).lit();
-    }
-    const lit_symbol& lit() const
-    {
-        return static_cast<const symbol&>(*this).lit();
-    }
-    lit_symbol& lit_else(const std::exception& exc)
-    {
-        return static_cast<symbol&>(*this).lit_else(exc);
-    }
-    const lit_symbol& lit_else(const std::exception& exc) const
-    {
-        return static_cast<const symbol&>(*this).lit_else(exc);
-    }
-
-    bool is_ref() const
-    {
-        return static_cast<const symbol&>(*this).is_ref();
-    }
-    ref_symbol& ref()
-    {
-        return static_cast<symbol&>(*this).ref();
-    }
-    const ref_symbol& ref() const
-    {
-        return static_cast<const symbol&>(*this).ref();
-    }
-    ref_symbol& ref_else(const std::exception& exc)
-    {
-        return static_cast<symbol&>(*this).ref_else(exc);
-    }
-    const ref_symbol& ref_else(const std::exception& exc) const
-    {
-        return static_cast<const symbol&>(*this).ref_else(exc);
-    }
-
-    bool is_list() const
-    {
-        return static_cast<const symbol&>(*this).is_list();
-    }
-    list_symbol& list()
-    {
-        return static_cast<symbol&>(*this).list();
-    }
-    const list_symbol& list() const
-    {
-        return static_cast<const symbol&>(*this).list();
-    }
-    list_symbol& list_else(const std::exception& exc)
-    {
-        return static_cast<symbol&>(*this).list_else(exc);
-    }
-    const list_symbol& list_else(const std::exception& exc) const
-    {
-        return static_cast<const symbol&>(*this).list_else(exc);
-    }
-
-    template<class Visitor>
-    void visit_none(Visitor&& visitor)
-    {
-        static_cast<symbol&>(*this).visit_none(visitor);
-    }
-    template<class Visitor>
-    void visit_none(Visitor&& visitor) const
-    {
-        static_cast<const symbol&>(*this).visit_none(visitor);
-    }
-    template<class Visitor>
-    void visit(Visitor&& visitor)
-    {
-        static_cast<symbol&>(*this).visit(visitor);
-    }
-    template<class Visitor>
-    void visit(Visitor&& visitor) const
-    {
-        static_cast<const symbol&>(*this).visit(visitor);
-    }
-private:
-    boost::variant<none_symbol, lit_symbol, ref_symbol, list_symbol> content;
-};
-
-/*
 constexpr size_t constexpr_max_for_symbol(size_t a, size_t b)
 {
     if(a > b)
@@ -802,19 +641,13 @@ public:
             construct(std::move(obj));
         });
     }
-
-    any_symbol(lit_symbol literal)
-    {
-        construct(std::move(literal));
-    }
-    any_symbol(ref_symbol reference)
-    {
-        construct(std::move(reference));
-    }
-    any_symbol(list_symbol list)
-    {
-        construct(std::move(list));
-    }
+    any_symbol(const any_symbol& that)
+      : any_symbol(static_cast<const symbol&>(that))
+    {}
+    any_symbol(any_symbol&& that)
+      : any_symbol(static_cast<symbol&&>(that))
+    {}
+    
     ~any_symbol() noexcept
     {
         destruct();
@@ -839,6 +672,11 @@ public:
         });
         return *this;
     }
+    any_symbol& operator=(any_symbol that)
+    {
+        return (*this = static_cast<symbol&&>(that));
+    }
+
 private:
     char buffer[max_symbol_size];
     
@@ -857,7 +695,6 @@ private:
         });
     }
 };
-*/
 
 inline list_symbol::list_symbol(std::initializer_list<any_symbol> l)
   : list_symbol(std::vector<any_symbol>{l.begin(), l.end()})
