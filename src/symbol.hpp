@@ -14,6 +14,7 @@ class lit_symbol;
 class ref_symbol;
 class mut_ref_symbol;
 class list_symbol;
+class macro_symbol;
 
 class symbol_impl;
 
@@ -26,7 +27,8 @@ public:
         LITERAL,
         MUTABLE_REFERENCE,
         REFERENCE,
-        LIST
+        LIST,
+        MACRO
     };
     
     type_value type() const;
@@ -111,6 +113,23 @@ public:
     {
         return const_cast<symbol*>(this)->list_else(exc);
     }
+    bool is_macro() const;
+    macro_symbol& macro();
+    const macro_symbol& macro() const
+    {
+        return const_cast<symbol*>(this)->macro();
+    }
+    macro_symbol& macro_else(const std::exception& exc)
+    {
+        if(type() == MACRO)
+            return macro();
+        else
+            throw exc;
+    }
+    const macro_symbol& macro_else(const std::exception& exc) const
+    {
+        return const_cast<symbol*>(this)->macro_else(exc);
+    }
     
     template<class Functor>
     void visit(Functor&& f)
@@ -131,6 +150,9 @@ public:
             break;
         case LIST:
             f(list());
+            break;
+        case MACRO:
+            f(macro());
             break;
         }
     }
@@ -163,6 +185,9 @@ public:
         case LIST:
             f(list());
             break;
+        case MACRO:
+            f(macro());
+            break;
         }
     }
     template<class Functor>
@@ -194,6 +219,7 @@ private:
     friend class mut_ref_symbol;
     friend class ref_symbol;
     friend class list_symbol;
+    friend class macro_symbol;
 
     ~symbol_impl()
     {}
@@ -506,7 +532,21 @@ private:
 };
 static_assert(std::is_nothrow_move_constructible<list_symbol>::value, "");
 
-
+class macro_symbol
+  : public symbol_impl
+{
+public:
+    typedef std::function<any_symbol (list_symbol::const_iterator begin, list_symbol::const_iterator end)> macro_function;
+    macro_symbol(macro_function func)
+      : f(std::move(func))
+    {
+        type_id = MACRO;
+    }
+    
+    any_symbol operator()(list_symbol::const_iterator begin, list_symbol::const_iterator end) const;
+private:
+    macro_function f;
+};
 
 inline symbol_impl& symbol::impl()
 {
@@ -573,6 +613,15 @@ inline list_symbol& symbol::list()
     assert(is_list());
     return *static_cast<list_symbol*>(this);
 }
+inline bool symbol::is_macro() const
+{
+    return impl().type_id == MACRO;
+}
+inline macro_symbol& symbol::macro()
+{
+    assert(is_macro());
+    return *static_cast<macro_symbol*>(this);
+}
 
 inline bool operator==(const symbol& lhs, const symbol& rhs)
 {
@@ -591,6 +640,8 @@ inline bool operator==(const symbol& lhs, const symbol& rhs)
         return lhs.ref() == rhs.ref();
     case symbol::LIST:
         return lhs.list() == rhs.list();
+    case symbol::MACRO:
+        return lhs.macro() == rhs.macro();
     }
 }
 inline bool operator!=(const symbol& lhs, const symbol& rhs)
@@ -715,6 +766,11 @@ inline void list_symbol::push_back(symbol&& s)
 inline void list_symbol::push_back(const symbol& s)
 {
     v.push_back(s);
+}
+
+inline any_symbol macro_symbol::operator()(list_symbol::const_iterator begin, list_symbol::const_iterator end) const
+{
+    return f(begin, end);
 }
 
 #endif
