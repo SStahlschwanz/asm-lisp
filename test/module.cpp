@@ -27,12 +27,15 @@ const list_symbol mod2_tree = list{
 
 BOOST_AUTO_TEST_CASE(module_test)
 {
-    unordered_map<string, vector<symbol_source>> mod1_imports =
-        get_imported_modules(mod1_tree);
-    BOOST_CHECK(mod1_imports.empty());
+    module_header mod1_header = read_module_header(mod1_tree);
+    module_header mod2_header = read_module_header(mod2_tree);
 
-    unordered_map<string, vector<symbol_source>> mod2_imports =
-        get_imported_modules(mod2_tree);
-    BOOST_CHECK(mod2_imports.size() == 1);
-    BOOST_CHECK(mod2_imports.count("mod1"));
+    unordered_map<string, vector<symbol_source>> mod1_imported_modules =
+            imported_modules(mod1_header);
+    BOOST_CHECK(mod1_imported_modules.empty());
+
+    unordered_map<string, vector<symbol_source>> mod2_imported_modules =
+            imported_modules(mod2_header);
+    BOOST_CHECK(mod2_imported_modules.size() == 1);
+    BOOST_CHECK(mod2_imported_modules.count("mod1"));
 }
