@@ -3,86 +3,36 @@
 
 #include "../src/module.hpp"
 
-
 #include "state_utils.hpp"
-#include "symbol_building.hpp"
 
-#include <vector>
-#include <string>
-#include <utility>
-#include <set>
-
-using std::vector;
-using std::string;
-using std::pair;
-using std::set;
 using std::unordered_map;
+using std::string;
+using std::vector;
 
-vector<pair<string, string>> imports_to_strings(const vector<module::import_entry>& imports)
+typedef lit_symbol lit;
+typedef ref_symbol ref;
+typedef list_symbol list;
+
+const ref export_tok{"export"};
+const ref import_tok{"import"};
+const ref from_tok{"from"};
+
+const list_symbol mod1_tree = list{
+    list{export_tok, ref{"a"}, ref{"b"}, ref{"c"}}
+};
+const list_symbol mod2_tree = list{
+    list{export_tok, ref{"x"}, ref{"y"}, ref{"z"}},
+    list{import_tok, list{ref{"a"}, ref{"b"}, ref{"c"}}, from_tok, ref{"mod1"}}
+};
+
+BOOST_AUTO_TEST_CASE(module_test)
 {
-    vector<pair<string, string>> result;
-    for(const module::import_entry& entry : imports)
-        result.push_back({entry.module, entry.identifier});
-    return result;
+    unordered_map<string, vector<symbol_source>> mod1_imports =
+        get_imported_modules(mod1_tree);
+    BOOST_CHECK(mod1_imports.empty());
 
-}
-
-set<string> exports_to_set(const unordered_map<string, symbol>& exports)
-{
-    set<string> result;
-    for(const auto& v : exports)
-        result.insert(v.first);
-    return result;
-}
-
-
-
-const state src_1 = make_state(
-R"(
-import asdf (ggg asdf asdf);
-export ff ss;
-def ff (());
-def ss {};
-)");
-
-BOOST_AUTO_TEST_CASE(import_output_test)
-{
-    state s = src_1;
-    module m = module::read(s);
-    auto got_imports = imports_to_strings(m.imports);
-    vector<pair<string, string>> expected_imports{{"asdf", "asdf"}, {"asdf", "ggg"}};
-    BOOST_CHECK(got_imports == expected_imports);
-
-    auto got_exports = exports_to_set(m.exports);
-    set<string> expected_exports = {"ff", "ss"};
-    BOOST_CHECK(got_exports == expected_exports);
-}
-
-const state src_2 = make_state(
-R"(
-export ggg asdf;
-
-def ggg ();
-def asdf ();
-)");
-BOOST_AUTO_TEST_CASE(define_test)
-//int main(int argc, char** argv)
-{
-    state s1 = src_1;
-    state s2 = src_2;
-
-    module m1 = module::read(s1);
-    module m2 = module::read(s2);
-    
-    unordered_map<string, const module::export_table*> export_tables;
-    m2.evaluate_exports(export_tables);
-    unordered_map<string, symbol> expected_m2_exports =
-    {
-        {"gg", list()},
-        {"asdf", list()}
-    };
-    BOOST_CHECK(m2.exports == expected_m2_exports);
-    export_tables["asdf"] = &m2.exports;
-    
-    m1.evaluate_exports(export_tables);
+    unordered_map<string, vector<symbol_source>> mod2_imports =
+        get_imported_modules(mod2_tree);
+    BOOST_CHECK(mod2_imports.size() == 1);
+    BOOST_CHECK(mod2_imports.count("mod1"));
 }

@@ -6,30 +6,22 @@
 #include "parse.hpp"
 
 #include <string>
-#include <vector>
 #include <unordered_map>
-#include <tuple>
-#include <iterator>
+#include <vector>
 
+
+typedef std::unordered_map<std::string, const symbol*> export_table;
 struct module
 {
-    typedef std::unordered_map<std::string, const symbol*> export_table;
     export_table exports;
-    
-    symbol::list syntax_tree;
-    std::vector<std::unique_ptr<symbol>> evaluated_exports; // holding from macros evaluated exported symbols
-    
-    template<class IteratorType>
-    static module read(parse_state<IteratorType>& state)
-    {
-        module result;
-        result.syntax_tree = parse_file(state);
-        return result;
-    }
-    
-    std::unordered_map<std::string, symbol::source_type> get_imported_modules() const;
-    void evaluate_exports(const std::unordered_map<std::string, const module*>& module_map);
+    list_symbol syntax_tree;
+    std::vector<std::unique_ptr<symbol>> evaluated_exports; // owns from macros evaluated exports
 };
+
+std::unordered_map<std::string, std::vector<symbol_source>> 
+        get_imported_modules(const list_symbol& syntax_tree);
+module evaluate_module(list_symbol syntax_tree,
+        const std::unordered_map<std::string, module>& dependencies);
 
 #endif
 
