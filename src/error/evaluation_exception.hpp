@@ -19,6 +19,26 @@ struct empty_top_level_statement
 {
     using evaluation_exception::evaluation_exception;
 };
+struct invalid_command
+  : evaluation_exception
+{
+    using evaluation_exception::evaluation_exception;
+};
+struct def_not_enough_arguments
+  : evaluation_exception
+{
+    using evaluation_exception::evaluation_exception;
+};
+struct invalid_defined_name
+  : evaluation_exception
+{
+    using evaluation_exception::evaluation_exception;
+};
+struct duplicate_definition
+  : evaluation_exception
+{
+    using evaluation_exception::evaluation_exception;
+};
 
 #endif
 

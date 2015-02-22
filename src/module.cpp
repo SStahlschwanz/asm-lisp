@@ -7,9 +7,16 @@ using std::unordered_map;
 using std::string;
 using std::vector;
 using std::size_t;
+using std::tie;
+using std::ignore;
 
 using boost::optional;
 using boost::none;
+
+
+struct not_implemented
+  : std::exception
+{};
 
 bool is_export_statement(const list_symbol& statement)
 {
@@ -84,10 +91,10 @@ unordered_map<string, vector<symbol_source>> imported_modules(const module_heade
     return result;
 }
 
-unordered_map<string, const symbol*> initial_symbol_table(const module_header& header,
+symbol_table initial_symbol_table(const module_header& header,
         const unordered_map<string, module>& dependencies)
 {
-    unordered_map<string, const symbol*> symbol_table;
+    symbol_table table;
     for(const import_statement& import : header.imports)
     {
         const auto& module_name = import.imported_module.identifier();
@@ -101,10 +108,10 @@ unordered_map<string, const symbol*> initial_symbol_table(const module_header& h
             auto symbol_find_it = imported_module.exports.find(imported_identifier);
             if(symbol_find_it == imported_module.exports.end())
                 throw symbol_not_found{s.source()};
-            symbol_table[imported_identifier] = symbol_find_it->second;
+            table[imported_identifier] = symbol_find_it->second;
         }
     }
-    return symbol_table;
+    return table;
 }
 
 void remove_not_exported(symbol_table& table, const module_header& header)
@@ -116,7 +123,7 @@ void remove_not_exported(symbol_table& table, const module_header& header)
         {
             for(auto exports_it = export_st.statement.begin() + 1;
                     exports_it != export_st.statement.end();
-                    ++it)
+                    ++exports_it)
             {
                 const auto& exported_identifier = exports_it->ref().identifier();
                 if(identifier == exported_identifier)
@@ -131,18 +138,64 @@ void remove_not_exported(symbol_table& table, const module_header& header)
     }
 }
 
+void dispatch_references(symbol& s, const symbol_table& table)
+{
+    if(s.is_ref())
+    {
+        ref_symbol& r = s.ref();
+        auto find_it = table.find(r.identifier());
+        if(find_it != table.end())
+            r.refered(find_it->second);
+    }
+    else if(s.is_list())
+    {
+        list_symbol& l = s.list();
+        for(symbol& child : l)
+            dispatch_references(child, table);
+    }
+}
+
 module evaluate_module(list_symbol syntax_tree, const module_header& header,
         const unordered_map<string, module>& dependencies)
 {
     symbol_table table = initial_symbol_table(header, dependencies);
 
     size_t header_size = header.imports.size() + header.exports.size();
+    assert(header_size < syntax_tree.size());
     for(auto it = syntax_tree.begin() + header_size; it != syntax_tree.end(); ++it)
     {
-        const list_symbol& statement = it->list();
+        list_symbol& statement = it->list();
         if(statement.empty())
             throw empty_top_level_statement{statement.source()};
+        
+        ref_symbol& command = statement[0].ref_else(
+                invalid_command{statement[0].source()});
 
+        if(command.identifier() == "def")
+        {
+            if(statement.size() < 3)
+                throw def_not_enough_arguments{statement.source(), statement.size()};
+
+            const ref_symbol& defined = statement[1].ref_else(
+                    invalid_defined_name{statement[1].source()});
+            for(auto argument_it = statement.begin() + 2;
+                    argument_it != statement.end();
+                    ++argument_it)
+            {
+                dispatch_references(*argument_it, table);
+            }
+            
+            const symbol* definition = 0;
+            if(statement.size() == 3)
+                definition = &static_cast<const symbol&>(statement[2]);
+            else
+                throw not_implemented{};
+            
+            bool was_inserted;
+            tie(ignore, was_inserted) = table.insert({defined.identifier(), definition});
+            if(!was_inserted)
+                throw duplicate_definition{defined.source()};
+        }
     }
 
     remove_not_exported(table, header);

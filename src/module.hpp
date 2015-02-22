@@ -7,6 +7,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <map>
 #include <vector>
 
 
@@ -28,7 +29,7 @@ struct module_header
 module_header read_module_header(const list_symbol& syntax_tree);
 std::unordered_map<std::string, std::vector<symbol_source>> imported_modules(const module_header& header);
 
-typedef std::unordered_map<std::string, const symbol*> symbol_table;
+typedef std::map<std::string, const symbol*> symbol_table;
 struct module
 {
     list_symbol syntax_tree;
