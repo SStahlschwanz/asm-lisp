@@ -2,8 +2,7 @@
 #define PARSE_ERRORS_HPP_
 
 #include "../symbol_source.hpp"
-
-#include <exception>
+#include "compile_exception.hpp"
 
 enum class parse_error
   : unsigned int
@@ -27,7 +26,7 @@ constexpr const char* parse_error_strings[] =
 };
 
 class parse_exception
-  : public std::exception
+  : public compile_exception
 {
 public:
     parse_exception(const file_position& pos, parse_error error)

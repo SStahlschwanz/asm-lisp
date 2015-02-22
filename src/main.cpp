@@ -1,5 +1,5 @@
-# include "module.hpp"
 #include "parse_state.hpp"
+#include "error/compile_exception.hpp"
 
 #include <iostream>
 #include <iterator>
@@ -17,8 +17,8 @@ int main()
     try
     {
         parse_file(state);
-    } catch(const parse_exception& exc)
+    } catch(const compile_exception& exc)
     {
-        cerr << "parse error" << endl;
+        cerr << "error" << endl;
     }
 }

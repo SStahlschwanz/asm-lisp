@@ -2,11 +2,10 @@
 #define IMPORT_EXPORTS_EXCEPTION_HPP_
 
 #include "../symbol.hpp"
-
-#include <exception>
+#include "compile_exception.hpp"
 
 class import_export_exception
-  : public std::exception
+  : public compile_exception
 {
 public:
     template<class... Types>

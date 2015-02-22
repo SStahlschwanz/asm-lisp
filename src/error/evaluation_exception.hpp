@@ -2,11 +2,10 @@
 #define EVALUATION_EXCEPTION_HPP_
 
 #include "../symbol.hpp"
-
-#include <exception>
+#include "compile_exception.hpp"
 
 class evaluation_exception
-  : public std::exception
+  : public compile_exception
 {
 public:
     template<class... Types>
