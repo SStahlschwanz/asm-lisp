@@ -123,14 +123,14 @@ public:
         case LITERAL:
             f(lit());
             break;
+        case MUTABLE_REFERENCE:
+            f(mut_ref());
+            break;
         case REFERENCE:
             f(ref());
             break;
         case LIST:
             f(list());
-            break;
-        default:
-            assert(false);
             break;
         }
     }
@@ -154,14 +154,14 @@ public:
         case LITERAL:
             f(lit());
             break;
+        case MUTABLE_REFERENCE:
+            f(mut_ref());
+            break;
         case REFERENCE:
             f(ref());
             break;
         case LIST:
             f(list());
-            break;
-        default:
-            assert(false);
             break;
         }
     }
@@ -585,12 +585,12 @@ inline bool operator==(const symbol& lhs, const symbol& rhs)
         return lhs.cast_none() == rhs.cast_none();
     case symbol::LITERAL:
         return lhs.lit() == rhs.lit();
+    case symbol::MUTABLE_REFERENCE:
+        return lhs.mut_ref() == rhs.mut_ref();
     case symbol::REFERENCE:
         return lhs.ref() == rhs.ref();
     case symbol::LIST:
         return lhs.list() == rhs.list();
-    default:
-        assert(false);
     }
 }
 inline bool operator!=(const symbol& lhs, const symbol& rhs)
@@ -617,7 +617,8 @@ constexpr size_t constexpr_max_for_symbol(size_t a, size_t b, TS... s)
 }
 
 constexpr const size_t max_symbol_size = constexpr_max_for_symbol(
-        sizeof(none_symbol), sizeof(lit_symbol), sizeof(ref_symbol), sizeof(list_symbol));
+        sizeof(none_symbol), sizeof(lit_symbol), sizeof(mut_ref_symbol),
+        sizeof(ref_symbol), sizeof(list_symbol));
 
 class any_symbol
   : public symbol
