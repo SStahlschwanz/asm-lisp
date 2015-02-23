@@ -12,7 +12,7 @@
 class none_symbol;
 class lit_symbol;
 class ref_symbol;
-class mut_ref_symbol;
+class owning_ref_symbol;
 class list_symbol;
 class macro_symbol;
 
@@ -25,7 +25,7 @@ public:
     {
         NONE,
         LITERAL,
-        MUTABLE_REFERENCE,
+        OWNING_REFERENCE,
         REFERENCE,
         LIST,
         MACRO
@@ -60,22 +60,22 @@ public:
         return const_cast<symbol*>(this)->lit_else(exc);
     }
     
-    bool is_mut_ref() const;
-    mut_ref_symbol& mut_ref();
-    const mut_ref_symbol& mut_ref() const
+    bool is_owning_ref() const;
+    owning_ref_symbol& owning_ref();
+    const owning_ref_symbol& owning_ref() const
     {
-        return const_cast<symbol*>(this)->mut_ref();
+        return const_cast<symbol*>(this)->owning_ref();
     }
-    mut_ref_symbol& mut_ref_else(const std::exception& exc)
+    owning_ref_symbol& owning_ref_else(const std::exception& exc)
     {
         if(type() == REFERENCE)
-            return mut_ref();
+            return owning_ref();
         else
             throw exc;
     }
-    const mut_ref_symbol& mut_ref_else(const std::exception& exc) const
+    const owning_ref_symbol& owning_ref_else(const std::exception& exc) const
     {
-        return const_cast<symbol*>(this)->mut_ref_else(exc);
+        return const_cast<symbol*>(this)->owning_ref_else(exc);
     }
 
     bool is_ref() const;
@@ -142,8 +142,8 @@ public:
         case LITERAL:
             f(lit());
             break;
-        case MUTABLE_REFERENCE:
-            f(mut_ref());
+        case OWNING_REFERENCE:
+            f(owning_ref());
             break;
         case REFERENCE:
             f(ref());
@@ -176,8 +176,8 @@ public:
         case LITERAL:
             f(lit());
             break;
-        case MUTABLE_REFERENCE:
-            f(mut_ref());
+        case OWNING_REFERENCE:
+            f(owning_ref());
             break;
         case REFERENCE:
             f(ref());
@@ -216,7 +216,7 @@ private:
     friend class symbol;
     friend class none_symbol;
     friend class lit_symbol;
-    friend class mut_ref_symbol;
+    friend class owning_ref_symbol;
     friend class ref_symbol;
     friend class list_symbol;
     friend class macro_symbol;
@@ -326,46 +326,52 @@ private:
 };
 static_assert(std::is_nothrow_move_constructible<lit_symbol>::value, "");
 
-class mut_ref_symbol
+class any_symbol;
+class owning_ref_symbol
   : public symbol_impl
 {
 public:
-    mut_ref_symbol(std::string str, symbol* reference)
-      : s(std::move(str))
+    owning_ref_symbol(std::string str, std::unique_ptr<any_symbol> reference)
+      : s(std::move(str)),
+        r(std::move(reference))
     {
-        type_id = MUTABLE_REFERENCE;
-        r = reference;
+        type_id = OWNING_REFERENCE;
     }
-    mut_ref_symbol()
-      : mut_ref_symbol("", 0)
+    owning_ref_symbol()
+      : owning_ref_symbol("", 0)
     {}
 
-    mut_ref_symbol(const mut_ref_symbol&) = default;
-    mut_ref_symbol(mut_ref_symbol&& that) noexcept
-      : mut_ref_symbol(std::move(that.s), that.r)
+    owning_ref_symbol(const owning_ref_symbol& that)
+      : s(that.s)
+    {
+        if(that.r)
+            r = std::make_unique<any_symbol>(*that.r);
+        else
+            r = nullptr;
+    }
+    owning_ref_symbol(owning_ref_symbol&& that) noexcept
+      : owning_ref_symbol(std::move(that.s), std::move(that.r))
     {}
 
-    explicit mut_ref_symbol(std::string str)
-      : mut_ref_symbol(std::move(str), 0)
+    explicit owning_ref_symbol(std::string str)
+      : owning_ref_symbol(std::move(str), 0)
     {}
-    explicit mut_ref_symbol(const char* str)
-      : mut_ref_symbol(std::string{str})
+    explicit owning_ref_symbol(const char* str)
+      : owning_ref_symbol(std::string{str})
     {}
     
-    mut_ref_symbol& operator=(mut_ref_symbol that)
+    owning_ref_symbol& operator=(owning_ref_symbol that)
     {
         std::swap(s, that.s);
         std::swap(r, that.r);
         return *this;
     }
     
-    symbol* refered() const
+    symbol* refered();
+    const symbol* refered() const;
+    void refered(std::unique_ptr<any_symbol> reference)
     {
-        return r;
-    }
-    void refered(symbol* new_reference)
-    {
-        r = new_reference;
+        r = std::move(reference);
     }
     const std::string& identifier() const
     {
@@ -376,20 +382,20 @@ public:
         s = std::move(new_identifier);
     }
 
-    bool operator==(const mut_ref_symbol& that) const
+    bool operator==(const owning_ref_symbol& that) const
     {
         return s == that.s && r == that.r;
     }
-    bool operator!=(const mut_ref_symbol& that) const
+    bool operator!=(const owning_ref_symbol& that) const
     {
         return !(*this == that);
     }
 
 private:
     std::string s;
-    symbol* r;
+    std::unique_ptr<any_symbol> r;
 };
-static_assert(std::is_nothrow_move_constructible<mut_ref_symbol>::value, "");
+static_assert(std::is_nothrow_move_constructible<owning_ref_symbol>::value, "");
 
 class ref_symbol
   : public symbol_impl
@@ -457,7 +463,6 @@ private:
 static_assert(std::is_nothrow_move_constructible<ref_symbol>::value, "");
 
  
-class any_symbol;
 class list_symbol
   : public symbol_impl
 {
@@ -586,14 +591,14 @@ inline lit_symbol& symbol::lit()
     assert(is_lit());
     return *static_cast<lit_symbol*>(this);
 }
-inline bool symbol::is_mut_ref() const
+inline bool symbol::is_owning_ref() const
 {
-    return impl().type_id == MUTABLE_REFERENCE;
+    return impl().type_id == OWNING_REFERENCE;
 }
-inline mut_ref_symbol& symbol::mut_ref()
+inline owning_ref_symbol& symbol::owning_ref()
 {
-    assert(is_mut_ref());
-    return *static_cast<mut_ref_symbol*>(this);
+    assert(is_owning_ref());
+    return *static_cast<owning_ref_symbol*>(this);
 }
 inline bool symbol::is_ref() const
 {
@@ -634,8 +639,8 @@ inline bool operator==(const symbol& lhs, const symbol& rhs)
         return lhs.cast_none() == rhs.cast_none();
     case symbol::LITERAL:
         return lhs.lit() == rhs.lit();
-    case symbol::MUTABLE_REFERENCE:
-        return lhs.mut_ref() == rhs.mut_ref();
+    case symbol::OWNING_REFERENCE:
+        return lhs.owning_ref() == rhs.owning_ref();
     case symbol::REFERENCE:
         return lhs.ref() == rhs.ref();
     case symbol::LIST:
@@ -668,7 +673,7 @@ constexpr size_t constexpr_max_for_symbol(size_t a, size_t b, TS... s)
 }
 
 constexpr const size_t max_symbol_size = constexpr_max_for_symbol(
-        sizeof(none_symbol), sizeof(lit_symbol), sizeof(mut_ref_symbol),
+        sizeof(none_symbol), sizeof(lit_symbol), sizeof(owning_ref_symbol),
         sizeof(ref_symbol), sizeof(list_symbol));
 
 class any_symbol
@@ -747,6 +752,17 @@ private:
         });
     }
 };
+
+
+
+inline symbol* owning_ref_symbol::refered()
+{
+    return r.get();
+}
+inline const symbol* owning_ref_symbol::refered() const
+{
+    return r.get();
+}
 
 inline list_symbol::list_symbol(std::initializer_list<any_symbol> l)
   : list_symbol(std::vector<any_symbol>{l.begin(), l.end()})
