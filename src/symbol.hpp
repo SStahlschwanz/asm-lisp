@@ -14,6 +14,7 @@ class lit_symbol;
 class ref_symbol;
 class owning_ref_symbol;
 class list_symbol;
+class type_symbol;
 class macro_symbol;
 
 class any_symbol;
@@ -32,6 +33,7 @@ typedef lit_symbol lit;
 typedef ref_symbol ref;
 typedef owning_ref_symbol owning_ref;
 typedef list_symbol list;
+typedef type_symbol type;
 typedef macro_symbol macro;
 
 }
@@ -443,6 +445,26 @@ private:
 };
 static_assert(std::is_nothrow_move_constructible<list_symbol>::value, "");
 
+class type_symbol
+  : public symbol_detail::symbol_impl
+{
+public:
+    static constexpr type_value type_id = TYPE;
+    
+    type_symbol()
+      : symbol_detail::symbol_impl(type_id)
+    {}
+    bool operator==(const type_symbol&) const
+    {
+        // TODO
+        assert(false);
+    }
+    bool operator!=(const type_symbol&) const
+    {
+        return !(*this == that);
+    }
+};
+
 class macro_symbol
   : public symbol_detail::symbol_impl
 {
@@ -518,6 +540,9 @@ void symbol::visit(FunctorType&& f)
         break;
     case LIST:
         f(cast<list_symbol>());
+        break;
+    case LIST:
+        f(cast<type_symbol>());
         break;
     case MACRO:
         f(cast<macro_symbol>());
