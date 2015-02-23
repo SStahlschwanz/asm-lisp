@@ -16,6 +16,8 @@ class owning_ref_symbol;
 class list_symbol;
 class macro_symbol;
 
+class any_symbol;
+
 namespace symbol_detail
 {
 
@@ -233,7 +235,6 @@ private:
 };
 static_assert(std::is_nothrow_move_constructible<lit_symbol>::value, "");
 
-class any_symbol;
 class owning_ref_symbol
   : public symbol_detail::symbol_impl
 {
@@ -290,10 +291,7 @@ public:
         s = std::move(new_identifier);
     }
 
-    bool operator==(const owning_ref_symbol& that) const
-    {
-        return s == that.s && r == that.r;
-    }
+    bool operator==(const owning_ref_symbol& that) const;
     bool operator!=(const owning_ref_symbol& that) const
     {
         return !(*this == that);
@@ -457,6 +455,15 @@ public:
     {}
     
     any_symbol operator()(list_symbol::const_iterator begin, list_symbol::const_iterator end) const;
+    bool operator==(const macro_symbol& that) const
+    {
+        // TODO
+        assert(false);
+    }
+    bool operator!=(const macro_symbol& that) const
+    {
+        return !(*this == that);
+    }
 private:
     macro_function f;
 };
@@ -649,6 +656,10 @@ inline symbol* owning_ref_symbol::refered()
 inline const symbol* owning_ref_symbol::refered() const
 {
     return r.get();
+}
+inline bool owning_ref_symbol::operator==(const owning_ref_symbol& that) const
+{
+    return s == that.s && ((r == nullptr && that.r == nullptr) || *r == *that.r);
 }
 
 inline list_symbol::list_symbol(std::initializer_list<any_symbol> l)
