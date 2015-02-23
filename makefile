@@ -95,6 +95,6 @@ test-build/%: $(filter-out %main.o,$(DEBUG_OBJS)) test-build/obj/%.o
 	$(CPP) $(DEBUG_LDFLAGS) -o $@ $^ $(DEBUG_LIBS)
 
 test-%: test-build/%
-	./$^
+	valgrind -q $^
 
 full-test: $(patsubst test/%.cpp,test-%,$(ALL_TESTS))
