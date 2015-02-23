@@ -28,6 +28,11 @@ struct def_not_enough_arguments
 {
     using evaluation_exception::evaluation_exception;
 };
+struct invalid_defined_symbol
+  : evaluation_exception
+{
+    using evaluation_exception::evaluation_exception;
+};
 struct invalid_defined_name
   : evaluation_exception
 {

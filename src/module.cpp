@@ -9,6 +9,9 @@ using std::vector;
 using std::size_t;
 using std::tie;
 using std::ignore;
+using std::move;
+using std::unique_ptr;
+using std::make_unique;
 
 using boost::optional;
 using boost::none;
@@ -139,7 +142,8 @@ void remove_not_exported(symbol_table& table, const module_header& header)
     }
 }
 
-void dispatch_references(symbol& s, const symbol_table& table)
+void dispatch_references(symbol& s, const symbol_table& table,
+        vector<unique_ptr<any_symbol>>& evaluated_symbols, compilation_context& context)
 {
     if(s.is<ref>())
     {
@@ -147,22 +151,31 @@ void dispatch_references(symbol& s, const symbol_table& table)
         auto find_it = table.find(r.identifier());
         if(find_it != table.end())
             r.refered(find_it->second);
+        else if(r.identifier() == "unique")
+        {
+            auto id = make_unique<any_symbol>(id_symbol{context.uuid()});
+            r.refered(id.get());
+            evaluated_symbols.push_back(move(id));
+        }
+            
     }
     else if(s.is<list>())
     {
         list_symbol& l = s.cast<list>();
         for(symbol& child : l)
-            dispatch_references(child, table);
+            dispatch_references(child, table, evaluated_symbols, context);
     }
 }
 
 module evaluate_module(list_symbol syntax_tree, const module_header& header,
-        const unordered_map<string, module>& dependencies)
+        const unordered_map<string, module>& dependencies, compilation_context& context)
 {
     symbol_table table = initial_symbol_table(header, dependencies);
 
     size_t header_size = header.imports.size() + header.exports.size();
     assert(header_size < syntax_tree.size());
+
+    vector<unique_ptr<any_symbol>> evaluated_symbols;
     for(auto it = syntax_tree.begin() + header_size; it != syntax_tree.end(); ++it)
     {
         list_symbol& statement = it->cast<list>();
@@ -178,12 +191,14 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header,
                 throw def_not_enough_arguments{statement.source(), statement.size()};
 
             const ref_symbol& defined = statement[1].cast_else<ref>(
-                    invalid_defined_name{statement[1].source()});
+                    invalid_defined_symbol{statement[1].source()});
+            if(defined.identifier() == "unique")
+                throw invalid_defined_name{defined.source()};
             for(auto argument_it = statement.begin() + 2;
                     argument_it != statement.end();
                     ++argument_it)
             {
-                dispatch_references(*argument_it, table);
+                dispatch_references(*argument_it, table, evaluated_symbols, context);
             }
             
             const symbol* definition = 0;
@@ -200,5 +215,5 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header,
     }
 
     remove_not_exported(table, header);
-    return module{std::move(syntax_tree), std::move(table), {}};
+    return module{std::move(syntax_tree), std::move(table), std::move(evaluated_symbols)};
 }

@@ -104,20 +104,22 @@ BOOST_AUTO_TEST_CASE(header_test)
 
 BOOST_AUTO_TEST_CASE(simple_definition_test)
 {
+    compilation_context context;
+    
     module_header mod1_header = {{}, {mod1_export1}};
     module_header mod2_header =
             {{mod2_import1, mod2_import2}, {mod2_export1, mod2_export2}};
     
     unordered_map<string, module> module_map;
-    module_map["mod1"] = evaluate_module(mod1_tree, mod1_header, module_map);
+    module_map["mod1"] = evaluate_module(mod1_tree, mod1_header, module_map, context);
     auto& exports1 = module_map["mod1"].exports;
     BOOST_CHECK(exports1.size() == 3);
     BOOST_CHECK(exports1.count("a") && exports1.count("b") && exports1.count("c"));
     BOOST_CHECK(*exports1["a"] == list{});
     BOOST_CHECK(*exports1["b"] == list{lit{"bb"}});
     BOOST_CHECK(*exports1["c"] == list{});
-    
-    module_map["mod2"] = evaluate_module(mod2_tree, mod2_header, module_map);
+
+    module_map["mod2"] = evaluate_module(mod2_tree, mod2_header, module_map, context);
     auto& exports2 = module_map["mod2"].exports;
     BOOST_CHECK(exports2.size() == 3);
     BOOST_CHECK(exports2.count("x") && exports2.count("y") && exports2.count("z"));

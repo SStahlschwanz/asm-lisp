@@ -4,6 +4,7 @@
 #include "symbol.hpp"
 #include "parse_state.hpp"
 #include "parse.hpp"
+#include "compilation_context.hpp"
 
 #include <string>
 #include <unordered_map>
@@ -37,7 +38,7 @@ struct module
     std::vector<std::unique_ptr<any_symbol>> evaluated_exports; // owns from macros evaluated exports
 };
 module evaluate_module(list_symbol syntax_tree, const module_header& header,
-        const std::unordered_map<std::string, module>& dependencies);
+        const std::unordered_map<std::string, module>& dependencies, compilation_context& context);
 
 #endif
 
