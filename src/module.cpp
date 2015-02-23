@@ -13,6 +13,7 @@ using std::ignore;
 using boost::optional;
 using boost::none;
 
+using namespace symbol_shortcuts;
 
 struct not_implemented
   : std::exception
@@ -20,13 +21,13 @@ struct not_implemented
 
 bool is_export_statement(const list_symbol& statement)
 {
-    return !statement.empty() && statement[0].is_ref() &&
-            statement[0].ref().identifier() == "export";
+    return !statement.empty() && statement[0].is<ref>() &&
+            statement[0].cast<ref>().identifier() == "export";
 }
 bool is_import_statement(const list_symbol& statement)
 {
-    return !statement.empty() && statement[0].is_ref() &&
-            statement[0].ref().identifier() == "import";
+    return !statement.empty() && statement[0].is<ref>() &&
+            statement[0].cast<ref>().identifier() == "import";
 }
 
 optional<import_statement> parse_import(const list_symbol& statement)
@@ -37,20 +38,20 @@ optional<import_statement> parse_import(const list_symbol& statement)
     if(statement.size() != 4)
         throw import_invalid_argument_number{statement.source()};
     
-    const list_symbol& import_list = statement[1].list_else(
+    const list_symbol& import_list = statement[1].cast_else<list>(
             missing_import_list{statement[1].source()});
     for(const symbol& import : import_list)
     {
-        if(!import.is_ref())
+        if(!import.is<ref>())
             throw invalid_imported_identifier{import.source()};
     }
     
-    const ref_symbol& from_token = statement[2].ref_else(
+    const ref_symbol& from_token = statement[2].cast_else<ref>(
             missing_from_token{statement[2].source()});
     if(from_token.identifier() != "from")
         throw missing_from_token{statement[2].source()};
 
-    const ref_symbol& imported_module = statement[3].ref_else(
+    const ref_symbol& imported_module = statement[3].cast_else<ref>(
             invalid_imported_module{statement[3].source()});
 
     return import_statement{statement, imported_module, import_list};
@@ -69,7 +70,7 @@ module_header read_module_header(const list_symbol& syntax_tree)
     module_header header;
     for(const symbol& s : syntax_tree)
     {
-        const list_symbol& statement = s.list();
+        const list_symbol& statement = s.cast<list>();
         if(optional<import_statement> import = parse_import(statement))
             header.imports.push_back(std::move(*import));
         else if(optional<export_statement> export_st = parse_export(statement))
@@ -103,8 +104,8 @@ symbol_table initial_symbol_table(const module_header& header,
         const module& imported_module = module_find_it->second;
         for(const symbol& s : import.import_list)
         {
-            // s.ref() checked by parse_import
-            const auto& imported_identifier = s.ref().identifier();
+            // s.cast<ref>() checked by parse_import
+            const auto& imported_identifier = s.cast<ref>().identifier();
             auto symbol_find_it = imported_module.exports.find(imported_identifier);
             if(symbol_find_it == imported_module.exports.end())
                 throw symbol_not_found{s.source()};
@@ -125,7 +126,7 @@ void remove_not_exported(symbol_table& table, const module_header& header)
                     exports_it != export_st.statement.end();
                     ++exports_it)
             {
-                const auto& exported_identifier = exports_it->ref().identifier();
+                const auto& exported_identifier = exports_it->cast<ref>().identifier();
                 if(identifier == exported_identifier)
                 {
                     ++it;
@@ -140,16 +141,16 @@ void remove_not_exported(symbol_table& table, const module_header& header)
 
 void dispatch_references(symbol& s, const symbol_table& table)
 {
-    if(s.is_ref())
+    if(s.is<ref>())
     {
-        ref_symbol& r = s.ref();
+        ref_symbol& r = s.cast<ref>();
         auto find_it = table.find(r.identifier());
         if(find_it != table.end())
             r.refered(find_it->second);
     }
-    else if(s.is_list())
+    else if(s.is<list>())
     {
-        list_symbol& l = s.list();
+        list_symbol& l = s.cast<list>();
         for(symbol& child : l)
             dispatch_references(child, table);
     }
@@ -164,11 +165,11 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header,
     assert(header_size < syntax_tree.size());
     for(auto it = syntax_tree.begin() + header_size; it != syntax_tree.end(); ++it)
     {
-        list_symbol& statement = it->list();
+        list_symbol& statement = it->cast<list>();
         if(statement.empty())
             throw empty_top_level_statement{statement.source()};
         
-        ref_symbol& command = statement[0].ref_else(
+        ref_symbol& command = statement[0].cast_else<ref>(
                 invalid_command{statement[0].source()});
 
         if(command.identifier() == "def")
@@ -176,7 +177,7 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header,
             if(statement.size() < 3)
                 throw def_not_enough_arguments{statement.source(), statement.size()};
 
-            const ref_symbol& defined = statement[1].ref_else(
+            const ref_symbol& defined = statement[1].cast_else<ref>(
                     invalid_defined_name{statement[1].source()});
             for(auto argument_it = statement.begin() + 2;
                     argument_it != statement.end();

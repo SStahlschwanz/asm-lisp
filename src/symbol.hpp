@@ -9,7 +9,6 @@
 
 #include "symbol_source.hpp"
 
-class none_symbol;
 class id_symbol;
 class lit_symbol;
 class ref_symbol;
@@ -17,14 +16,29 @@ class owning_ref_symbol;
 class list_symbol;
 class macro_symbol;
 
+namespace symbol_detail
+{
+
 class symbol_impl;
+
+}
+
+namespace symbol_shortcuts
+{
+
+typedef lit_symbol lit;
+typedef ref_symbol ref;
+typedef owning_ref_symbol owning_ref;
+typedef list_symbol list;
+typedef macro_symbol macro;
+
+}
 
 class symbol
 {
 public:
     enum type_value
     {
-        NONE,
         ID,
         LITERAL,
         OWNING_REFERENCE,
@@ -37,251 +51,83 @@ public:
     const symbol_source& source() const;
     void source(const symbol_source& new_source);
     
-    bool is_none() const;
-    none_symbol& cast_none();
-    const none_symbol& cast_none() const
+    template<class SymbolType>
+    bool is() const;
+    template<class SymbolType>
+    SymbolType& cast();
+    template<class SymbolType>
+    const SymbolType& cast() const
     {
-        return const_cast<symbol*>(this)->cast_none();
+        return const_cast<symbol*>(this)->cast<SymbolType>();
     }
-    
-    bool is_id() const;
-    id_symbol& cast_id();
-    const id_symbol& cast_id() const
+    template<class SymbolType>
+    SymbolType& cast_else(const std::exception& exc)
     {
-        return const_cast<symbol*>(this)->cast_id();
-    }
-    id_symbol& cast_id_else(const std::exception& exc)
-    {
-        if(type() == ID)
-            return cast_id();
+        if(is<SymbolType>())
+            return cast<SymbolType>();
         else
             throw exc;
     }
-    const id_symbol& cast_id_else(const std::exception& exc) const
+    template<class SymbolType>
+    const SymbolType& cast_else(const std::exception& exc) const
     {
-        return const_cast<symbol*>(this)->cast_id_else(exc);
-    }
-    
-    bool is_lit() const;
-    lit_symbol& lit();
-    const lit_symbol& lit() const
-    {
-        return const_cast<symbol*>(this)->lit();
-    }
-    lit_symbol& lit_else(const std::exception& exc)
-    {
-        if(type() == LITERAL)
-            return lit();
-        else
-            throw exc;
-    }
-    const lit_symbol& lit_else(const std::exception& exc) const
-    {
-        return const_cast<symbol*>(this)->lit_else(exc);
-    }
-    
-    bool is_owning_ref() const;
-    owning_ref_symbol& owning_ref();
-    const owning_ref_symbol& owning_ref() const
-    {
-        return const_cast<symbol*>(this)->owning_ref();
-    }
-    owning_ref_symbol& owning_ref_else(const std::exception& exc)
-    {
-        if(type() == REFERENCE)
-            return owning_ref();
-        else
-            throw exc;
-    }
-    const owning_ref_symbol& owning_ref_else(const std::exception& exc) const
-    {
-        return const_cast<symbol*>(this)->owning_ref_else(exc);
+        return const_cast<symbol*>(this)->cast_else<SymbolType>(exc);
     }
 
-    bool is_ref() const;
-    ref_symbol& ref();
-    const ref_symbol& ref() const
-    {
-        return const_cast<symbol*>(this)->ref();
-    }
-    ref_symbol& ref_else(const std::exception& exc)
-    {
-        if(type() == REFERENCE)
-            return ref();
-        else
-            throw exc;
-    }
-    const ref_symbol& ref_else(const std::exception& exc) const
-    {
-        return const_cast<symbol*>(this)->ref_else(exc);
-    }
-    
-    bool is_list() const;
-    list_symbol& list();
-    const list_symbol& list() const
-    {
-        return const_cast<symbol*>(this)->list();
-    }
-    list_symbol& list_else(const std::exception& exc)
-    {
-        if(type() == LIST)
-            return list();
-        else
-            throw exc;
-    }
-    const list_symbol& list_else(const std::exception& exc) const
-    {
-        return const_cast<symbol*>(this)->list_else(exc);
-    }
-    bool is_macro() const;
-    macro_symbol& macro();
-    const macro_symbol& macro() const
-    {
-        return const_cast<symbol*>(this)->macro();
-    }
-    macro_symbol& macro_else(const std::exception& exc)
-    {
-        if(type() == MACRO)
-            return macro();
-        else
-            throw exc;
-    }
-    const macro_symbol& macro_else(const std::exception& exc) const
-    {
-        return const_cast<symbol*>(this)->macro_else(exc);
-    }
-    
-    template<class Functor>
-    void visit(Functor&& f)
-    {
-        switch(type())
-        {
-        case NONE:
-            assert(type() != NONE); // crashes always
-            break;
-        case ID:
-            f(cast_id());
-            break;
-        case LITERAL:
-            f(lit());
-            break;
-        case OWNING_REFERENCE:
-            f(owning_ref());
-            break;
-        case REFERENCE:
-            f(ref());
-            break;
-        case LIST:
-            f(list());
-            break;
-        case MACRO:
-            f(macro());
-            break;
-        }
-    }
-    template<class Functor>
-    void visit(Functor&& f) const
+    template<class FunctorType>
+    void visit(FunctorType&& functor);
+    template<class FunctorType>
+    void visit(FunctorType&& functor) const
     {
         const_cast<symbol*>(this)->visit([&](auto& obj)
         {
-            typedef typename std::decay<decltype(obj)>::type T;
-            f(const_cast<const T&>(obj));
-        });
-    }
-    template<class Functor>
-    void visit_none(Functor&& f)
-    {
-        switch(type())
-        {
-        case NONE:
-            f(cast_none());
-            break;
-        case ID:
-            f(cast_id());
-            break;
-        case LITERAL:
-            f(lit());
-            break;
-        case OWNING_REFERENCE:
-            f(owning_ref());
-            break;
-        case REFERENCE:
-            f(ref());
-            break;
-        case LIST:
-            f(list());
-            break;
-        case MACRO:
-            f(macro());
-            break;
-        }
-    }
-    template<class Functor>
-    void visit_none(Functor&& f) const
-    {
-        const_cast<symbol*>(this)->visit_none([&](auto& obj)
-        {
-            typedef typename std::decay<decltype(obj)>::type T;
-            f(const_cast<const T&>(obj));
+            typedef typename std::decay<decltype(obj)>::type actual_type;
+            functor(const_cast<const actual_type&>(obj));
         });
     }
 private:
     friend class any_symbol;
-    friend class symbol_impl;
+    friend class symbol_detail::symbol_impl;
     ~symbol()
     {}
 
-    symbol_impl& impl();
-    const symbol_impl& impl() const;
+    symbol_detail::symbol_impl& impl();
+    const symbol_detail::symbol_impl& impl() const;
 };
 
+namespace symbol_detail
+{
 class symbol_impl
   : public symbol
 {
 private:
-    friend class symbol;
-    friend class none_symbol;
-    friend class id_symbol;
-    friend class lit_symbol;
-    friend class owning_ref_symbol;
-    friend class ref_symbol;
-    friend class list_symbol;
-    friend class macro_symbol;
+    friend class ::symbol;
+    friend class ::id_symbol;
+    friend class ::lit_symbol;
+    friend class ::owning_ref_symbol;
+    friend class ::ref_symbol;
+    friend class ::list_symbol;
+    friend class ::macro_symbol;
 
-    ~symbol_impl()
+    symbol_impl(type_value type_val)
+      : t(type_val)
     {}
-    type_value type_id;
+    ~symbol_impl() = default;
+
+    type_value t;
     symbol_source source_value;
 };
-
-class none_symbol
-  : public symbol_impl
-{
-public:
-    none_symbol()
-    {
-        type_id = NONE;
-    }
-
-    bool operator==(const none_symbol&) const
-    {
-        return true;
-    }
-    bool operator!=(const none_symbol&) const
-    {
-        return false;
-    }
-};
-
+}
 class id_symbol
-  : public symbol_impl
+  : public symbol_detail::symbol_impl
 {
 public:
+    static constexpr type_value type_id = ID;
+
     id_symbol(size_t new_id)
-      : i(new_id)
-    {
-        type_id = ID;
-    }
+      : symbol_detail::symbol_impl(type_id),
+        i(new_id)
+    {}
     id_symbol()
       : id_symbol(0)
     {}
@@ -307,14 +153,15 @@ private:
 };
 
 class lit_symbol
-  : public symbol_impl
+  : public symbol_detail::symbol_impl
 {
 public:
+    static constexpr type_value type_id = LITERAL;
+
     lit_symbol(std::string str)
-      : s(std::move(str))
-    {
-        type_id = LITERAL;
-    }
+      : symbol_detail::symbol_impl(type_id),
+        s(std::move(str))
+    {}
     lit_symbol(const char* str)
       : lit_symbol(std::string{str})
     {}
@@ -388,21 +235,22 @@ static_assert(std::is_nothrow_move_constructible<lit_symbol>::value, "");
 
 class any_symbol;
 class owning_ref_symbol
-  : public symbol_impl
+  : public symbol_detail::symbol_impl
 {
 public:
+    static constexpr type_value type_id = OWNING_REFERENCE;
     owning_ref_symbol(std::string str, std::unique_ptr<any_symbol> reference)
-      : s(std::move(str)),
+      : symbol_detail::symbol_impl(type_id),
+        s(std::move(str)),
         r(std::move(reference))
-    {
-        type_id = OWNING_REFERENCE;
-    }
+    {}
     owning_ref_symbol()
       : owning_ref_symbol("", 0)
     {}
 
     owning_ref_symbol(const owning_ref_symbol& that)
-      : s(that.s)
+      : symbol_detail::symbol_impl(OWNING_REFERENCE),
+        s(that.s)
     {
         if(that.r)
             r = std::make_unique<any_symbol>(*that.r);
@@ -458,15 +306,15 @@ private:
 static_assert(std::is_nothrow_move_constructible<owning_ref_symbol>::value, "");
 
 class ref_symbol
-  : public symbol_impl
+  : public symbol_detail::symbol_impl
 {
 public:
+    static constexpr type_value type_id = REFERENCE;
     ref_symbol(std::string str, const symbol* reference)
-      : s(std::move(str))
-    {
-        type_id = REFERENCE;
-        r = reference;
-    }
+      : symbol_detail::symbol_impl(type_id),
+        s(std::move(str)),
+        r(reference)
+    {}
     ref_symbol()
       : ref_symbol("", 0)
     {}
@@ -524,14 +372,14 @@ static_assert(std::is_nothrow_move_constructible<ref_symbol>::value, "");
 
  
 class list_symbol
-  : public symbol_impl
+  : public symbol_detail::symbol_impl
 {
 public:
+    static constexpr type_value type_id = LIST;
     list_symbol(std::vector<any_symbol> vec)
-      : v(std::move(vec))
-    {
-        type_id = LIST;
-    }
+      : symbol_detail::symbol_impl(type_id),
+        v(std::move(vec))
+    {}
     list_symbol()
       : list_symbol(std::vector<any_symbol>{})
     {}
@@ -598,32 +446,32 @@ private:
 static_assert(std::is_nothrow_move_constructible<list_symbol>::value, "");
 
 class macro_symbol
-  : public symbol_impl
+  : public symbol_detail::symbol_impl
 {
 public:
+    static constexpr type_value type_id = MACRO;
     typedef std::function<any_symbol (list_symbol::const_iterator begin, list_symbol::const_iterator end)> macro_function;
     macro_symbol(macro_function func)
-      : f(std::move(func))
-    {
-        type_id = MACRO;
-    }
+      : symbol_detail::symbol_impl(MACRO),
+        f(std::move(func))
+    {}
     
     any_symbol operator()(list_symbol::const_iterator begin, list_symbol::const_iterator end) const;
 private:
     macro_function f;
 };
 
-inline symbol_impl& symbol::impl()
+inline symbol_detail::symbol_impl& symbol::impl()
 {
-    return *static_cast<symbol_impl*>(this);
+    return *static_cast<symbol_detail::symbol_impl*>(this);
 }
-inline const symbol_impl& symbol::impl() const
+inline const symbol_detail::symbol_impl& symbol::impl() const
 {
-    return *static_cast<const symbol_impl*>(this);
+    return *static_cast<const symbol_detail::symbol_impl*>(this);
 }
 inline symbol::type_value symbol::type() const
 {
-    return impl().type_id;
+    return impl().t;
 }
 inline const symbol_source& symbol::source() const
 {
@@ -633,69 +481,43 @@ inline void symbol::source(const symbol_source& new_source)
 {
     impl().source_value = new_source;
 }
-inline bool symbol::is_none() const
+template<class SymbolType>
+inline bool symbol::is() const
 {
-    return impl().type_id == NONE;
+    return type() == SymbolType::type_id;
 }
-inline none_symbol& symbol::cast_none()
+template<class SymbolType>
+SymbolType& symbol::cast()
 {
-    assert(is_none());
-    return *static_cast<none_symbol*>(this);
+    assert(is<SymbolType>());
+    return *static_cast<SymbolType*>(this);
 }
-inline bool symbol::is_id() const
+template<class FunctorType>
+void symbol::visit(FunctorType&& f)
 {
-    return impl().type_id == ID;
+    switch(type())
+    {
+    case ID:
+        f(cast<id_symbol>());
+        break;
+    case LITERAL:
+        f(cast<lit_symbol>());
+        break;
+    case REFERENCE:
+        f(cast<ref_symbol>());
+        break;
+    case OWNING_REFERENCE:
+        f(cast<owning_ref_symbol>());
+        break;
+    case LIST:
+        f(cast<list_symbol>());
+        break;
+    case MACRO:
+        f(cast<macro_symbol>());
+        break;
+    }
 }
-inline id_symbol& symbol::cast_id()
-{
-    assert(is_id());
-    return *static_cast<id_symbol*>(this);
-}
-inline bool symbol::is_lit() const
-{
-    return impl().type_id == LITERAL;
-}
-inline lit_symbol& symbol::lit()
-{
-    assert(is_lit());
-    return *static_cast<lit_symbol*>(this);
-}
-inline bool symbol::is_owning_ref() const
-{
-    return impl().type_id == OWNING_REFERENCE;
-}
-inline owning_ref_symbol& symbol::owning_ref()
-{
-    assert(is_owning_ref());
-    return *static_cast<owning_ref_symbol*>(this);
-}
-inline bool symbol::is_ref() const
-{
-    return impl().type_id == REFERENCE;
-}
-inline ref_symbol& symbol::ref()
-{
-    assert(is_ref());
-    return *static_cast<ref_symbol*>(this);
-}
-inline bool symbol::is_list() const
-{
-    return impl().type_id == LIST;
-}
-inline list_symbol& symbol::list()
-{
-    assert(is_list());
-    return *static_cast<list_symbol*>(this);
-}
-inline bool symbol::is_macro() const
-{
-    return impl().type_id == MACRO;
-}
-inline macro_symbol& symbol::macro()
-{
-    assert(is_macro());
-    return *static_cast<macro_symbol*>(this);
-}
+
 
 inline bool operator==(const symbol& lhs, const symbol& rhs)
 {
@@ -704,20 +526,18 @@ inline bool operator==(const symbol& lhs, const symbol& rhs)
     
     switch(lhs.type())
     {
-    case symbol::NONE:
-        return lhs.cast_none() == rhs.cast_none();
     case symbol::ID:
-        return lhs.cast_id() == rhs.cast_id();
+        return lhs.cast<id_symbol>() == rhs.cast<id_symbol>();
     case symbol::LITERAL:
-        return lhs.lit() == rhs.lit();
+        return lhs.cast<lit_symbol>() == rhs.cast<lit_symbol>();
     case symbol::OWNING_REFERENCE:
-        return lhs.owning_ref() == rhs.owning_ref();
+        return lhs.cast<owning_ref_symbol>() == rhs.cast<owning_ref_symbol>();
     case symbol::REFERENCE:
-        return lhs.ref() == rhs.ref();
+        return lhs.cast<ref_symbol>() == rhs.cast<ref_symbol>();
     case symbol::LIST:
-        return lhs.list() == rhs.list();
+        return lhs.cast<list_symbol>() == rhs.cast<list_symbol>();
     case symbol::MACRO:
-        return lhs.macro() == rhs.macro();
+        return lhs.cast<macro_symbol>() == rhs.cast<macro_symbol>();
     }
 }
 inline bool operator!=(const symbol& lhs, const symbol& rhs)
@@ -744,27 +564,23 @@ constexpr size_t constexpr_max_for_symbol(size_t a, size_t b, TS... s)
 }
 
 constexpr const size_t max_symbol_size = constexpr_max_for_symbol(
-        sizeof(none_symbol), sizeof(lit_symbol), sizeof(owning_ref_symbol),
+        sizeof(lit_symbol), sizeof(owning_ref_symbol),
         sizeof(ref_symbol), sizeof(list_symbol));
 
 class any_symbol
   : public symbol
 {
 public:
-    any_symbol()
-    {
-        construct(none_symbol());
-    }
     any_symbol(const symbol& that)
     {
-        that.visit_none([&](auto obj)
+        that.visit([&](auto obj)
         {
             construct(obj);
         });
     }
     any_symbol(symbol&& that) noexcept
     {
-        that.visit_none([&](auto& obj)
+        that.visit([&](auto& obj)
         {
             construct(std::move(obj));
         });
@@ -816,7 +632,7 @@ private:
     }
     void destruct() noexcept
     {
-        visit_none([](auto& obj)
+        visit([](auto& obj)
         {
             typedef typename std::decay<decltype(obj)>::type T;
             obj.~T();

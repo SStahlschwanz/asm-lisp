@@ -36,7 +36,7 @@ const list_symbol mod1_tree = list
     list{def, b, list{lit{"bb"}}},
     list{def, c, list{}}
 };
-const export_statement mod1_export1{mod1_tree[0].list()};
+const export_statement mod1_export1{mod1_tree[0].cast<list>()};
 
 const list_symbol mod2_tree = list
 {
@@ -49,15 +49,15 @@ const list_symbol mod2_tree = list
     list{def, z, list{}}
 };
 const import_statement mod2_import1{
-        mod2_tree[0].list(),
-        mod2_tree[0].list()[3].ref(),
-        mod2_tree[0].list()[1].list()};
+        mod2_tree[0].cast<list>(),
+        mod2_tree[0].cast<list>()[3].cast<ref>(),
+        mod2_tree[0].cast<list>()[1].cast<list>()};
 const import_statement mod2_import2{
-        mod2_tree[2].list(),
-        mod2_tree[2].list()[3].ref(),
-        mod2_tree[2].list()[1].list()};
-const export_statement mod2_export1{mod2_tree[1].list()};
-const export_statement mod2_export2{mod2_tree[3].list()};
+        mod2_tree[2].cast<list>(),
+        mod2_tree[2].cast<list>()[3].cast<ref>(),
+        mod2_tree[2].cast<list>()[1].cast<list>()};
+const export_statement mod2_export1{mod2_tree[1].cast<list>()};
+const export_statement mod2_export2{mod2_tree[3].cast<list>()};
 
 
 bool operator==(const export_statement& lhs, const export_statement& rhs)
