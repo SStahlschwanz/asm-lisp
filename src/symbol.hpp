@@ -10,6 +10,7 @@
 #include "symbol_source.hpp"
 
 class none_symbol;
+class id_symbol;
 class lit_symbol;
 class ref_symbol;
 class owning_ref_symbol;
@@ -24,6 +25,7 @@ public:
     enum type_value
     {
         NONE,
+        ID,
         LITERAL,
         OWNING_REFERENCE,
         REFERENCE,
@@ -40,6 +42,24 @@ public:
     const none_symbol& cast_none() const
     {
         return const_cast<symbol*>(this)->cast_none();
+    }
+    
+    bool is_id() const;
+    id_symbol& cast_id();
+    const id_symbol& cast_id() const
+    {
+        return const_cast<symbol*>(this)->cast_id();
+    }
+    id_symbol& cast_id_else(const std::exception& exc)
+    {
+        if(type() == ID)
+            return cast_id();
+        else
+            throw exc;
+    }
+    const id_symbol& cast_id_else(const std::exception& exc) const
+    {
+        return const_cast<symbol*>(this)->cast_id_else(exc);
     }
     
     bool is_lit() const;
@@ -139,6 +159,9 @@ public:
         case NONE:
             assert(type() != NONE); // crashes always
             break;
+        case ID:
+            f(cast_id());
+            break;
         case LITERAL:
             f(lit());
             break;
@@ -172,6 +195,9 @@ public:
         {
         case NONE:
             f(cast_none());
+            break;
+        case ID:
+            f(cast_id());
             break;
         case LITERAL:
             f(lit());
@@ -215,6 +241,7 @@ class symbol_impl
 private:
     friend class symbol;
     friend class none_symbol;
+    friend class id_symbol;
     friend class lit_symbol;
     friend class owning_ref_symbol;
     friend class ref_symbol;
@@ -244,6 +271,39 @@ public:
     {
         return false;
     }
+};
+
+class id_symbol
+  : public symbol_impl
+{
+public:
+    id_symbol(size_t new_id)
+      : i(new_id)
+    {
+        type_id = ID;
+    }
+    id_symbol()
+      : id_symbol(0)
+    {}
+    bool operator==(const id_symbol& that) const
+    {
+        return i == that.i;
+    }
+    bool operator!=(const id_symbol& that) const
+    {
+        return !(*this == that);
+    }
+
+    size_t id() const
+    {
+        return i;
+    }
+    void id(size_t new_id)
+    {
+        i = new_id;
+    }
+private:
+    size_t i;
 };
 
 class lit_symbol
@@ -579,8 +639,17 @@ inline bool symbol::is_none() const
 }
 inline none_symbol& symbol::cast_none()
 {
-    assert(impl().type_id == NONE);
+    assert(is_none());
     return *static_cast<none_symbol*>(this);
+}
+inline bool symbol::is_id() const
+{
+    return impl().type_id == ID;
+}
+inline id_symbol& symbol::cast_id()
+{
+    assert(is_id());
+    return *static_cast<id_symbol*>(this);
 }
 inline bool symbol::is_lit() const
 {
@@ -637,6 +706,8 @@ inline bool operator==(const symbol& lhs, const symbol& rhs)
     {
     case symbol::NONE:
         return lhs.cast_none() == rhs.cast_none();
+    case symbol::ID:
+        return lhs.cast_id() == rhs.cast_id();
     case symbol::LITERAL:
         return lhs.lit() == rhs.lit();
     case symbol::OWNING_REFERENCE:
