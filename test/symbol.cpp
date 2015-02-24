@@ -2,11 +2,13 @@
 #include <boost/test/included/unit_test.hpp>
 
 #include <algorithm>
+#include <exception>
 
 #include "../src/symbol.hpp"
  
 using std::equal;
 using std::begin;
+using std::exception;
 
 typedef lit_symbol lit;
 typedef ref_symbol ref;
@@ -52,12 +54,19 @@ BOOST_AUTO_TEST_CASE(ref_test)
 
 BOOST_AUTO_TEST_CASE(cast_test)
 {
+    struct my_exception
+      : exception
+    {};
+    my_exception exc;
+    
     symbol* s;
 
     lit lit_obj = "abcde";
     s = &lit_obj;
     BOOST_CHECK_EQUAL(s->type(), symbol::LITERAL);
     BOOST_CHECK_EQUAL(&s->cast<lit>(), &lit_obj);
+    BOOST_CHECK_EQUAL(&s->cast_else<lit>(exc), &lit_obj);
+    BOOST_CHECK_THROW(s->cast_else<ref>(exc), my_exception);
 
     ref ref_obj{"abcd"};
     s = &ref_obj;

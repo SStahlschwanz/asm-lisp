@@ -4,7 +4,6 @@
 #include <boost/variant.hpp>
 
 #include <vector>
-#include <exception>
 #include <initializer_list>
 
 #include "symbol_source.hpp"
@@ -48,6 +47,7 @@ public:
         OWNING_REFERENCE,
         REFERENCE,
         LIST,
+        TYPE,
         MACRO
     };
     
@@ -64,18 +64,19 @@ public:
     {
         return const_cast<symbol*>(this)->cast<SymbolType>();
     }
-    template<class SymbolType>
-    SymbolType& cast_else(const std::exception& exc)
+    template<class SymbolType, class ExceptionType>
+    SymbolType& cast_else(ExceptionType&& exc)
     {
         if(is<SymbolType>())
             return cast<SymbolType>();
         else
             throw exc;
     }
-    template<class SymbolType>
-    const SymbolType& cast_else(const std::exception& exc) const
+    template<class SymbolType, class ExceptionType>
+    const SymbolType& cast_else(ExceptionType&& exc) const
     {
-        return const_cast<symbol*>(this)->cast_else<SymbolType>(exc);
+        return const_cast<symbol*>(this)->cast_else<SymbolType>(
+                std::forward<ExceptionType>(exc));
     }
 
     template<class FunctorType>
@@ -111,6 +112,7 @@ private:
     friend class ::owning_ref_symbol;
     friend class ::ref_symbol;
     friend class ::list_symbol;
+    friend class ::type_symbol;
     friend class ::macro_symbol;
 
     symbol_impl(type_value type_val)
@@ -445,24 +447,41 @@ private:
 };
 static_assert(std::is_nothrow_move_constructible<list_symbol>::value, "");
 
+namespace llvm
+{
+class Type;
+}
+
 class type_symbol
   : public symbol_detail::symbol_impl
 {
 public:
     static constexpr type_value type_id = TYPE;
     
-    type_symbol()
-      : symbol_detail::symbol_impl(type_id)
+    type_symbol(llvm::Type* llvm_t)
+      : symbol_detail::symbol_impl(type_id),
+        llvm_t(llvm_t)
     {}
-    bool operator==(const type_symbol&) const
+    bool operator==(const type_symbol& that) const
     {
-        // TODO
-        assert(false);
+        return llvm_t == that.llvm_t;
     }
-    bool operator!=(const type_symbol&) const
+    bool operator!=(const type_symbol& that) const
     {
         return !(*this == that);
     }
+
+    llvm::Type* llvm_type() const
+    {
+        return llvm_t;
+    }
+    void llvm_type(llvm::Type* new_type)
+    {
+        llvm_t = new_type;
+    }
+
+private:
+    llvm::Type* llvm_t;
 };
 
 class macro_symbol
@@ -541,7 +560,7 @@ void symbol::visit(FunctorType&& f)
     case LIST:
         f(cast<list_symbol>());
         break;
-    case LIST:
+    case TYPE:
         f(cast<type_symbol>());
         break;
     case MACRO:
@@ -568,6 +587,8 @@ inline bool operator==(const symbol& lhs, const symbol& rhs)
         return lhs.cast<ref_symbol>() == rhs.cast<ref_symbol>();
     case symbol::LIST:
         return lhs.cast<list_symbol>() == rhs.cast<list_symbol>();
+    case symbol::TYPE:
+        return lhs.cast<type_symbol>() == rhs.cast<type_symbol>();
     case symbol::MACRO:
         return lhs.cast<macro_symbol>() == rhs.cast<macro_symbol>();
     }
