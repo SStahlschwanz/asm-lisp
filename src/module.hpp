@@ -33,7 +33,7 @@ std::unordered_map<std::string, std::vector<symbol_source>> imported_modules(con
 typedef std::map<std::string, const symbol*> symbol_table;
 struct module
 {
-    list_symbol syntax_tree;
+    list_symbol transformed_tree;
     symbol_table exports;
     std::vector<std::unique_ptr<any_symbol>> evaluated_exports; // owns from macros evaluated exports
 };
