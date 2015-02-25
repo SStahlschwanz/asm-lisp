@@ -1,5 +1,6 @@
-#define BOOST_TEST_MODULE whitespace
-#include <boost/test/included/unit_test.hpp>
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE Hello
+#include <boost/test/unit_test.hpp>
 
 #include "../src/whitespace.hpp"
 #include "../src/whitespace.hpp"

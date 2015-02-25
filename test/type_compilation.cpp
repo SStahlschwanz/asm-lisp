@@ -1,5 +1,6 @@
-#define BOOST_TEST_MODULE type_compilation
-#include <boost/test/included/unit_test.hpp>
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE Hello
+#include <boost/test/unit_test.hpp>
 
 #include "../src/type_compilation.hpp"
 #include "../src/error/type_compilation_exception.hpp"
