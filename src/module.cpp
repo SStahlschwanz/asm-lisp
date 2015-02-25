@@ -151,13 +151,6 @@ void dispatch_references(symbol& s, const symbol_table& table,
         auto find_it = table.find(r.identifier());
         if(find_it != table.end())
             r.refered(find_it->second);
-        else if(r.identifier() == "unique")
-        {
-            auto id = make_unique<any_symbol>(id_symbol{context.uuid()});
-            r.refered(id.get());
-            evaluated_symbols.push_back(move(id));
-        }
-            
     }
     else if(s.is<list>())
     {
