@@ -28,9 +28,9 @@ struct module_header
     std::vector<export_statement> exports;
 };
 module_header read_module_header(const list_symbol& syntax_tree);
-std::unordered_map<std::string, std::vector<symbol_source>> imported_modules(const module_header& header);
+std::unordered_map<identifier_id_t, std::vector<symbol_source>> imported_modules(const module_header& header);
 
-typedef std::map<std::string, const symbol*> symbol_table;
+typedef std::unordered_map<identifier_id_t, const symbol*> symbol_table;
 struct module
 {
     list_symbol transformed_tree;
@@ -38,7 +38,7 @@ struct module
     std::vector<std::unique_ptr<any_symbol>> evaluated_exports; // owns from macros evaluated exports
 };
 module evaluate_module(list_symbol syntax_tree, const module_header& header,
-        const std::unordered_map<std::string, module>& dependencies, compilation_context& context);
+        const std::unordered_map<identifier_id_t, module>& dependencies, compilation_context& context);
 
 #endif
 

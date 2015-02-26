@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "symbol_source.hpp"
+#include "compilation_context.hpp"
 
 class id_symbol;
 class lit_symbol;
@@ -245,18 +246,15 @@ class owning_ref_symbol
 {
 public:
     static constexpr type_value type_id = OWNING_REFERENCE;
-    owning_ref_symbol(std::string str, std::unique_ptr<any_symbol> reference)
+    owning_ref_symbol(identifier_id_t identifier_id, std::unique_ptr<any_symbol> reference)
       : symbol_detail::symbol_impl(type_id),
-        s(std::move(str)),
+        identifier_id(identifier_id),
         r(std::move(reference))
-    {}
-    owning_ref_symbol()
-      : owning_ref_symbol("", 0)
     {}
 
     owning_ref_symbol(const owning_ref_symbol& that)
-      : symbol_detail::symbol_impl(OWNING_REFERENCE),
-        s(that.s)
+      : symbol_detail::symbol_impl(type_id),
+        identifier_id(that.identifier_id)
     {
         if(that.r)
             r = std::make_unique<any_symbol>(*that.r);
@@ -264,19 +262,16 @@ public:
             r = nullptr;
     }
     owning_ref_symbol(owning_ref_symbol&& that) noexcept
-      : owning_ref_symbol(std::move(that.s), std::move(that.r))
+      : owning_ref_symbol(that.identifier_id, std::move(that.r))
     {}
-
-    explicit owning_ref_symbol(std::string str)
-      : owning_ref_symbol(std::move(str), 0)
-    {}
-    explicit owning_ref_symbol(const char* str)
-      : owning_ref_symbol(std::string{str})
+    
+    explicit owning_ref_symbol(identifier_id_t identifier_id)
+      : owning_ref_symbol(identifier_id, nullptr)
     {}
     
     owning_ref_symbol& operator=(owning_ref_symbol that)
     {
-        std::swap(s, that.s);
+        std::swap(identifier_id, that.identifier_id);
         std::swap(r, that.r);
         return *this;
     }
@@ -287,13 +282,13 @@ public:
     {
         r = std::move(reference);
     }
-    const std::string& identifier() const
+    identifier_id_t identifier() const
     {
-        return s;
+        return identifier_id;
     }
-    void identifier(std::string new_identifier)
+    void identifier(identifier_id_t new_identifier_id)
     {
-        s = std::move(new_identifier);
+        identifier_id = new_identifier_id;
     }
 
     bool operator==(const owning_ref_symbol& that) const;
@@ -303,7 +298,7 @@ public:
     }
 
 private:
-    std::string s;
+    identifier_id_t identifier_id;
     std::unique_ptr<any_symbol> r;
 };
 static_assert(std::is_nothrow_move_constructible<owning_ref_symbol>::value, "");
@@ -313,30 +308,23 @@ class ref_symbol
 {
 public:
     static constexpr type_value type_id = REFERENCE;
-    ref_symbol(std::string str, const symbol* reference)
+    ref_symbol(identifier_id_t identifier_id, const symbol* reference)
       : symbol_detail::symbol_impl(type_id),
-        s(std::move(str)),
+        identifier_id(identifier_id),
         r(reference)
-    {}
-    ref_symbol()
-      : ref_symbol("", 0)
     {}
 
     ref_symbol(const ref_symbol&) = default;
     ref_symbol(ref_symbol&& that) noexcept
-      : ref_symbol(std::move(that.s), that.r)
+      : ref_symbol(that.identifier_id, that.r)
     {}
 
-    explicit ref_symbol(std::string str)
-      : ref_symbol(std::move(str), 0)
+    explicit ref_symbol(identifier_id_t identifier_id)
+      : ref_symbol(identifier_id, nullptr)
     {}
-    explicit ref_symbol(const char* str)
-      : ref_symbol(std::string{str})
-    {}
-    
     ref_symbol& operator=(ref_symbol that)
     {
-        std::swap(s, that.s);
+        std::swap(identifier_id, that.identifier_id);
         std::swap(r, that.r);
         return *this;
     }
@@ -349,18 +337,18 @@ public:
     {
         r = new_reference;
     }
-    const std::string& identifier() const
+    identifier_id_t identifier() const
     {
-        return s;
+        return identifier_id;
     }
-    void identifier(std::string new_identifier)
+    void identifier(identifier_id_t new_identifier_id)
     {
-        s = std::move(new_identifier);
+        identifier_id = new_identifier_id;
     }
 
     bool operator==(const ref_symbol& that) const
     {
-        return s == that.s && r == that.r;
+        return identifier_id == that.identifier_id && r == that.r;
     }
     bool operator!=(const ref_symbol& that) const
     {
@@ -368,7 +356,7 @@ public:
     }
 
 private:
-    std::string s;
+    identifier_id_t identifier_id;
     const symbol* r;
 };
 static_assert(std::is_nothrow_move_constructible<ref_symbol>::value, "");
@@ -619,7 +607,9 @@ constexpr size_t constexpr_max_for_symbol(size_t a, size_t b, TS... s)
 
 constexpr const size_t max_symbol_size = constexpr_max_for_symbol(
         sizeof(lit_symbol), sizeof(owning_ref_symbol),
-        sizeof(ref_symbol), sizeof(list_symbol));
+        sizeof(ref_symbol), sizeof(list_symbol),
+        sizeof(macro_symbol), sizeof(type_symbol),
+        sizeof(id_symbol));
 
 class any_symbol
   : public symbol
@@ -706,7 +696,7 @@ inline const symbol* owning_ref_symbol::refered() const
 }
 inline bool owning_ref_symbol::operator==(const owning_ref_symbol& that) const
 {
-    return s == that.s && ((r == nullptr && that.r == nullptr) || *r == *that.r);
+    return identifier_id == that.identifier_id && ((r == nullptr && that.r == nullptr) || *r == *that.r);
 }
 
 inline list_symbol::list_symbol(std::initializer_list<any_symbol> l)

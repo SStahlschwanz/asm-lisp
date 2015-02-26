@@ -5,6 +5,8 @@
 #include "../src/type_compilation.hpp"
 #include "../src/error/type_compilation_exception.hpp"
 
+#include "state_utils.hpp"
+
 #include <llvm/IR/DerivedTypes.h>
 
 using llvm::IntegerType;
@@ -30,10 +32,10 @@ BOOST_AUTO_TEST_CASE(int_test)
     const list_symbol param4{lit_symbol{"53alksjdf"}};
     BOOST_CHECK_THROW(compile_int(param4.begin(), param4.end(), context), type_compilation_exception);
     
-    const list_symbol param5{ref_symbol{"53alksjdf"}};
+    const list_symbol param5{ref_symbol{"53alksjdf"_id}};
     BOOST_CHECK_THROW(compile_int(param5.begin(), param5.end(), context), type_compilation_exception);
     
-    const list_symbol param6{lit_symbol{"53"}, ref_symbol{""}};
+    const list_symbol param6{lit_symbol{"53"}, ref_symbol{""_id}};
     BOOST_CHECK_THROW(compile_int(param6.begin(), param6.end(), context), type_compilation_exception);
 }
 
