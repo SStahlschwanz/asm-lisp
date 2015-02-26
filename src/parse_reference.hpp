@@ -43,7 +43,8 @@ boost::optional<ref_symbol> parse_reference(State& state)
         }
         
         file_position end = state.position();
-        ref_symbol result{std::move(identifier)};
+        identifier_id_t identifier_id = state.identifier_id(identifier);
+        ref_symbol result{identifier_id};
         result.source(file_source{begin, end, state.file()});
         return result;
     }
@@ -59,7 +60,8 @@ boost::optional<ref_symbol> parse_reference(State& state)
         }
 
         file_position end = state.position();
-        ref_symbol result{std::move(identifier)};
+        identifier_id_t identifier_id = state.identifier_id(identifier);
+        ref_symbol result{identifier_id};
         result.source(file_source{begin, end, state.file()});
         return result;
     }

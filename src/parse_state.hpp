@@ -2,6 +2,7 @@
 #define PARSE_STATE_HPP_
 
 #include "symbol_source.hpp"
+#include "compilation_context.hpp"
 
 #include <string>
 #include <cassert>
@@ -17,12 +18,15 @@ private:
     
     file_position file_pos;
     size_t file_id;
+
+    compilation_context& context;
 public:
-    parse_state(Iterator begin, Iterator end, size_t file_id)
+    parse_state(Iterator begin, Iterator end, size_t file_id, compilation_context& context)
       : pos{begin},
         end{end},
         file_pos{0, 0},
-        file_id{file_id}
+        file_id{file_id},
+        context(context)
     {}
     
     bool empty() const
@@ -59,6 +63,10 @@ public:
     size_t file() const
     {
         return file_id;
+    }
+    identifier_id_t identifier_id(const std::string& str)
+    {
+        return context.identifier_id(str);
     }
 };
 

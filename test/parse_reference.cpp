@@ -15,7 +15,7 @@ BOOST_AUTO_TEST_CASE(letters)
 
     optional<ref_symbol> got = parse_reference(s);
     BOOST_CHECK(got);
-    ref_symbol expected{"abc"};
+    ref_symbol expected{"abc"_id};
 
     BOOST_CHECK(*got == expected);
     BOOST_CHECK(remaining(s) == "");
@@ -27,7 +27,7 @@ BOOST_AUTO_TEST_CASE(digit_at_end)
 
     optional<ref_symbol> got = parse_reference(s);
     BOOST_CHECK(got);
-    ref_symbol expected{"abc9"};
+    ref_symbol expected{"abc9"_id};
 
     BOOST_CHECK(*got == expected);
     BOOST_CHECK(remaining(s) == "");
@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(operator_terminated)
 
     optional<ref_symbol> got = parse_reference(s);
     BOOST_CHECK(got);
-    ref_symbol expected{"ab"};
+    ref_symbol expected{"ab"_id};
 
     BOOST_CHECK(*got == expected);
     BOOST_CHECK(remaining(s) == "[cd");
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(operators)
 
     optional<ref_symbol> got = parse_reference(s);
     BOOST_CHECK(got);
-    ref_symbol expected{"$*&%<"};
+    ref_symbol expected{"$*&%<"_id};
 
     BOOST_CHECK(*got == expected);
     BOOST_CHECK(remaining(s) == "fw");

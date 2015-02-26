@@ -35,15 +35,15 @@ BOOST_AUTO_TEST_CASE(lit_test)
 
 BOOST_AUTO_TEST_CASE(ref_test)
 {
-    ref ref1{"abcde"};
+    ref ref1{1};
     const ref ref2 = ref1;
-    ref ref3{"abcde", &ref1};
-    ref ref4{"asdff", &ref1};
+    ref ref3{1, &ref1};
+    ref ref4{2, &ref1};
     
-    BOOST_CHECK_EQUAL(ref1.identifier(), "abcde");
-    BOOST_CHECK_EQUAL(ref2.identifier(), "abcde");
-    BOOST_CHECK_EQUAL(ref3.identifier(), "abcde");
-    BOOST_CHECK_EQUAL(ref4.identifier(), "asdff");
+    BOOST_CHECK_EQUAL(ref1.identifier(), 1);
+    BOOST_CHECK_EQUAL(ref2.identifier(), 1);
+    BOOST_CHECK_EQUAL(ref3.identifier(), 1);
+    BOOST_CHECK_EQUAL(ref4.identifier(), 2);
     
     BOOST_CHECK_EQUAL(ref3.refered(), &ref1);
     BOOST_CHECK_EQUAL(ref4.refered(), &ref1);
@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE(cast_test)
     BOOST_CHECK_EQUAL(&s->cast_else<lit>(exc), &lit_obj);
     BOOST_CHECK_THROW(s->cast_else<ref>(exc), my_exception);
 
-    ref ref_obj{"abcd"};
+    ref ref_obj{1};
     s = &ref_obj;
     BOOST_CHECK_EQUAL(s->type(), symbol::REFERENCE);
     BOOST_CHECK_EQUAL(&s->cast<ref>(), &ref_obj);
@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(visit_test)
     });
     BOOST_CHECK(visited);
 
-    ref ref_obj{"asdf"};
+    ref ref_obj{1};
     s = &ref_obj;
     visited = false;
     s->visit([&](auto& obj)
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(any_symbol_lit_ref_test) // only test any_symbol with lit_s
         BOOST_CHECK(obj == lit_obj);
     });
 
-    ref ref_obj{"123", &lit_obj};
+    ref ref_obj{1, &lit_obj};
     any_symbol ref_any = ref_obj;
     BOOST_CHECK(ref_obj == ref_any);
 
@@ -143,9 +143,9 @@ BOOST_AUTO_TEST_CASE(any_symbol_lit_ref_test) // only test any_symbol with lit_s
 
 BOOST_AUTO_TEST_CASE(list_symbol_test)
 {
-    ref obj1{"abcde"};
+    ref obj1{1};
     lit obj2 = "abcde";
-    ref obj3{"abcde", &obj1};
+    ref obj3{1, &obj1};
     list obj4 = {obj2, obj3};
     
     list list1 = {obj1, obj2, obj4};

@@ -4,7 +4,6 @@
 #include "error/evaluation_exception.hpp"
 
 using std::unordered_map;
-using std::string;
 using std::vector;
 using std::size_t;
 using std::tie;
@@ -25,12 +24,12 @@ struct not_implemented
 bool is_export_statement(const list_symbol& statement)
 {
     return !statement.empty() && statement[0].is<ref>() &&
-            statement[0].cast<ref>().identifier() == "export";
+            statement[0].cast<ref>().identifier() == identifier_ids::EXPORT;
 }
 bool is_import_statement(const list_symbol& statement)
 {
     return !statement.empty() && statement[0].is<ref>() &&
-            statement[0].cast<ref>().identifier() == "import";
+            statement[0].cast<ref>().identifier() == identifier_ids::IMPORT;
 }
 
 optional<import_statement> parse_import(const list_symbol& statement)
@@ -51,7 +50,7 @@ optional<import_statement> parse_import(const list_symbol& statement)
     
     const ref_symbol& from_token = statement[2].cast_else<ref>(
             missing_from_token{statement[2].source()});
-    if(from_token.identifier() != "from")
+    if(from_token.identifier() != identifier_ids::FROM)
         throw missing_from_token{statement[2].source()};
 
     const ref_symbol& imported_module = statement[3].cast_else<ref>(
@@ -84,9 +83,9 @@ module_header read_module_header(const list_symbol& syntax_tree)
     return header;
 }
 
-unordered_map<string, vector<symbol_source>> imported_modules(const module_header& header)
+unordered_map<identifier_id_t, vector<symbol_source>> imported_modules(const module_header& header)
 {
-    unordered_map<string, vector<symbol_source>> result;
+    unordered_map<identifier_id_t, vector<symbol_source>> result;
     for(const import_statement& import : header.imports)
     {
         result[import.imported_module.identifier()].push_back(
@@ -96,7 +95,7 @@ unordered_map<string, vector<symbol_source>> imported_modules(const module_heade
 }
 
 symbol_table initial_symbol_table(const module_header& header,
-        const unordered_map<string, module>& dependencies)
+        const unordered_map<identifier_id_t, module>& dependencies)
 {
     symbol_table table;
     for(const import_statement& import : header.imports)
@@ -161,7 +160,7 @@ void dispatch_references(symbol& s, const symbol_table& table,
 }
 
 module evaluate_module(list_symbol syntax_tree, const module_header& header,
-        const unordered_map<string, module>& dependencies, compilation_context& context)
+        const unordered_map<identifier_id_t, module>& dependencies, compilation_context& context)
 {
     symbol_table table = initial_symbol_table(header, dependencies);
 
@@ -178,15 +177,13 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header,
         ref_symbol& command = statement[0].cast_else<ref>(
                 invalid_command{statement[0].source()});
 
-        if(command.identifier() == "def")
+        if(command.identifier() == identifier_ids::DEF)
         {
             if(statement.size() < 3)
                 throw def_not_enough_arguments{statement.source(), statement.size()};
 
             const ref_symbol& defined = statement[1].cast_else<ref>(
                     invalid_defined_symbol{statement[1].source()});
-            if(defined.identifier() == "unique")
-                throw invalid_defined_name{defined.source()};
             for(auto argument_it = statement.begin() + 2;
                     argument_it != statement.end();
                     ++argument_it)
