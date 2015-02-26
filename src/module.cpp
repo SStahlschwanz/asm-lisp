@@ -184,8 +184,6 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header,
 
             const ref_symbol& defined = statement[1].cast_else<ref>(
                     invalid_defined_symbol{statement[1].source()});
-            if(defined.identifier() == identifier_ids::UNIQUE)
-                throw invalid_defined_name{defined.source()};
             for(auto argument_it = statement.begin() + 2;
                     argument_it != statement.end();
                     ++argument_it)
