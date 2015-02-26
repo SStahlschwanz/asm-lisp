@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <initializer_list>
+#include <memory>
 
 #include "symbol_source.hpp"
 
