@@ -4,16 +4,15 @@ COMMON_CPPFLAGS=-std=c++14 $(LLVM_CPP_FLAGS)
 DEBUG_CPPFLAGS=$(COMMON_CPPFLAGS) -Wall -g -fcolor-diagnostics
 RELEASE_CPPFLAGS=$(COMMON_CPPFLAGS) -O3 -DNDEBUG
 
-LLVM_LD_FLAGS=-rdynamic
-LLVM_LIBS=-lLLVMX86Disassembler -lLLVMX86AsmParser -lLLVMX86CodeGen -lLLVMSelectionDAG -lLLVMAsmPrinter -lLLVMX86Desc -lLLVMObject -lLLVMMCParser -lLLVMBitReader -lLLVMX86Info -lLLVMX86AsmPrinter -lLLVMX86Utils -lLLVMJIT -lLLVMExecutionEngine -lLLVMCodeGen -lLLVMScalarOpts -lLLVMInstCombine -lLLVMTransformUtils -lLLVMipa -lLLVMAnalysis -lLLVMTarget -lLLVMMC -lLLVMCore -lLLVMSupport -lz -lpthread -lffi -lcurses -ldl -lm
+LLVM_LD_FLAGS=-rdynamic $(shell llvm-config --ldflags)
+LLVM_LIBS=$(shell llvm-config --libs)
 
 COMMON_LDFLAGS=$(LLVM_LD_FLAGS)
 COMMON_LIBS=$(LLVM_LIBS)
-DEBUG_LDFLAGS=-g #(COMMON_LDFLAGS)
+DEBUG_LDFLAGS=-g $(COMMON_LDFLAGS)
 DEBUG_LIBS=-lboost_unit_test_framework $(COMMON_LIBS)
 RELEASE_LDFLAGS=-O3 $(COMMON_LDFLAGS)
 RELEASE_LIBS=$(COMMON_LIBS)
-
 
 ALL_SRCS=$(wildcard src/*.cpp)
 ALL_TESTS=$(wildcard test/*.cpp)
