@@ -1,5 +1,5 @@
-#ifndef TYPE_COMPILATION_HPP_
-#define TYPE_COMPILATION_HPP_
+#ifndef COMPILE_TYPE_HPP_
+#define COMPILE_TYPE_HPP_
 
 #include "symbol.hpp"
 #include "compilation_context.hpp"

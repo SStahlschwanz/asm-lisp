@@ -1,6 +1,6 @@
 #include "core_module.hpp"
 
-#include "type_compilation.hpp"
+#include "compile_type.hpp"
 #include "symbol.hpp"
 #include "error/unique_exception.hpp"
 
@@ -8,6 +8,7 @@
 
 using std::unique_ptr;
 using std::make_unique;
+using namespace unique_exception;
 
 module create_core_module(compilation_context& context)
 {
@@ -24,7 +25,7 @@ module create_core_module(compilation_context& context)
     auto unique_func = [&](list_symbol::const_iterator begin, list_symbol::const_iterator end)
     {
         if(begin != end)
-            throw parameter_to_unique{};
+            throw invalid_argument_number{};
         return id_symbol{context.uuid()};
     };
     auto unique_macro = make_unique<any_symbol>(macro_symbol{unique_func});

@@ -37,14 +37,14 @@ BOOST_AUTO_TEST_CASE(unterminated_quote)
 {
     state s = make_state("\"abc");
     
-    BOOST_CHECK_THROW(parse_literal(s), parse_exception);
+    BOOST_CHECK_THROW(parse_literal(s), parse_exception::parse_exception);
 }
 
 BOOST_AUTO_TEST_CASE(quote_terminated_next_line)
 {
     state s = make_state("\"abc\nasdf\"");
     
-    BOOST_CHECK_THROW(parse_literal(s), parse_exception);
+    BOOST_CHECK_THROW(parse_literal(s), parse_exception::parse_exception);
 }
 
 BOOST_AUTO_TEST_CASE(no_literal)

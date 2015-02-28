@@ -66,19 +66,23 @@ public:
     {
         return const_cast<symbol*>(this)->cast<SymbolType>();
     }
-    template<class SymbolType, class ExceptionType>
-    SymbolType& cast_else(ExceptionType&& exc)
+    template<class SymbolType, class FunctorType>
+    SymbolType& cast_else(FunctorType&& functor)
     {
         if(is<SymbolType>())
             return cast<SymbolType>();
         else
-            throw exc;
+        {
+            functor();
+            assert(false);
+            return *static_cast<SymbolType*>(nullptr); // to suppress warnings
+        }
     }
-    template<class SymbolType, class ExceptionType>
-    const SymbolType& cast_else(ExceptionType&& exc) const
+    template<class SymbolType, class FunctorType>
+    const SymbolType& cast_else(FunctorType&& functor) const
     {
         return const_cast<symbol*>(this)->cast_else<SymbolType>(
-                std::forward<ExceptionType>(exc));
+                std::forward<FunctorType>(functor));
     }
 
     template<class FunctorType>

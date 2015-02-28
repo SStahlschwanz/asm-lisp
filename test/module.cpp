@@ -93,12 +93,10 @@ BOOST_AUTO_TEST_CASE(header_test)
     BOOST_CHECK(mod2_header.exports[1] == mod2_export2);
     
 
-    unordered_map<identifier_id_t, vector<symbol_source>> mod1_imported_modules =
-            imported_modules(mod1_header);
+    unordered_map<identifier_id_t, vector<symbol_source>> mod1_imported_modules = imported_modules(mod1_header);
     BOOST_CHECK(mod1_imported_modules.empty());
 
-    unordered_map<identifier_id_t, vector<symbol_source>> mod2_imported_modules =
-            imported_modules(mod2_header);
+    unordered_map<identifier_id_t, vector<symbol_source>> mod2_imported_modules = imported_modules(mod2_header);
     BOOST_CHECK(mod2_imported_modules.size() == 1);
     BOOST_CHECK(mod2_imported_modules.count("mod1"_id));
 }

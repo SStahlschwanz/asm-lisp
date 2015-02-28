@@ -16,6 +16,8 @@ using boost::optional;
 using boost::none;
 
 using namespace symbol_shortcuts;
+using namespace import_export_exception;
+using namespace evaluation_exception;
 
 struct not_implemented
   : std::exception
@@ -40,21 +42,28 @@ optional<import_statement> parse_import(const list_symbol& statement)
     if(statement.size() != 4)
         throw import_invalid_argument_number{statement.source()};
     
-    const list_symbol& import_list = statement[1].cast_else<list>(
-            missing_import_list{statement[1].source()});
+    const list_symbol& import_list = statement[1].cast_else<list>([&]()
+    {
+        throw invalid_import_list{statement[1].source()};
+    });
+    
     for(const symbol& import : import_list)
     {
         if(!import.is<ref>())
             throw invalid_imported_identifier{import.source()};
     }
     
-    const ref_symbol& from_token = statement[2].cast_else<ref>(
-            missing_from_token{statement[2].source()});
+    const ref_symbol& from_token = statement[2].cast_else<ref>([&]()
+    {
+        throw invalid_from_token{statement[2].source()};
+    });
     if(from_token.identifier() != identifier_ids::FROM)
-        throw missing_from_token{statement[2].source()};
+        throw invalid_from_token{statement[2].source()};
 
-    const ref_symbol& imported_module = statement[3].cast_else<ref>(
-            invalid_imported_module{statement[3].source()});
+    const ref_symbol& imported_module = statement[3].cast_else<ref>([&]()
+    {
+        throw invalid_imported_module{statement[3].source()}; 
+    });
 
     return import_statement{statement, imported_module, import_list};
 }
@@ -174,16 +183,20 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header,
         if(statement.empty())
             throw empty_top_level_statement{statement.source()};
         
-        ref_symbol& command = statement[0].cast_else<ref>(
-                invalid_command{statement[0].source()});
+        ref_symbol& command = statement[0].cast_else<ref>([&]()
+        {
+            throw invalid_command{statement[0].source()};
+        });
 
         if(command.identifier() == identifier_ids::DEF)
         {
             if(statement.size() < 3)
-                throw def_not_enough_arguments{statement.source(), statement.size()};
+                throw def_invalid_argument_number{statement.source()};
 
-            const ref_symbol& defined = statement[1].cast_else<ref>(
-                    invalid_defined_symbol{statement[1].source()});
+            const ref_symbol& defined = statement[1].cast_else<ref>([&]()
+            {
+                throw invalid_defined_symbol{statement[1].source()};
+            });
             for(auto argument_it = statement.begin() + 2;
                     argument_it != statement.end();
                     ++argument_it)
@@ -195,13 +208,17 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header,
             if(statement.size() == 3)
                 definition = &static_cast<const symbol&>(statement[2]);
             else
-                throw not_implemented{};
+                assert(false);
             
             bool was_inserted;
             tie(ignore, was_inserted) = table.insert({defined.identifier(), definition});
             if(!was_inserted)
                 throw duplicate_definition{defined.source()};
         }
+        else if(command.identifier() == identifier_ids::IMPORT)
+            throw import_after_header{statement.source()};
+        else if(command.identifier() == identifier_ids::EXPORT)
+            throw export_after_header{statement.source()};
     }
 
     remove_not_exported(table, header);
