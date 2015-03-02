@@ -1,4 +1,4 @@
-#include "macro_compilation.hpp"
+#include "compile_macro.hpp"
 #include "error/compile_macro_exception.hpp"
 
 #include <algorithm>
@@ -6,7 +6,6 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
-#include <string>
 #include <memory>
 
 #include <llvm/IR/Function.h>
@@ -25,7 +24,6 @@ using std::ignore;
 using std::vector;
 using std::unordered_map;
 using std::find;
-using std::string;
 using std::unique_ptr;
 using std::move;
 
@@ -36,6 +34,8 @@ using llvm::LLVMContext;
 using llvm::Type;
 using llvm::BasicBlock;
 
+using namespace core_exception;
+using namespace compile_macro_exception;
 
 template<class ExceptionType>
 const symbol& resolve_refs_else(const symbol& s, ExceptionType&& exc)
@@ -46,96 +46,112 @@ const symbol& resolve_refs_else(const symbol& s, ExceptionType&& exc)
         if(r.refered() == 0)
             throw forward<ExceptionType>(exc);
         else
-            resolve_refs_else(*r.refered(), forward<ExceptionType>(exc));
+            return resolve_refs_else(*r.refered(), forward<ExceptionType>(exc));
     }
     else
         return s;
 }
-
-struct value_info
+const symbol& resolve_refs(const symbol& s)
 {
-    Value* llvm_value;
-    // const symbol& definition; TODO
-};
+    return resolve_refs_else(s, identifier_not_defined{s.source()});
+}
 
-pair<unique_ptr<Function>, unordered_map<string, value_info>>
-        compile_signature(const symbol& params_node, const symbol& return_type_node)
+
+pair<unique_ptr<Function>, unordered_map<identifier_id_t, value_info>> compile_signature(const symbol& params_node, const symbol& return_type_node, compilation_context& context)
 {
-    const list_symbol& params_list = params_node.cast_else<list_symbol>(
-            macro_invalid_param_list{params_node.source()});
+    const list_symbol& params_list = params_node.cast_else<list_symbol>([&]()
+    {
+        throw invalid_param_list{params_node.source()};
+    });
     
-    const symbol& resolved_return_symbol = resolve_refs_else(return_type_node,
-            identifier_not_defined{return_type_node.source()});
-    const type_symbol& return_type = resolved_return_symbol.cast_else<type_symbol>(
-            invalid_return_type{resolved_return_symbol.source()});
+    const symbol& resolved_return_symbol = resolve_refs(return_type_node);
+    const type_symbol& return_type = resolved_return_symbol.cast_else<type_symbol>([&]()
+    {
+        throw invalid_return_type{resolved_return_symbol.source()};
+    });
     
-    vector<Type*> arg_types;
-    vector<string> arg_names;
+    vector<value_info> arg_infos;
     for(const symbol& s : params_list)
     {
-        const list_symbol& param_declaration = s.cast_else<list_symbol>(
-                invalid_macro_parameter_declaration{s.source()});
+        const list_symbol& param_declaration = s.cast_else<list_symbol>([&]()
+        {
+            throw invalid_parameter_declaration{s.source()};
+        });
         if(param_declaration.size() != 2)
             throw invalid_parameter_declaration_node_number{param_declaration.source()};
         
-        const ref_symbol& param_name = param_declaration[0].cast_else<ref_symbol>(
-                invalid_parameter_name{param_declaration[0]});
-        if(find(arg_names.begin(), arg_names.end(), param_name.identifier()) != arg_names.end())
-            throw duplicate_parameter_name{param_name.source()};
-        arg_names.push_back(param_name.identifier());
+        const ref_symbol& param_name = param_declaration[0].cast_else<ref_symbol>([&]()
+        {
+            throw invalid_parameter_name{param_declaration[0].source()};
+        });
 
-        const symbol& resolved_param_type_symbol = resolve_refs_else(param_declaration[1],
-                identifier_not_defined{param_declaration[1]});
-        const type_symbol& param_type = resolved_param_type_symbol.cast_else<type_symbol>(
-                invalid_parameter_type{resolved_param_type_symbol.source()});
-        arg_types.push_back(param_type.llvm_type());
+        const symbol& resolved_param_type_symbol = resolve_refs(param_declaration[1]);
+        const type_symbol& param_type = resolved_param_type_symbol.cast_else<type_symbol>([&]()
+        {
+            throw invalid_parameter_type{resolved_param_type_symbol.source()};
+        });
+        arg_infos.push_back(value_info{param_declaration, param_name, param_type, 0});
     }
+    
+    vector<Type*> arg_types;
+    arg_types.reserve(arg_infos.size());
+    for(value_info& info : arg_infos)
+        arg_types.push_back(info.type.llvm_type());
     
     FunctionType* function_type = FunctionType::get(return_type.llvm_type(), arg_types, false);
     unique_ptr<Function> function{Function::Create(function_type, Function::ExternalLinkage)};
-    unordered_map<string, value_info> parameter_table;
+    unordered_map<identifier_id_t, value_info> parameter_table;
     
     auto arg_it = function->arg_begin();
-    auto name_it = arg_names.begin();
-    for( ; arg_it != function->arg_end(); ++arg_it, ++name_it)
+    auto info_it = arg_infos.begin();
+    for( ; arg_it != function->arg_end(); ++arg_it, ++info_it)
     {
-        assert(name_it != arg_names.end());
-        arg_it->setName(*name_it);
-        parameter_table[*name_it] = value_info{arg_it};
+        assert(info_it != arg_infos.end());
+        info_it->llvm_value = arg_it;
+        identifier_id_t arg_identifier = info_it->name.identifier();
+        arg_it->setName(context.to_string(arg_identifier));
+        bool was_inserted;
+        tie(ignore, was_inserted) = parameter_table.insert({arg_identifier, *info_it});
+        if(!was_inserted)
+            throw duplicate_parameter_name{info_it->name.source()};
     }
-    assert(name_it == arg_names.end());
+    assert(info_it == arg_infos.end());
 
     return {move(function), move(parameter_table)};
 }
 
 struct block_info
 {
-    BasicBlock* llvm_block;
     const ref_symbol& block_name;
-    unordered_map<string, value_info> variable_table;
+    unordered_map<identifier_id_t, value_info> variable_table;
     bool is_entry_block;
+    BasicBlock* llvm_block;
 };
+
+
+/*
 block_info compile_block(const symbol& block_node, const unordered_map<string, value_info>& global_variables_table,
         compilation_context& context)
 {
-    const list_symbol& block_definition = block_node.cast_else<list_symbol>(
-            invalid_block_definition{block_node.source()});
+    const list_symbol& block_definition = block_node.cast_else<list_symbol>([&]()
+    {
+        throw invalid_block_definition{block_node.source()};
+    });
 
     if(block_definition.size() != 3)
-        throw invalid_block_definiton_argument_number{block_definition.source()};
+        throw invalid_block_definition_argument_number{block_definition.source()};
     
     
 }
 
-void compile_body(const symbol& body_node, Function& function, unordered_map<string, value_info> parameter_table,
-        compilation_context& context)
+void compile_body(const symbol& body_node, Function& function, unordered_map<string, value_info> parameter_table, compilation_context& context)
 {
     const list_symbol& block_list = body_node.cast_else<list_symbol>(
             invalid_block_list{body_node});
     if(block_list.empty())
-        throw macro_empty_body{block_list};
+        throw empty_body{block_list};
     
-    unordered_map<string, value_info>& function_global_variables = parameter_table;
+    unordered_map<identifier_id_t, value_info>& function_global_variables = parameter_table;
     unordered_map<string, block_info> block_map;
 
     // check whether variables in this variable_table have already been defined
@@ -143,11 +159,11 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<str
     {
         for(const auto& p : variable_table)
         {
-            const string& variable_name = p.first;
+            identifier_id_t identifier = p.first;
             // check in function global variables
             auto global_table_it = function_global_variables.find(variable_name);
             if(global_table_it != function_global_variables.end())
-                throw duplicate_variable_name{/*TODO*/};
+                throw duplicate_variable_name{};
             
             // check in other blocks
             for(const auto& other_block_p : block_map)
@@ -155,7 +171,7 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<str
                 const block_info& other_block = other_block_p.second;
                 auto table_it = other_block.variable_table.find(variable_name);
                 if(table_it != other_block.variable_table.end())
-                    throw duplicate_variable_name{/*TODO*/};
+                    throw duplicate_variable_name{};
             }
         }
     };
@@ -180,18 +196,18 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<str
             throw duplicate_block_name{block.block_name.source()};
     }
 }
+*/
 
-macro_symbol compile_macro(list_symbol::const_iterator begin, list_symbol::const_iterator end,
-        compilation_context& context)
+macro_symbol compile_macro(list_symbol::const_iterator begin, list_symbol::const_iterator end, compilation_context& context)
 {
     if(distance(begin, end) != 3)
-        throw macro_invalid_argument_number{};
+        throw invalid_argument_number{};
     
     unique_ptr<Function> function;
-    unordered_map<string, value_info> parameter_table;
-    tie(function, parameter_table) = compile_signature(*begin, *(begin + 1));
+    unordered_map<identifier_id_t, value_info> parameter_table;
+    tie(function, parameter_table) = compile_signature(*begin, *(begin + 1), context);
     
-    const symbol& body_node = *(begin + 2);
-    compile_body(body_node, *function, move(parameter_table), context);
+    //const symbol& body_node = *(begin + 2);
+    //compile_body(body_node, *function, move(parameter_table), context);
 }
 

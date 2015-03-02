@@ -2,15 +2,15 @@
 #define TYPE_COMPILE_EXCEPTION_HPP_
 
 #include "../symbol.hpp"
-#include "compile_exception.hpp"
+#include "core_exception.hpp"
 
 namespace type_compile_exception
 {
 
 struct type_compile_exception
-  : compile_exception
+  : core_exception::core_exception
 {
-    using compile_exception::compile_exception;
+    using core_exception::core_exception::core_exception;
 };
 
 struct int_invalid_argument_number
