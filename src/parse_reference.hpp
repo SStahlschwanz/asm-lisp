@@ -44,7 +44,11 @@ boost::optional<ref_symbol> parse_reference(State& state)
         
         file_position end = state.position();
         identifier_id_t identifier_id = state.identifier_id(identifier);
+        #ifdef NDEBUG
         ref_symbol result{identifier_id};
+        #else
+        ref_symbol result{identifier_id, identifier, 0}; 
+        #endif
         result.source(file_source{begin, end, state.file()});
         return result;
     }
@@ -61,6 +65,7 @@ boost::optional<ref_symbol> parse_reference(State& state)
 
         file_position end = state.position();
         identifier_id_t identifier_id = state.identifier_id(identifier);
+
         ref_symbol result{identifier_id};
         result.source(file_source{begin, end, state.file()});
         return result;

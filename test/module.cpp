@@ -110,7 +110,11 @@ BOOST_AUTO_TEST_CASE(simple_definition_test)
             {{mod2_import1, mod2_import2}, {mod2_export1, mod2_export2}};
     
     unordered_map<identifier_id_t, module> module_map;
-    module_map["mod1"_id] = evaluate_module(mod1_tree, mod1_header, module_map, context);
+    auto lookup_module = [&](const import_statement& import) -> const module&
+    {
+        return module_map.at(import.imported_module.identifier());
+    };
+    module_map["mod1"_id] = evaluate_module(mod1_tree, mod1_header, lookup_module, context);
     auto& exports1 = module_map["mod1"_id].exports;
     BOOST_CHECK(exports1.size() == 3);
     BOOST_CHECK(exports1.count("a"_id) && exports1.count("b"_id) && exports1.count("c"_id));
@@ -118,7 +122,7 @@ BOOST_AUTO_TEST_CASE(simple_definition_test)
     BOOST_CHECK(*exports1["b"_id] == list{lit{"bb"}});
     BOOST_CHECK(*exports1["c"_id] == list{});
 
-    module_map["mod2"_id] = evaluate_module(mod2_tree, mod2_header, module_map, context);
+    module_map["mod2"_id] = evaluate_module(mod2_tree, mod2_header, lookup_module, context);
     auto& exports2 = module_map["mod2"_id].exports;
     BOOST_CHECK(exports2.size() == 3);
     BOOST_CHECK(exports2.count("x"_id) && exports2.count("y"_id) && exports2.count("z"_id));

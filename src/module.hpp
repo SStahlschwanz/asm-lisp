@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <map>
 #include <vector>
+#include <functional>
 
 
 struct import_statement
@@ -37,8 +38,7 @@ struct module
     symbol_table exports;
     std::vector<std::unique_ptr<any_symbol>> evaluated_exports; // owns from macros evaluated exports
 };
-module evaluate_module(list_symbol syntax_tree, const module_header& header,
-        const std::unordered_map<identifier_id_t, module>& dependencies, compilation_context& context);
+module evaluate_module(list_symbol syntax_tree, const module_header& header, std::function<const module& (const import_statement& import)> get_module_func, compilation_context& context);
 
 #endif
 

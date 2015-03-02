@@ -4,6 +4,7 @@
 #include <exception>
 #include <utility>
 #include <vector>
+#include <stdexcept>
 
 #include <boost/variant.hpp>
 
@@ -15,7 +16,7 @@ struct code_location
     std::size_t file_id;
 };
 
-typedef boost::variant<code_location, std::string> error_parameter;
+typedef boost::variant<code_location, std::string, size_t> error_parameter;
 
 struct to_error_parameter_visitor
   : boost::static_visitor<error_parameter>
@@ -49,6 +50,13 @@ public:
     const char* error_name;
     std::vector<error_parameter> parameters;
 };
+
+struct not_implemented
+  : std::runtime_error
+{
+   using std::runtime_error::runtime_error;
+};
+
 
 #endif
 

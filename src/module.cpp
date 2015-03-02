@@ -11,6 +11,7 @@ using std::ignore;
 using std::move;
 using std::unique_ptr;
 using std::make_unique;
+using std::function;
 
 using boost::optional;
 using boost::none;
@@ -18,10 +19,6 @@ using boost::none;
 using namespace symbol_shortcuts;
 using namespace import_export_exception;
 using namespace evaluation_exception;
-
-struct not_implemented
-  : std::exception
-{};
 
 bool is_export_statement(const list_symbol& statement)
 {
@@ -40,7 +37,7 @@ optional<import_statement> parse_import(const list_symbol& statement)
         return none;
     
     if(statement.size() != 4)
-        throw import_invalid_argument_number{statement.source()};
+        throw import_invalid_argument_number{statement.source(), statement.size() - 1};
     
     const list_symbol& import_list = statement[1].cast_else<list>([&]()
     {
@@ -103,16 +100,12 @@ unordered_map<identifier_id_t, vector<symbol_source>> imported_modules(const mod
     return result;
 }
 
-symbol_table initial_symbol_table(const module_header& header,
-        const unordered_map<identifier_id_t, module>& dependencies)
+symbol_table initial_symbol_table(const module_header& header, function<const module&(const import_statement&)> get_module_func)
 {
     symbol_table table;
     for(const import_statement& import : header.imports)
     {
-        const auto& module_name = import.imported_module.identifier();
-        auto module_find_it = dependencies.find(module_name);
-        assert(module_find_it != dependencies.end()); // this has to be checked by the caller
-        const module& imported_module = module_find_it->second;
+        const module& imported_module = get_module_func(import);
         for(const symbol& s : import.import_list)
         {
             // s.cast<ref>() checked by parse_import
@@ -168,13 +161,12 @@ void dispatch_references(symbol& s, const symbol_table& table,
     }
 }
 
-module evaluate_module(list_symbol syntax_tree, const module_header& header,
-        const unordered_map<identifier_id_t, module>& dependencies, compilation_context& context)
+module evaluate_module(list_symbol syntax_tree, const module_header& header, function<const module&(const import_statement&)> get_module_func, compilation_context& context)
 {
-    symbol_table table = initial_symbol_table(header, dependencies);
+    symbol_table table = initial_symbol_table(header, get_module_func);
 
     size_t header_size = header.imports.size() + header.exports.size();
-    assert(header_size < syntax_tree.size());
+    assert(header_size <= syntax_tree.size());
 
     vector<unique_ptr<any_symbol>> evaluated_symbols;
     for(auto it = syntax_tree.begin() + header_size; it != syntax_tree.end(); ++it)
@@ -222,5 +214,5 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header,
     }
 
     remove_not_exported(table, header);
-    return module{std::move(syntax_tree), std::move(table), std::move(evaluated_symbols)};
+    return module{move(syntax_tree), move(table), move(evaluated_symbols)};
 }

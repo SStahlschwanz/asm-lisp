@@ -1,43 +1,56 @@
-#include "parse_state.hpp"
-#include "parse.hpp"
+#include "compile_unit.hpp"
 #include "error/compile_exception.hpp"
 #include "error_to_string.hpp"
-#include "module.hpp"
+
+#include <boost/filesystem.hpp>
 
 #include <iostream>
-#include <iterator>
-#include <fstream>
+#include <string>
 
-using std::fstream;
+using boost::filesystem::path;
+
+using std::cout;
 using std::cerr;
 using std::endl;
-
-using namespace std;
+using std::vector;
+using std::string;
+using std::pair;
 
 int main(int argc, char** args)
 {
-    char** end = args + argc;
-    unordered_map<size_t, string> file_id_name_mapping;
+    vector<path> paths{args + 1, args + argc};
+    cout << "compiling files";
+    for(const path& p : paths)
+        cout << " " << p.native();
+    cout << endl;
+    
     compilation_context context;
-    unordered_map<size_t, module> module_map;
-    for(char** it = args + 1; it != end; ++it)
+    try
     {
-        size_t file_id = context.identifier_id(*it);
-        file_id_name_mapping[file_id] = *it;
-        try
+        vector<module> modules = compile_unit(paths, context);
+        assert(modules.size() == paths.size());
+        for(size_t i = 0; i != modules.size(); ++i)
         {
-            fstream file(*it);
-            istream_iterator<char> begin{file};
-            istream_iterator<char> end{};
-            parse_state<istream_iterator<char>> state{begin, end, file_id, context};
-            list_symbol syntax_tree = parse_file(state);
-            module_header header = read_module_header(syntax_tree);
-            module m = evaluate_module(move(syntax_tree), header, module_map, context);
-            module_map.emplace(file_id, move(m));
+            cout << "file " << paths[i].native() << ":" << endl;
+            module& m = modules[i];
+            for(const pair<identifier_id_t, const symbol*>& exp : m.exports)
+            {
+                const string& identifier = context.to_string(exp.first);
+                const symbol& s = *exp.second;
+                cout << identifier << " defined as" << endl;
+                print_symbol(cout, s, context);
+                cout << endl;
+            }
+            cout << endl;
         }
-        catch(const compile_exception& exc)
+    }
+    catch(const compile_exception& exc)
+    {
+        auto file_id_to_name = [&](size_t file_id) -> string
         {
-            cout << default_error_to_string(exc, file_id_name_mapping) << endl;
-        }
+            assert(file_id < paths.size());
+            return paths[file_id].native();
+        };
+        cerr << default_error_to_string(exc, file_id_to_name) << endl; 
     }
 }

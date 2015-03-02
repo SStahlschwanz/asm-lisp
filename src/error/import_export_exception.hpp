@@ -4,6 +4,10 @@
 #include "../symbol.hpp"
 #include "compile_exception.hpp"
 
+
+#include <string>
+#include <utility>
+
 namespace import_export_exception
 {
 
@@ -16,8 +20,8 @@ struct import_export_exception
 struct import_invalid_argument_number
   : import_export_exception
 {
-    import_invalid_argument_number(const symbol_source& source)
-      : import_export_exception{"import_export_import_invalid_argument_number", to_error_parameter(source)}
+    import_invalid_argument_number(const symbol_source& source, size_t number)
+      : import_export_exception{"import_export_import_invalid_argument_number", to_error_parameter(source), number}
     {}
     using import_export_exception::import_export_exception;
 };
@@ -69,6 +73,13 @@ struct symbol_not_found
 {
     symbol_not_found(const symbol_source& source)
       : import_export_exception{"import_export_symbol_not_found", to_error_parameter(source)}
+    {}
+};
+struct module_not_found
+  : import_export_exception
+{
+    module_not_found(const symbol_source& source, std::string str)
+      : import_export_exception{"import_export_module_not_found", to_error_parameter(source), std::move(str)}
     {}
 };
 
