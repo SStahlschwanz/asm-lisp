@@ -1,5 +1,5 @@
 #define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE Hello
+#define BOOST_TEST_MODULE parse_literal
 #include <boost/test/unit_test.hpp>
 
 #include "../src/parse_literal.hpp"
