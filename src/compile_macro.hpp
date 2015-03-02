@@ -1,5 +1,5 @@
-#ifndef MACRO_COMPILATION_HPP_
-#define MACRO_COMPILATION_HPP_
+#ifndef COMPILE_MACRO_HPP_
+#define COMPILE_MACRO_HPP_
 
 #include "symbol.hpp"
 #include "compilation_context.hpp"
