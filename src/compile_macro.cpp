@@ -1,5 +1,5 @@
 #include "macro_compilation.hpp"
-#include "error/macro_compilation_exception.hpp"
+#include "error/compile_macro_exception.hpp"
 
 #include <algorithm>
 #include <utility>

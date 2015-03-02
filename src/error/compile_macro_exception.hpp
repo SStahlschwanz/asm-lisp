@@ -1,5 +1,5 @@
-#ifndef MACRO_COMPILATION_EXCEPTION_HPP_
-#define MACRO_COMPILATION_EXCEPTION_HPP_
+#ifndef COMPILE_MACRO_EXCEPTION_HPP_
+#define COMPILE_MACRO_EXCEPTION_HPP_
 
 #include "../symbol.hpp"
 #include "compile_exception.hpp"
