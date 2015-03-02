@@ -1,0 +1,40 @@
+universal operations:
+
+(add <number type>)
+(sub <number type>)
+(mul <number type>)
+(div <number type>)
+(alloc <type>)
+(store <type>)
+(load <type>)
+cond_branch
+(cmp <eq|ne|lt|le|gt|ge> <number type>)
+(return <type>)
+(call <proc type>)
+
+
+macro specific operations:
+
+list_create
+list_size
+list_push
+list_pop
+list_get
+list_set
+
+literal_create
+literal_size
+literal_push
+literal_pop
+literal_get
+literal_set
+
+identifier_create
+identifier_cmp
+
+reference_create
+reference_set_identifier
+reference_get_identifier
+reference_set_refered
+reference_get_refered
+

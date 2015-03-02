@@ -4,6 +4,7 @@
 
 #include "../src/compile_macro.hpp"
 #include "../src/error/compile_macro_exception.hpp"
+#include "../src/core_unique_ids.hpp"
 
 #include "state_utils.hpp"
 
@@ -24,6 +25,9 @@ using std::advance;
 using llvm::Function;
 using llvm::Value;
 using llvm::IntegerType;
+using llvm::Type;
+
+using boost::get;
 
 using namespace symbol_shortcuts;
 
@@ -48,7 +52,7 @@ BOOST_AUTO_TEST_CASE(compile_signature_test)
         list{c, int64_type},
     };
     const any_symbol return_type1 = int64_type;
-
+    
     unique_ptr<Function> function1;
     unordered_map<identifier_id_t, value_info> parameter_table1;
     tie(function1, parameter_table1) = compile_signature(params1, return_type1, context);
@@ -59,7 +63,7 @@ BOOST_AUTO_TEST_CASE(compile_signature_test)
     BOOST_CHECK(parameter_table1.count(b.identifier()));
     BOOST_CHECK(parameter_table1.count(c.identifier()));
     BOOST_CHECK(parameter_table1.at(b.identifier()).llvm_value == (++function1->arg_begin()));
-
+    
     const any_symbol params2 = list
     {
         list{a, int64_type},
@@ -70,3 +74,28 @@ BOOST_AUTO_TEST_CASE(compile_signature_test)
     
     BOOST_CHECK_THROW(compile_signature(params2, return_type2, context), compile_macro_exception::compile_macro_exception);
 }
+
+BOOST_AUTO_TEST_CASE(compile_instruction_test)
+{
+    Type* llvm_int64 = IntegerType::get(context.llvm(), 64);
+    const type_symbol int64_type{llvm_int64};
+    
+    const id_symbol add_constructor{unique_ids::ADD};
+    const list_symbol instruction1{add_constructor, int64_type}; 
+    const instruction_statement got1 = compile_instruction(instruction1);
+    BOOST_CHECK(get<instruction_statement::add>(got1.instruction).type == int64_type);
+    
+    const id_symbol div_constructor{unique_ids::DIV};
+    const list_symbol instruction2{div_constructor, int64_type}; 
+    const instruction_statement got2 = compile_instruction(instruction2);
+    BOOST_CHECK(get<instruction_statement::div>(got2.instruction).type == int64_type);
+
+    const id_symbol cmp_constructor{unique_ids::CMP};
+    const ref_symbol cmp_ref{"asdfasdf"_id, &cmp_constructor};
+    const id_symbol lt{unique_ids::LT};
+    const list_symbol instruction3{cmp_ref, lt, int64_type};
+    const instruction_statement got3 = compile_instruction(instruction3);
+    BOOST_CHECK(get<instruction_statement::cmp>(got3.instruction).cmp_kind == unique_ids::LT);
+    BOOST_CHECK(get<instruction_statement::cmp>(got3.instruction).type == int64_type);
+}
+

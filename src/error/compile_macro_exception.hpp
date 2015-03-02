@@ -119,6 +119,67 @@ struct invalid_block_definition_argument_number
     {}
 };
 
+
+struct empty_instruction
+  : compile_macro_exception
+{
+    empty_instruction(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_empty_instruction", to_error_parameter(src)}
+    {}
+
+};
+struct invalid_instruction_constructor
+  : compile_macro_exception
+{
+    invalid_instruction_constructor(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_invalid_instruction_constructor", to_error_parameter(src)}
+    {}
+};
+struct unknown_instruction_constructor
+  : compile_macro_exception
+{
+    unknown_instruction_constructor(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_invalid_instruction_constructor", to_error_parameter(src)}
+    {}
+};
+
+struct instruction_constructor_invalid_argument_number
+  : compile_macro_exception
+{
+    instruction_constructor_invalid_argument_number(const symbol_source& src, std::string constructor_name, size_t expected_argument_number, size_t got_argument_number)
+      : compile_macro_exception{"compile_macro_instruction_constructor_invalid_argument_number", to_error_parameter(src), std::move(constructor_name), expected_argument_number, got_argument_number}
+    {}
+};
+struct invalid_instruction_type_parameter
+  : compile_macro_exception
+{
+    invalid_instruction_type_parameter(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_invalid_instruction_type_parameter", to_error_parameter(src)}
+    {}
+};
+struct invalid_number_type
+  : compile_macro_exception
+{
+    invalid_number_type(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_invalid_number_type", to_error_parameter(src)}
+    {}
+};
+
+struct invalid_comparison_kind
+  : compile_macro_exception
+{
+    invalid_comparison_kind(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_invalid_comparison_kind", to_error_parameter(src)}
+    {}
+};
+struct unknown_comparison_kind
+  : compile_macro_exception
+{
+    unknown_comparison_kind(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_unknown_comparioon_kind", to_error_parameter(src)}
+    {}
+};
+
 }
 
 #endif

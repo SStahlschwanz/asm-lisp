@@ -1,12 +1,6 @@
 #include "compile_macro.hpp"
 #include "error/compile_macro_exception.hpp"
-
-#include <algorithm>
-#include <utility>
-#include <vector>
-#include <unordered_map>
-#include <algorithm>
-#include <memory>
+#include "core_unique_ids.hpp"
 
 #include <llvm/IR/Function.h>
 #include <llvm/IR/LLVMContext.h>
@@ -14,6 +8,13 @@
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Value.h>
 #include <llvm/IR/BasicBlock.h>
+
+#include <algorithm>
+#include <utility>
+#include <vector>
+#include <unordered_map>
+#include <algorithm>
+#include <memory>
 
 
 using std::distance;
@@ -26,6 +27,8 @@ using std::unordered_map;
 using std::find;
 using std::unique_ptr;
 using std::move;
+using std::begin;
+using std::end;
 
 using llvm::Value;
 using llvm::Function;
@@ -33,6 +36,10 @@ using llvm::FunctionType;
 using llvm::LLVMContext;
 using llvm::Type;
 using llvm::BasicBlock;
+using llvm::isa;
+using llvm::IntegerType;
+
+using boost::get;
 
 using namespace core_exception;
 using namespace compile_macro_exception;
@@ -120,6 +127,105 @@ pair<unique_ptr<Function>, unordered_map<identifier_id_t, value_info>> compile_s
     return {move(function), move(parameter_table)};
 }
 
+template<class InstructionType>
+instruction_statement compile_unary_typed_instruction(const char* name, const list_symbol& statement)
+{
+    if(statement.size() != 2)
+        throw instruction_constructor_invalid_argument_number{statement.source(), name, 1, statement.size() - 1};
+
+    const symbol& resolved_param = resolve_refs(statement[1]);
+    const type_symbol& type = resolved_param.cast_else<type_symbol>([&]
+    {
+        throw invalid_instruction_type_parameter{resolved_param.source()};
+    });
+    return instruction_statement{statement, InstructionType{type}};
+}
+template<class InstructionType>
+instruction_statement compile_number_instruction(const char* name, const list_symbol& statement)
+{
+    instruction_statement result = compile_unary_typed_instruction<InstructionType>(name, statement);
+    const type_symbol& type = get<InstructionType>(result.instruction).type;
+    if(!isa<IntegerType>(type.llvm_type()))
+        throw invalid_number_type{type.source()};
+    return result;
+}
+instruction_statement compile_cmp_instruction(const list_symbol& statement)
+{
+    if(statement.size() != 3)
+        throw instruction_constructor_invalid_argument_number{statement.source(), "cmp", 2, statement.size() - 1};
+
+    const symbol& resolved_first_arg = resolve_refs(statement[1]);
+    const symbol& resolved_second_arg = resolve_refs(statement[2]);
+    
+    const id_symbol& first_arg = resolved_first_arg.cast_else<id_symbol>([&]
+    {
+        throw invalid_comparison_kind{resolved_first_arg.source()};
+    });
+    size_t comparison_kind = first_arg.id();
+    const size_t known_comparison_kinds[] =
+    {
+        unique_ids::EQ,
+        unique_ids::NE,
+        unique_ids::LT,
+        unique_ids::LE,
+        unique_ids::GT,
+        unique_ids::GE
+    };
+    if(find(begin(known_comparison_kinds), end(known_comparison_kinds), comparison_kind) == end(known_comparison_kinds))
+        throw unknown_comparison_kind{resolved_first_arg.source()};
+
+    const type_symbol& second_arg = resolved_second_arg.cast_else<type_symbol>([&]
+    {
+        throw invalid_instruction_type_parameter{resolved_second_arg.source()};
+    });
+
+    return instruction_statement{statement, instruction_statement::cmp{comparison_kind, second_arg}};
+}
+
+instruction_statement compile_instruction(const symbol& node)
+{
+    if(node.is<list_symbol>())
+    {
+        const list_symbol& statement = node.cast<list_symbol>();
+        if(statement.empty())
+            throw empty_instruction{statement.source()};
+        const symbol& resolved_instruction_constructor = resolve_refs(statement[0]);
+        const id_symbol& instruction_constructor = resolved_instruction_constructor.cast_else<id_symbol>([&]
+        {
+            throw invalid_instruction_constructor{statement[0].source()};
+        });
+        switch(instruction_constructor.id())
+        {
+        case unique_ids::ADD:
+            return compile_number_instruction<instruction_statement::add>("add", statement);
+        case unique_ids::SUB:
+            return compile_number_instruction<instruction_statement::sub>("sub", statement);
+        case unique_ids::MUL:
+            return compile_number_instruction<instruction_statement::mul>("mul", statement);
+        case unique_ids::DIV:
+            return compile_number_instruction<instruction_statement::div>("div", statement);
+        case unique_ids::ALLOC:
+            return compile_unary_typed_instruction<instruction_statement::alloc>("alloc", statement);
+        case unique_ids::STORE:
+            return compile_unary_typed_instruction<instruction_statement::store>("store", statement);
+        case unique_ids::LOAD:
+            return compile_unary_typed_instruction<instruction_statement::load>("load", statement);
+        case unique_ids::RETURN:
+            return compile_unary_typed_instruction<instruction_statement::return_inst>("return", statement);
+        case unique_ids::COND_BRANCH:
+            if(statement.size() != 1)
+                throw instruction_constructor_invalid_argument_number{statement.source(), "cond_branch", 0, statement.size() - 1};
+            return instruction_statement{statement, instruction_statement::cond_branch{}};
+        case unique_ids::CMP:
+            return compile_cmp_instruction(statement);
+        case unique_ids::CALL:
+            throw not_implemented{"instruction"};
+        default:
+            throw unknown_instruction_constructor{instruction_constructor.source()};
+        }
+    }
+}
+/*
 struct block_info
 {
     const ref_symbol& block_name;
@@ -129,7 +235,7 @@ struct block_info
 };
 
 
-/*
+
 block_info compile_block(const symbol& block_node, const unordered_map<string, value_info>& global_variables_table,
         compilation_context& context)
 {

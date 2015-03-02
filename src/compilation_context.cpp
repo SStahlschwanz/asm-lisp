@@ -12,24 +12,16 @@ using llvm::getGlobalContext;
 
 compilation_context::compilation_context()
 {
-    using namespace identifier_ids;
     identifier_table = 
     {
-        {"export", EXPORT},
-        {"import", IMPORT},
-        {"from", FROM},
-        {"def", DEF},
-        {"unique", UNIQUE},
-        {"int", INT},
+        {"export", static_cast<size_t>(identifier_ids::EXPORT)},
+        {"import", static_cast<size_t>(identifier_ids::IMPORT)},
+        {"from", static_cast<size_t>(identifier_ids::FROM)},
+        {"def", static_cast<size_t>(identifier_ids::DEF)}
     };
-    next_uuid = identifier_ids::FIRST_UNUSED;
-    assert(identifier_table.size() + 1 == next_uuid);
+    assert(identifier_table.size() + 1 == static_cast<size_t>(identifier_ids::FIRST_UNUSED));
 }
 
-size_t compilation_context::uuid()
-{
-    return next_uuid++;
-}
 LLVMContext& compilation_context::llvm()
 {
     return getGlobalContext();

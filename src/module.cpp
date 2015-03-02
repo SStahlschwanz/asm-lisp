@@ -23,12 +23,12 @@ using namespace evaluation_exception;
 bool is_export_statement(const list_symbol& statement)
 {
     return !statement.empty() && statement[0].is<ref>() &&
-            statement[0].cast<ref>().identifier() == identifier_ids::EXPORT;
+            statement[0].cast<ref>().identifier() == static_cast<size_t>(identifier_ids::EXPORT);
 }
 bool is_import_statement(const list_symbol& statement)
 {
     return !statement.empty() && statement[0].is<ref>() &&
-            statement[0].cast<ref>().identifier() == identifier_ids::IMPORT;
+            statement[0].cast<ref>().identifier() == static_cast<size_t>(identifier_ids::IMPORT);
 }
 
 optional<import_statement> parse_import(const list_symbol& statement)
@@ -54,7 +54,7 @@ optional<import_statement> parse_import(const list_symbol& statement)
     {
         throw invalid_from_token{statement[2].source()};
     });
-    if(from_token.identifier() != identifier_ids::FROM)
+    if(from_token.identifier() != static_cast<size_t>(identifier_ids::FROM))
         throw invalid_from_token{statement[2].source()};
 
     const ref_symbol& imported_module = statement[3].cast_else<ref>([&]()
@@ -180,7 +180,7 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header, fun
             throw invalid_command{statement[0].source()};
         });
 
-        if(command.identifier() == identifier_ids::DEF)
+        if(command.identifier() == static_cast<size_t>(identifier_ids::DEF))
         {
             if(statement.size() < 3)
                 throw def_invalid_argument_number{statement.source()};
@@ -207,9 +207,9 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header, fun
             if(!was_inserted)
                 throw duplicate_definition{defined.source()};
         }
-        else if(command.identifier() == identifier_ids::IMPORT)
+        else if(command.identifier() == static_cast<size_t>(identifier_ids::IMPORT))
             throw import_after_header{statement.source()};
-        else if(command.identifier() == identifier_ids::EXPORT)
+        else if(command.identifier() == static_cast<size_t>(identifier_ids::EXPORT))
             throw export_after_header{statement.source()};
     }
 
