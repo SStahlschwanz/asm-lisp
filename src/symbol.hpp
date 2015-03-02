@@ -66,19 +66,23 @@ public:
     {
         return const_cast<symbol*>(this)->cast<SymbolType>();
     }
-    template<class SymbolType, class ExceptionType>
-    SymbolType& cast_else(ExceptionType&& exc)
+    template<class SymbolType, class FunctorType>
+    SymbolType& cast_else(FunctorType&& functor)
     {
         if(is<SymbolType>())
             return cast<SymbolType>();
         else
-            throw exc;
+        {
+            functor();
+            assert(false);
+            return *static_cast<SymbolType*>(nullptr); // to suppress warnings
+        }
     }
-    template<class SymbolType, class ExceptionType>
-    const SymbolType& cast_else(ExceptionType&& exc) const
+    template<class SymbolType, class FunctorType>
+    const SymbolType& cast_else(FunctorType&& functor) const
     {
         return const_cast<symbol*>(this)->cast_else<SymbolType>(
-                std::forward<ExceptionType>(exc));
+                std::forward<FunctorType>(functor));
     }
 
     template<class FunctorType>
@@ -177,10 +181,11 @@ public:
       : lit_symbol("")
     {}
     
-    lit_symbol(const lit_symbol&) = default;
     lit_symbol(lit_symbol&& that) noexcept
-      : lit_symbol(std::move(that.s))
+      : symbol_detail::symbol_impl(std::move(that)),
+        s(std::move(that.s))
     {}
+    lit_symbol(const lit_symbol&) = default;
 
     lit_symbol& operator=(lit_symbol that)
     {
@@ -262,7 +267,9 @@ public:
             r = nullptr;
     }
     owning_ref_symbol(owning_ref_symbol&& that) noexcept
-      : owning_ref_symbol(that.identifier_id, std::move(that.r))
+      : symbol_detail::symbol_impl{std::move(that)},
+        identifier_id{that.identifier_id},
+        r{std::move(that.r)}
     {}
     
     explicit owning_ref_symbol(identifier_id_t identifier_id)
@@ -313,10 +320,20 @@ public:
         identifier_id(identifier_id),
         r(reference)
     {}
+#ifndef NDEBUG
+    ref_symbol(identifier_id_t identifier_id, std::string str, const symbol* reference)
+      : symbol_detail::symbol_impl(type_id),
+        s(std::move(str)),
+        identifier_id(identifier_id),
+        r(reference)
+    {}
+#endif
 
     ref_symbol(const ref_symbol&) = default;
     ref_symbol(ref_symbol&& that) noexcept
-      : ref_symbol(that.identifier_id, that.r)
+      : symbol_detail::symbol_impl(std::move(that)),
+        identifier_id(that.identifier_id),
+        r(that.r)
     {}
 
     explicit ref_symbol(identifier_id_t identifier_id)
@@ -356,6 +373,9 @@ public:
     }
 
 private:
+#ifndef NDEBUG
+    std::string s;
+#endif
     identifier_id_t identifier_id;
     const symbol* r;
 };
@@ -378,7 +398,8 @@ public:
     
     list_symbol(const list_symbol&) = default;
     list_symbol(list_symbol&& that) noexcept
-      : list_symbol(std::move(that.v))
+      : symbol_detail::symbol_impl(std::move(that)),
+        v(std::move(that.v))
     {}
 
     list_symbol& operator=(list_symbol that)
@@ -664,7 +685,6 @@ public:
     {
         return (*this = static_cast<symbol&&>(that));
     }
-
 private:
     char buffer[max_symbol_size];
     

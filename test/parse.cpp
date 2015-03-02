@@ -1,5 +1,5 @@
 #define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE Hello
+#define BOOST_TEST_MODULE parse
 #include <boost/test/unit_test.hpp>
 
 #include "../src/parse.hpp"
@@ -79,7 +79,7 @@ R"(abcde {} fer;
 fj;
 +-* 123;)");
 
-BOOST_AUTO_TEST_CASE(parse_file_test)
+BOOST_AUTO_TEST_CASE(parse_file_test1)
 {
     state s{mod1};
     optional<list_symbol> got = parse_file(s);
@@ -88,6 +88,20 @@ BOOST_AUTO_TEST_CASE(parse_file_test)
         list{ref{"abcde"_id}, list{}, ref{"fer"_id}},
         list{ref{"fj"_id}},
         list{ref{"+-*"_id}, lit{"123"}}};
+    
+    BOOST_CHECK(*got == expected);
+}
+
+const state mod2 = make_state(
+R"(import (a b c) from a;)"); 
+
+BOOST_AUTO_TEST_CASE(parse_file_test2)
+{
+    state s{mod2};
+    optional<list_symbol> got = parse_file(s);
+    BOOST_CHECK(got);
+    any_symbol expected = list{
+        list{ref{"import"_id}, list{ref{"a"_id}, ref{"b"_id}, ref{"c"_id}}, ref{"from"_id}, ref{"a"_id}}};
     
     BOOST_CHECK(*got == expected);
 }

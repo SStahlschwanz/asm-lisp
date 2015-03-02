@@ -1,5 +1,5 @@
 #define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE Hello
+#define BOOST_TEST_MODULE module
 #include <boost/test/unit_test.hpp>
 
 #include "../src/module.hpp"
@@ -93,12 +93,10 @@ BOOST_AUTO_TEST_CASE(header_test)
     BOOST_CHECK(mod2_header.exports[1] == mod2_export2);
     
 
-    unordered_map<identifier_id_t, vector<symbol_source>> mod1_imported_modules =
-            imported_modules(mod1_header);
+    unordered_map<identifier_id_t, vector<symbol_source>> mod1_imported_modules = imported_modules(mod1_header);
     BOOST_CHECK(mod1_imported_modules.empty());
 
-    unordered_map<identifier_id_t, vector<symbol_source>> mod2_imported_modules =
-            imported_modules(mod2_header);
+    unordered_map<identifier_id_t, vector<symbol_source>> mod2_imported_modules = imported_modules(mod2_header);
     BOOST_CHECK(mod2_imported_modules.size() == 1);
     BOOST_CHECK(mod2_imported_modules.count("mod1"_id));
 }
@@ -112,7 +110,11 @@ BOOST_AUTO_TEST_CASE(simple_definition_test)
             {{mod2_import1, mod2_import2}, {mod2_export1, mod2_export2}};
     
     unordered_map<identifier_id_t, module> module_map;
-    module_map["mod1"_id] = evaluate_module(mod1_tree, mod1_header, module_map, context);
+    auto lookup_module = [&](const import_statement& import) -> const module&
+    {
+        return module_map.at(import.imported_module.identifier());
+    };
+    module_map["mod1"_id] = evaluate_module(mod1_tree, mod1_header, lookup_module, context);
     auto& exports1 = module_map["mod1"_id].exports;
     BOOST_CHECK(exports1.size() == 3);
     BOOST_CHECK(exports1.count("a"_id) && exports1.count("b"_id) && exports1.count("c"_id));
@@ -120,7 +122,7 @@ BOOST_AUTO_TEST_CASE(simple_definition_test)
     BOOST_CHECK(*exports1["b"_id] == list{lit{"bb"}});
     BOOST_CHECK(*exports1["c"_id] == list{});
 
-    module_map["mod2"_id] = evaluate_module(mod2_tree, mod2_header, module_map, context);
+    module_map["mod2"_id] = evaluate_module(mod2_tree, mod2_header, lookup_module, context);
     auto& exports2 = module_map["mod2"_id].exports;
     BOOST_CHECK(exports2.size() == 3);
     BOOST_CHECK(exports2.count("x"_id) && exports2.count("y"_id) && exports2.count("z"_id));

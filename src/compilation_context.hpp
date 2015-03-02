@@ -31,11 +31,15 @@ class compilation_context
 {
 public:
     compilation_context();
+    compilation_context(const compilation_context&) = delete;
     
+    compilation_context& operator=(const compilation_context&) = delete;
+
     std::size_t uuid();
     llvm::LLVMContext& llvm();
 
     identifier_id_t identifier_id(const std::string& str);
+    const std::string& to_string(identifier_id_t);
 private:
     std::size_t next_uuid;
     std::unordered_map<std::string, identifier_id_t> identifier_table;

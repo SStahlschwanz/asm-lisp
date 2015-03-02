@@ -5,6 +5,7 @@
 #include "parse_literal.hpp"
 #include "parse_reference.hpp"
 #include "whitespace.hpp"
+#include "error/parse_exception.hpp"
 
 #include <boost/optional.hpp>
 
@@ -55,7 +56,7 @@ boost::optional<list_symbol> parse_semicolon_list(State& state)
             if(result.empty())
                 return boost::none; // nothing was parsed -> this is not a semicolon list
             else
-                throw parse_exception(state.position(), parse_error::UNTERMINATED_SEMICOLON_LIST);
+                throw parse_exception::unterminated_semicolon_list{{state.position(), state.file()}};
         }
         else
         {
@@ -88,7 +89,7 @@ boost::optional<list_symbol> parse_curly_list(State& state)
         }
         
         if(state.empty() || state.front() != '}')
-            throw parse_exception(begin, parse_error::UNMATCHED_CURLY_BRACE);
+            throw parse_exception::unmatched_curly_brace{{begin, state.file()}};
         else
         {
             state.pop_front();
@@ -123,7 +124,7 @@ boost::optional<list_symbol> parse_square_list(State& state)
         } while(!state.empty() && state.front() == ',');
         
         if(state.empty() || state.front() != ']')
-            throw parse_exception(begin, parse_error::UNMATCHED_SQUARE_BRACE); 
+            throw parse_exception::unmatched_square_brace{{begin, state.file()}};
         else
         {
             state.pop_front();
@@ -149,7 +150,7 @@ boost::optional<list_symbol> parse_round_list(State& state)
         list_symbol first_list = parse_nodes(state);
 
         if(state.empty())
-            throw parse_exception(begin, parse_error::UNMATCHED_ROUND_BRACE);
+            throw parse_exception::unmatched_round_brace{{begin, state.file()}};
         else if(state.front() == ')')
         {
             state.pop_front();
@@ -172,7 +173,7 @@ boost::optional<list_symbol> parse_round_list(State& state)
             } while(!state.empty() && state.front() == ',');
             
             if(state.empty() || state.front() != ')')
-                throw parse_exception(begin, parse_error::UNMATCHED_ROUND_BRACE);
+                throw parse_exception::unmatched_round_brace{{begin, state.file()}};
             else
             {
                 state.pop_front();
@@ -181,7 +182,7 @@ boost::optional<list_symbol> parse_round_list(State& state)
             }
         }
         else
-            throw parse_exception(begin, parse_error::UNMATCHED_ROUND_BRACE);
+            throw parse_exception::unmatched_round_brace{{begin, state.file()}};
     }
 }
 
@@ -217,7 +218,7 @@ list_symbol parse_file(State& state)
     }
 
     if(!state.empty())
-        throw parse_exception(state.position(), parse_error::INVALID_CHARACTER);
+        throw parse_exception::invalid_character{{state.position(), state.file()}, state.front()};
 
     result.source(file_source{begin, state.position(), state.file()});
     return result;

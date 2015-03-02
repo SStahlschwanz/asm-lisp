@@ -4,20 +4,24 @@
 #include "../symbol.hpp"
 #include "compile_exception.hpp"
 
-class unique_exception
-  : public compile_exception
+namespace unique_exception
 {
-public:
-    template<class... Types>
-    unique_exception(Types&&... types)
+
+struct unique_exception
+  : compile_exception
+{
+    using compile_exception::compile_exception;
+};
+
+struct invalid_argument_number
+  : unique_exception
+{
+    invalid_argument_number()
+      : unique_exception{"unique_invalid_argument_number"}
     {}
 };
 
-struct parameter_to_unique
-  : unique_exception
-{
-    using unique_exception::unique_exception;
-};
+}
 
 #endif
 

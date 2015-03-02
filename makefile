@@ -8,7 +8,7 @@ LLVM_LD_FLAGS=-rdynamic $(shell llvm-config --ldflags)
 LLVM_LIBS=$(shell llvm-config --libs)
 
 COMMON_LDFLAGS=$(LLVM_LD_FLAGS)
-COMMON_LIBS=$(LLVM_LIBS)
+COMMON_LIBS=-lboost_system -lboost_filesystem $(LLVM_LIBS)
 DEBUG_LDFLAGS=-g $(COMMON_LDFLAGS)
 DEBUG_LIBS=-lboost_unit_test_framework $(COMMON_LIBS)
 RELEASE_LDFLAGS=-O3 $(COMMON_LDFLAGS)
