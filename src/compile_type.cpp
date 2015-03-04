@@ -1,8 +1,10 @@
 #include "compile_type.hpp"
 
-#include "error/type_compile_exception.hpp"
+#include "error/compile_type_error.hpp"
 
 #include <llvm/IR/DerivedTypes.h>
+
+#include <boost/variant.hpp>
 
 #include <string>
 #include <algorithm>
@@ -14,17 +16,19 @@ using std::out_of_range;
 using std::invalid_argument;
 using std::distance;
 
+using boost::blank;
+
 using namespace symbol_shortcuts;
-using namespace type_compile_exception;
+using namespace compile_type_error;
 
 type_symbol compile_int(list_symbol::const_iterator begin, list_symbol::const_iterator end, compilation_context& context)
 {
     if(distance(begin, end) != 1)
-        throw int_invalid_argument_number{};
+        fatal<id("int_invalid_argument_number")>(blank());
 
     const lit_symbol& bit_width_lit = begin->cast_else<lit_symbol>([&]()
     {
-        throw int_invalid_argument_symbol{begin->source()};
+        fatal<id("int_invalid_argument_symbol")>(begin->source());
     });
 
     unsigned long width;
@@ -40,11 +44,11 @@ type_symbol compile_int(list_symbol::const_iterator begin, list_symbol::const_it
     }
     catch(const invalid_argument&)
     {
-        throw int_invalid_argument_literal{bit_width_lit.source()};
+        fatal<id("int_invalid_argument_literal")>(bit_width_lit.source());
     }
     catch(const out_of_range&)
     {
-        throw int_out_of_range_bit_width{bit_width_lit.source()};
+        fatal<id("int_out_of_range_bit_width")>(bit_width_lit.source());
     }
 
     llvm::IntegerType* llvm_type = llvm::IntegerType::get(context.llvm(), width);

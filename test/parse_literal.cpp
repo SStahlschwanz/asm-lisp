@@ -5,6 +5,8 @@
 #include "../src/parse_literal.hpp"
 #include "../src/parse_literal.hpp"
 
+#include "../src/error/compile_exception.hpp"
+
 #include "state_utils.hpp"
 
 using boost::optional;
@@ -37,14 +39,14 @@ BOOST_AUTO_TEST_CASE(unterminated_quote)
 {
     state s = make_state("\"abc");
     
-    BOOST_CHECK_THROW(parse_literal(s), parse_exception::parse_exception);
+    BOOST_CHECK_THROW(parse_literal(s), compile_exception);
 }
 
 BOOST_AUTO_TEST_CASE(quote_terminated_next_line)
 {
     state s = make_state("\"abc\nasdf\"");
     
-    BOOST_CHECK_THROW(parse_literal(s), parse_exception::parse_exception);
+    BOOST_CHECK_THROW(parse_literal(s), compile_exception);
 }
 
 BOOST_AUTO_TEST_CASE(no_literal)

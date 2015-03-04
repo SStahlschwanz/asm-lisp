@@ -5,7 +5,7 @@
 #include "parse_literal.hpp"
 #include "parse_reference.hpp"
 #include "whitespace.hpp"
-#include "error/parse_exception.hpp"
+#include "error/parse_error.hpp"
 
 #include <boost/optional.hpp>
 
@@ -34,6 +34,7 @@ list_symbol parse_nodes(State& state)
 template<class State>
 boost::optional<list_symbol> parse_semicolon_list(State& state)
 {
+    using namespace parse_error;
     if(state.empty())
         return boost::none;
     else if(state.front() == ';')
@@ -56,7 +57,7 @@ boost::optional<list_symbol> parse_semicolon_list(State& state)
             if(result.empty())
                 return boost::none; // nothing was parsed -> this is not a semicolon list
             else
-                throw parse_exception::unterminated_semicolon_list{{state.position(), state.file()}};
+                fatal<id("unterminated_semicolon_list")>(code_location{state.position(), state.file()});
         }
         else
         {
@@ -73,6 +74,7 @@ boost::optional<list_symbol> parse_semicolon_list(State& state)
 template<class State>
 boost::optional<list_symbol> parse_curly_list(State& state)
 {
+    using namespace parse_error;
     if(state.empty() || state.front() != '{')
         return boost::none;
     else
@@ -89,7 +91,7 @@ boost::optional<list_symbol> parse_curly_list(State& state)
         }
         
         if(state.empty() || state.front() != '}')
-            throw parse_exception::unmatched_curly_brace{{begin, state.file()}};
+            fatal<id("unmatched_curly_brace")>(code_location{begin, state.file()});
         else
         {
             state.pop_front();
@@ -105,6 +107,7 @@ boost::optional<list_symbol> parse_curly_list(State& state)
 template<class State>
 boost::optional<list_symbol> parse_square_list(State& state)
 {
+    using namespace parse_error;
     if(state.empty() || state.front() != '[')
         return boost::none;
     else
@@ -124,7 +127,7 @@ boost::optional<list_symbol> parse_square_list(State& state)
         } while(!state.empty() && state.front() == ',');
         
         if(state.empty() || state.front() != ']')
-            throw parse_exception::unmatched_square_brace{{begin, state.file()}};
+            fatal<id("unmatched_square_brace")>(code_location{begin, state.file()});
         else
         {
             state.pop_front();
@@ -138,6 +141,7 @@ boost::optional<list_symbol> parse_square_list(State& state)
 template <class State>
 boost::optional<list_symbol> parse_round_list(State& state)
 {
+    using namespace parse_error;
     if(state.empty() || state.front() != '(')
         return boost::none;
     else
@@ -150,7 +154,7 @@ boost::optional<list_symbol> parse_round_list(State& state)
         list_symbol first_list = parse_nodes(state);
 
         if(state.empty())
-            throw parse_exception::unmatched_round_brace{{begin, state.file()}};
+            fatal<id("unmatched_round_brace")>(code_location{begin, state.file()});
         else if(state.front() == ')')
         {
             state.pop_front();
@@ -173,7 +177,7 @@ boost::optional<list_symbol> parse_round_list(State& state)
             } while(!state.empty() && state.front() == ',');
             
             if(state.empty() || state.front() != ')')
-                throw parse_exception::unmatched_round_brace{{begin, state.file()}};
+                fatal<id("unmatched_round_brace")>(code_location{begin, state.file()});
             else
             {
                 state.pop_front();
@@ -182,7 +186,7 @@ boost::optional<list_symbol> parse_round_list(State& state)
             }
         }
         else
-            throw parse_exception::unmatched_round_brace{{begin, state.file()}};
+            fatal<id("unmatched_round_brace")>(code_location{begin, state.file()});
     }
 }
 
@@ -207,6 +211,7 @@ boost::optional<any_symbol> parse_node(State& state)
 template <class State>
 list_symbol parse_file(State& state)
 {
+    using namespace parse_error;
     list_symbol result;
     file_position begin = state.position();
     whitespace(state);
@@ -218,7 +223,7 @@ list_symbol parse_file(State& state)
     }
 
     if(!state.empty())
-        throw parse_exception::invalid_character{{state.position(), state.file()}, state.front()};
+        fatal<id("invalid_character")>(code_location{state.position(), state.file()});
 
     result.source(file_source{begin, state.position(), state.file()});
     return result;

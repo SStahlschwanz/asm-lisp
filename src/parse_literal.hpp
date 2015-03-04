@@ -2,7 +2,7 @@
 #define PARSE_LITERAL_HPP_
 
 #include "symbol.hpp"
-#include "error/parse_exception.hpp"
+#include "error/parse_error.hpp"
 
 #include <boost/optional.hpp>
 
@@ -20,6 +20,7 @@ template <class State>
 boost::optional<lit_symbol> parse_literal(State& state)
 {
     using namespace parse_literal_detail;
+    using namespace parse_error;
     
     if(state.empty())
         return boost::none;
@@ -32,7 +33,7 @@ boost::optional<lit_symbol> parse_literal(State& state)
         while(true)
         {
             if(state.empty() || state.front() == '\n')
-                throw parse_exception::unmatched_quote{{begin, state.file()}};
+                fatal<id("unmatched_quote")>(code_location{begin, state.file()});
             if(state.front() == '"')
                 break;
             else

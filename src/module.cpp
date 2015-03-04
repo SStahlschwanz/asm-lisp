@@ -1,7 +1,7 @@
 #include "module.hpp"
 
-#include "error/import_export_exception.hpp"
-#include "error/evaluation_exception.hpp"
+#include "error/import_export_error.hpp"
+#include "error/evaluate_error.hpp"
 
 using std::unordered_map;
 using std::vector;
@@ -17,8 +17,6 @@ using boost::optional;
 using boost::none;
 
 using namespace symbol_shortcuts;
-using namespace import_export_exception;
-using namespace evaluation_exception;
 
 bool is_export_statement(const list_symbol& statement)
 {
@@ -33,33 +31,34 @@ bool is_import_statement(const list_symbol& statement)
 
 optional<import_statement> parse_import(const list_symbol& statement)
 {
+    using namespace import_export_error;
     if(!is_import_statement(statement))
         return none;
     
     if(statement.size() != 4)
-        throw import_invalid_argument_number{statement.source(), statement.size() - 1};
+        fatal<id("import_invalid_argument_number")>(statement.source());
     
     const list_symbol& import_list = statement[1].cast_else<list>([&]()
     {
-        throw invalid_import_list{statement[1].source()};
+        fatal<id("invalid_import_list")>(statement[1].source());
     });
     
     for(const symbol& import : import_list)
     {
         if(!import.is<ref>())
-            throw invalid_imported_identifier{import.source()};
+            fatal<id("invalid_imported_identifier")>(import.source());
     }
     
     const ref_symbol& from_token = statement[2].cast_else<ref>([&]()
     {
-        throw invalid_from_token{statement[2].source()};
+        fatal<id("invalid_from_token")>(statement[2].source());
     });
     if(from_token.identifier() != static_cast<size_t>(identifier_ids::FROM))
-        throw invalid_from_token{statement[2].source()};
+        fatal<id("invalid_from_token")>(statement[2].source());
 
     const ref_symbol& imported_module = statement[3].cast_else<ref>([&]()
     {
-        throw invalid_imported_module{statement[3].source()}; 
+        fatal<id("invalid_imported_module")>(statement[3].source());
     });
 
     return import_statement{statement, imported_module, import_list};
@@ -102,6 +101,7 @@ unordered_map<identifier_id_t, vector<symbol_source>> imported_modules(const mod
 
 symbol_table initial_symbol_table(const module_header& header, function<const module&(const import_statement&)> get_module_func)
 {
+    using namespace import_export_error;
     symbol_table table;
     for(const import_statement& import : header.imports)
     {
@@ -112,7 +112,7 @@ symbol_table initial_symbol_table(const module_header& header, function<const mo
             const auto& imported_identifier = s.cast<ref>().identifier();
             auto symbol_find_it = imported_module.exports.find(imported_identifier);
             if(symbol_find_it == imported_module.exports.end())
-                throw symbol_not_found{s.source()};
+                fatal<id("symbol_not_found")>(s.source());
             table[imported_identifier] = symbol_find_it->second;
         }
     }
@@ -163,6 +163,7 @@ void dispatch_references(symbol& s, const symbol_table& table,
 
 module evaluate_module(list_symbol syntax_tree, const module_header& header, function<const module&(const import_statement&)> get_module_func, compilation_context& context)
 {
+    using namespace evaluation_error;
     symbol_table table = initial_symbol_table(header, get_module_func);
 
     size_t header_size = header.imports.size() + header.exports.size();
@@ -173,21 +174,21 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header, fun
     {
         list_symbol& statement = it->cast<list>();
         if(statement.empty())
-            throw empty_top_level_statement{statement.source()};
+            fatal<id("empty_top_level_statement")>(statement.source());
         
         ref_symbol& command = statement[0].cast_else<ref>([&]()
         {
-            throw invalid_command{statement[0].source()};
+            fatal<id("invalid_command")>(statement[0].source());
         });
 
         if(command.identifier() == static_cast<size_t>(identifier_ids::DEF))
         {
             if(statement.size() < 3)
-                throw def_invalid_argument_number{statement.source()};
+                fatal<id("def_invalid_argument_number")>(statement.source());
 
             const ref_symbol& defined = statement[1].cast_else<ref>([&]()
             {
-                throw invalid_defined_symbol{statement[1].source()};
+                fatal<id("invalid_defined_symbol")>(statement[1].source());
             });
             for(auto argument_it = statement.begin() + 2;
                     argument_it != statement.end();
@@ -205,12 +206,12 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header, fun
             bool was_inserted;
             tie(ignore, was_inserted) = table.insert({defined.identifier(), definition});
             if(!was_inserted)
-                throw duplicate_definition{defined.source()};
+                fatal<id("duplicate_definition")>(defined.source());
         }
         else if(command.identifier() == static_cast<size_t>(identifier_ids::IMPORT))
-            throw import_after_header{statement.source()};
+            import_export_error::fatal<import_export_error::id("import_after_header")>(statement.source());
         else if(command.identifier() == static_cast<size_t>(identifier_ids::EXPORT))
-            throw export_after_header{statement.source()};
+            import_export_error::fatal<import_export_error::id("export_after_header")>(statement.source());
     }
 
     remove_not_exported(table, header);

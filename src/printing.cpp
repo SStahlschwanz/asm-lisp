@@ -1,11 +1,10 @@
-#include "error_to_string.hpp"
+#include "printing.hpp"
 
 #include <string>
 #include <unordered_map>
 #include <vector>
 #include <sstream>
 
-#include "error/type_compile_exception.hpp"
 #include "symbol.hpp"
 
 using std::size_t;
@@ -19,6 +18,9 @@ using std::unordered_map;
 
 using boost::static_visitor;
 using boost::apply_visitor;
+using boost::blank;
+
+/*
 
 const unordered_map<string, string> default_errors =
 {
@@ -56,6 +58,8 @@ const unordered_map<string, string> default_errors =
     {"unique_invalid_argument_number", "invalid number of arguments to ' unique': expected none"}
 };
 
+*/
+
 struct print_error_visitor
   : static_visitor<>
 {
@@ -67,6 +71,8 @@ struct print_error_visitor
         file_id_to_name(file_id_to_name)
     {}
     
+    void operator()(const blank& b)
+    {}
     void operator()(const code_location& loc)
     {
         oss << file_id_to_name(loc.file_id) << ':' << (loc.pos.line + 1) << ':' << (loc.pos.line_pos + 1);
@@ -120,12 +126,23 @@ string format(const string& format_string, const vector<error_parameter>& parame
     return stream.str();
 }
 
-string default_error_to_string(const compile_exception& exc, function<string (size_t)> file_id_to_name)
+ostream& print_error(ostream& os, const compile_exception& exc, function<string (size_t)> file_id_to_name)
 {
-    auto it = default_errors.find(exc.error_name);
-    assert(it != default_errors.end());
-    
-    return format(it->second, exc.parameters, file_id_to_name);
+    switch(exc.kind)
+    {
+    case error_kind::PARSE:
+        break;
+    case error_kind::IMPORT_EXPORT:
+        break;
+    case error_kind::EVALUATION:
+        break;
+    case error_kind::COMPILE_TYPE:
+        break;
+    case error_kind::CORE_MISC:
+        break;
+    }
+
+    return os;
 }
 
 struct print_symbol_visitor

@@ -2,8 +2,10 @@
 
 #include "compile_type.hpp"
 #include "symbol.hpp"
-#include "error/unique_exception.hpp"
+#include "error/core_misc_error.hpp"
 #include "core_unique_ids.hpp"
+
+#include <boost/variant.hpp>
 
 #include <memory>
 #include <utility>
@@ -12,7 +14,9 @@ using std::unique_ptr;
 using std::make_unique;
 using std::size_t;
 using std::move;
-using namespace unique_exception;
+using namespace core_misc_error;
+
+using boost::blank;
 
 module create_core_module(compilation_context& context)
 {
@@ -35,7 +39,7 @@ module create_core_module(compilation_context& context)
     auto unique_func = [next_unique_id](list_symbol::const_iterator begin, list_symbol::const_iterator end) mutable
     {
         if(begin != end)
-            throw invalid_argument_number{};
+            fatal<id("unique_invalid_argument_number")>(blank());
         return id_symbol{next_unique_id++};
     };
     add_symbol("unique", macro_symbol{unique_func});

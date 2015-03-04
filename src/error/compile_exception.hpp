@@ -9,54 +9,63 @@
 #include <boost/variant.hpp>
 
 #include "../symbol_source.hpp"
+#include "error_kind.hpp"
 
 struct code_location
 {
     file_position pos;
     std::size_t file_id;
 };
+typedef boost::variant<boost::blank, code_location> error_location;
 
-typedef boost::variant<code_location, std::string, size_t> error_parameter;
 
-struct to_error_parameter_visitor
-  : boost::static_visitor<error_parameter>
+struct to_error_location_symbol_source_visitor
+  : boost::static_visitor<error_location>
 {
-    error_parameter operator()(const boost::blank&)
+    error_location operator()(boost::blank)
     {
-        return std::string{"<no source>"};
+        return boost::blank();
     }
-    error_parameter operator()(const file_source& src)
+    error_location operator()(const file_source& src)
     {
         return code_location{src.begin, src.file_id};
     }
 };
-
-inline error_parameter to_error_parameter(const symbol_source& src)
+inline error_location to_error_location(const symbol_source& src)
 {
-    to_error_parameter_visitor visitor;
+    to_error_location_symbol_source_visitor visitor;
     return boost::apply_visitor(visitor, src);
 }
-
-class compile_exception
-  : public std::exception
+template<class T>
+inline error_location to_error_location(T&& obj)
 {
-public:
-    template<class... Types>
-    compile_exception(const char* error_name, Types&&... printable_objects)
-      : error_name(error_name),
-        parameters{std::forward<Types>(printable_objects)...}
+    return std::forward<T>(obj);
+}
+
+typedef boost::variant<boost::blank> error_parameter;
+
+struct compile_exception
+  : std::exception
+{
+    template<class Location, class... ParamTypes>
+    compile_exception(error_kind kind, std::size_t error_id, const Location& location, ParamTypes&&... params)
+      : kind{kind},
+        error_id{error_id},
+        location{to_error_location(location)},
+        params{std::forward<ParamTypes>(params)...}
     {}
     
-    const char* error_name;
-    std::vector<error_parameter> parameters;
+    error_kind kind;
+    std::size_t error_id;
+    error_location location;
+    std::vector<error_parameter> params;
 };
 
 struct not_implemented
   : std::runtime_error
 {
-   using std::runtime_error::runtime_error;
+    using std::runtime_error::runtime_error;
 };
-
 
 #endif
 

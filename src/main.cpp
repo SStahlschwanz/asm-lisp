@@ -1,6 +1,6 @@
 #include "compile_unit.hpp"
 #include "error/compile_exception.hpp"
-#include "error_to_string.hpp"
+#include "printin.hpp"
 
 #include <boost/filesystem.hpp>
 
@@ -51,6 +51,6 @@ int main(int argc, char** args)
             assert(file_id < paths.size());
             return paths[file_id].native();
         };
-        cerr << default_error_to_string(exc, file_id_to_name) << endl; 
+        print_error(cerr, exc, file_id_to_name);
     }
 }

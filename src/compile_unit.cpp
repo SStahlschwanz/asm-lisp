@@ -3,7 +3,7 @@
 #include "module.hpp"
 #include "compilation_context.hpp"
 #include "error/compile_exception.hpp"
-#include "error/import_export_exception.hpp"
+#include "error/import_export_error.hpp"
 
 #include <boost/optional.hpp>
 
@@ -26,7 +26,7 @@ using boost::filesystem::exists;
 using boost::optional;
 using boost::none;
 
-using import_export_exception::module_not_found;
+using namespace import_export_error;
 
 vector<size_t> toposort(const vector<vector<size_t>>& graph)
 {
@@ -107,7 +107,8 @@ vector<module> compile_unit(const vector<path>& paths, compilation_context& cont
         path module_path{module_name + ".al"};
         auto it = find(paths.begin(), paths.end(), module_path);
         if(it == paths.end())
-            throw module_not_found{import.imported_module.source(), module_name};
+            fatal<id("module_not_found")>(import.imported_module.source());
+            //throw module_not_found{import.imported_module.source(), module_name};
         return it - paths.begin();
     };
     
