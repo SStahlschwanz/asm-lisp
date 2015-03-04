@@ -7,7 +7,8 @@ enum class error_kind
     IMPORT_EXPORT,
     EVALUATE,
     COMPILE_TYPE,
-    CORE_MISC
+    CORE_MISC,
+    COMPILE_MACRO
 };
 
 #endif

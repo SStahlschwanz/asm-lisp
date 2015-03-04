@@ -3,8 +3,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include "../src/compile_macro.hpp"
-#include "../src/error/compile_macro_exception.hpp"
 #include "../src/core_unique_ids.hpp"
+#include "../src/error/compile_exception.hpp"
 
 #include "state_utils.hpp"
 
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(compile_signature_test)
     };
     const any_symbol return_type2 = int64_type;
     
-    BOOST_CHECK_THROW(compile_signature(params2, return_type2, context), compile_macro_exception::compile_macro_exception);
+    BOOST_CHECK_THROW(compile_signature(params2, return_type2, context), compile_exception);
 }
 
 BOOST_AUTO_TEST_CASE(compile_instruction_test)

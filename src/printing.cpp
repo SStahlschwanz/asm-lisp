@@ -12,6 +12,7 @@
 #include "error/evaluate_error.hpp"
 #include "error/compile_type_error.hpp"
 #include "error/core_misc_error.hpp"
+#include "error/compile_macro_error.hpp"
 
 
 using std::size_t;
@@ -69,9 +70,11 @@ struct print_error_visitor
     {
         os << "<argument missing>";
     }
-    void operator()(size_t number)
+
+    template<class T>
+    void operator()(const T& obj)
     {
-        os << number;
+        os << obj;
     }
 };
 
@@ -139,6 +142,10 @@ ostream& print_error(ostream& os, const compile_exception& exc, function<string 
     case error_kind::CORE_MISC:
         assert(exc.error_id < size(core_misc_error::dictionary));
         error_message_template = core_misc_error::dictionary[exc.error_id].second.data();
+        break;
+    case error_kind::COMPILE_MACRO:
+        assert(exc.error_id < size(core_misc_error::dictionary));
+        error_message_template = compile_macro_error::dictionary[exc.error_id].second.data();
         break;
     }
     print_error_location(os, exc.location, file_id_to_name);
