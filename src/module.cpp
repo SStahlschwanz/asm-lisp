@@ -36,7 +36,7 @@ optional<import_statement> parse_import(const list_symbol& statement)
         return none;
     
     if(statement.size() != 4)
-        fatal<id("import_invalid_argument_number")>(statement.source());
+        fatal<id("import_invalid_argument_number")>(statement.source(), statement.size() - 3);
     
     const list_symbol& import_list = statement[1].cast_else<list>([&]()
     {
@@ -163,7 +163,7 @@ void dispatch_references(symbol& s, const symbol_table& table,
 
 module evaluate_module(list_symbol syntax_tree, const module_header& header, function<const module&(const import_statement&)> get_module_func, compilation_context& context)
 {
-    using namespace evaluation_error;
+    using namespace evaluate_error;
     symbol_table table = initial_symbol_table(header, get_module_func);
 
     size_t header_size = header.imports.size() + header.exports.size();

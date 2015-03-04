@@ -15,9 +15,14 @@ class conststr
 public:
     template<unsigned int N>
     constexpr conststr(const char (&arr)[N])
-      : data(arr),
+      : data_(arr),
         size(N - 1)
     {}
+
+    constexpr const char* data() const
+    {
+        return data_;
+    }
 
     friend constexpr bool operator==(const conststr& lhs, const conststr& rhs)
     {
@@ -25,13 +30,13 @@ public:
             return false;
         for(std::size_t i = 0; i != lhs.size; ++i)
         {
-            if(lhs.data[i] != rhs.data[i])
+            if(lhs.data_[i] != rhs.data_[i])
                 return false;
         }
         return true;
     }
 private:
-    const char* data;
+    const char* data_;
     std::size_t size;
 };
 

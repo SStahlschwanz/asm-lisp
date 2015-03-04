@@ -5,7 +5,7 @@ enum class error_kind
 {
     PARSE,
     IMPORT_EXPORT,
-    EVALUATION,
+    EVALUATE,
     COMPILE_TYPE,
     CORE_MISC
 };

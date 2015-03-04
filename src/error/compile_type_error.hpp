@@ -9,10 +9,10 @@ namespace compile_type_error
 
 constexpr std::pair<conststr, conststr> dictionary[] =
 {
-    {"int_invalid_argument_number", ""},
-    {"int_invalid_argument_symbol", ""},
-    {"int_invalid_argument_literal", ""},
-    {"int_out_of_range_bit_width", ""}
+    {"int_invalid_argument_number", "invalid number of arguments to 'int': expected 1"},
+    {"int_invalid_argument_symbol", "invalid argument: expected a literal (bit width)"},
+    {"int_invalid_argument_literal", "invalid bit width: expected a positive integer"},
+    {"int_out_of_range_bit_width", "invalid bit width: expected a positive integer"}
 };
 
 constexpr std::size_t id(conststr str)

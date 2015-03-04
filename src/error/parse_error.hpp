@@ -14,7 +14,7 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"unmatched_curly_brace", "unmatched '{'"},
     {"unmatched_square_brace", "unmatched '['"},
     {"unmatched_round_brace", "unmatched '('"},
-    {"invalid_character", "unexpected character"}
+    {"invalid_character", "unexpected character: {0}"}
 };
 
 constexpr std::size_t id(conststr str)

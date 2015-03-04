@@ -4,16 +4,16 @@
 #include "error_utils.hpp"
 #include "compile_exception.hpp"
 
-namespace evaluation_error
+namespace evaluate_error
 {
 
 constexpr std::pair<conststr, conststr> dictionary[] =
 {
-    {"empty_top_level_statement", ""},
-    {"invalid_command", ""},
-    {"def_invalid_argument_number", ""},
-    {"invalid_defined_symbol", ""},
-    {"duplicate_definition", ""}
+    {"empty_top_level_statement", "empty top level statement is not allowed"},
+    {"invalid_command", "invalid command"},
+    {"def_invalid_argument_number", "too few arguments to def: expected at least 2"},
+    {"invalid_defined_symbol", "invalid symbol to defined: expected identifier"},
+    {"duplicate_definition", "duplicate definition"}
 };
 
 constexpr std::size_t id(conststr str)
@@ -26,7 +26,7 @@ template<std::size_t error_id, class Location, class... ParamTypes>
 {
     static_assert(error_id < size(dictionary), "invalid error id");
     static_assert(error_id != std::numeric_limits<std::size_t>::max(), "invalid error id");
-    throw compile_exception{error_kind::EVALUATION, error_id, location, std::forward<ParamTypes>(params)...};
+    throw compile_exception{error_kind::EVALUATE, error_id, location, std::forward<ParamTypes>(params)...};
 }
 
 }

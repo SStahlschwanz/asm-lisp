@@ -42,7 +42,9 @@ inline error_location to_error_location(T&& obj)
     return std::forward<T>(obj);
 }
 
-typedef boost::variant<boost::blank> error_parameter;
+
+
+typedef boost::variant<boost::blank, std::size_t> error_parameter;
 
 struct compile_exception
   : std::exception

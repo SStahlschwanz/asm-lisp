@@ -7,6 +7,13 @@
 
 #include "symbol.hpp"
 
+#include "error/parse_error.hpp"
+#include "error/import_export_error.hpp"
+#include "error/evaluate_error.hpp"
+#include "error/compile_type_error.hpp"
+#include "error/core_misc_error.hpp"
+
+
 using std::size_t;
 using std::string;
 using std::function;
@@ -20,74 +27,56 @@ using boost::static_visitor;
 using boost::apply_visitor;
 using boost::blank;
 
-/*
-
-const unordered_map<string, string> default_errors =
+struct print_location_visitor
+  : static_visitor<>
 {
-    {"parse_unmatched_quote", "{0}: unmatched '\"'"},
-    {"parse_unterminated_semicolon_list", "{0}: expected ';'"},
-    {"parse_unmatchd_curly_brace", "{0}: unmatched '{'"},
-    {"parse_unmatched_square_brace", "{0}: unmatched '['"},
-    {"parse_unmatched_round_brace", "{0}: unmatched '('"},
-    {"parse_invalid_character", "{0}: unexpected character '{1}'"},
+    ostream& os;
+    const function<string (size_t)>& file_id_to_name;
+    
+    print_location_visitor(ostream& os, const function<string (size_t)>& file_id_to_name)
+      : os(os),
+        file_id_to_name(file_id_to_name)
+    {}
 
-
-    {"import_export_import_invalid_argument_number", "{0}: invalid number of arguments to \'import\': expected 3, got {1}"},
-    {"import_export_invalid_import_list", "{0}: expected a list (of imports)"},
-    {"import_export_invalid_from_token", "{0}: expected 'from'"},
-    {"import_export_invalid_imported_module", "{0}: expected an identifier (module name)"},
-    {"import_export_invalid_imported_identifier", "{0}: expected an identifier (name of symbol to import)"},
-    {"import_export_import_after_header", "{0}: import statement after file header is not allowed"},
-    {"import_export_export_after_header", "{0}: export statement after file header is not allowed"},
-    {"import_export_module_not_found", "{0}: module not found: \'{1}\'"},
-
-
-    {"evaluation_empty_top_level_statement", "{0}: empty top level statement is not allowed"},
-    {"evaluation_invalid_command", "{0}: invalid command"},
-    {"evaluation_def_invalid_argument_number", "{0}: too few arguments to def: expected at least 2"},
-    {"evaluation_invalid_defined_symbol", "{0}: invalid symbol to defined: expected identifier"},
-    {"evaluation_duplicate_definition", "{0}: duplicate definition"},
-
-
-    {"type_compile_int_invalid_argument_number", "invalid number of arguments to 'int': expected 1"},
-    {"type_compile_int_invalid_argument_symbol", "{0}: invalid argument: expected a literal (bit width)"},
-    {"type_compile_int_invalid_argument_literal", "{0}: invalid bit width: expected a positive integer"},
-    {"type_compile_int_out_of_range_bit_width", "{0}: invalid bit width: expected a positive integer"},
-
-
-    {"unique_invalid_argument_number", "invalid number of arguments to ' unique': expected none"}
+    void operator()(const blank&)
+    {
+        os << "<no location>";
+    }
+    void operator()(const code_location& loc)
+    {
+        os << file_id_to_name(loc.file_id) << ":" << (loc.pos.line + 1) << ":" << (loc.pos.line_pos + 1);
+    }
 };
 
-*/
+
+ostream& print_error_location(ostream& os, const error_location& loc, const function<string (size_t)>& file_id_to_name)
+{
+    print_location_visitor visitor(os, file_id_to_name);
+    apply_visitor(visitor, loc);
+    return os;
+}
 
 struct print_error_visitor
   : static_visitor<>
 {
-    ostringstream& oss;
-    const function<string (size_t)>& file_id_to_name;
+    ostream& os;
     
-    print_error_visitor(ostringstream& s, const function<string (size_t)>& file_id_to_name)
-      : oss(s),
-        file_id_to_name(file_id_to_name)
+    print_error_visitor(ostream& os)
+      : os(os)
     {}
     
-    void operator()(const blank& b)
-    {}
-    void operator()(const code_location& loc)
+    void operator()(const blank&)
     {
-        oss << file_id_to_name(loc.file_id) << ':' << (loc.pos.line + 1) << ':' << (loc.pos.line_pos + 1);
+        os << "<argument missing>";
     }
-    void operator()(const string& str)
+    void operator()(size_t number)
     {
-        oss << str;
-    }
-    void operator()(size_t s)
-    {
-        oss << s;
+        os << number;
     }
 };
 
-string format(const string& format_string, const vector<error_parameter>& parameters, const function<string (size_t)> file_id_to_name)
+
+string format(const string& format_string, const vector<error_parameter>& parameters)
 {
     ostringstream stream;
     auto it = format_string.begin();
@@ -117,7 +106,7 @@ string format(const string& format_string, const vector<error_parameter>& parame
             assert(after_number == number_string.size());
             assert(number < parameters.size());
 
-            print_error_visitor visitor{stream, file_id_to_name};
+            print_error_visitor visitor{stream};
             apply_visitor(visitor, parameters[number]);
         }
         else
@@ -128,19 +117,33 @@ string format(const string& format_string, const vector<error_parameter>& parame
 
 ostream& print_error(ostream& os, const compile_exception& exc, function<string (size_t)> file_id_to_name)
 {
+    const char* error_message_template;
     switch(exc.kind)
     {
     case error_kind::PARSE:
+        assert(exc.error_id < size(parse_error::dictionary));
+        error_message_template = parse_error::dictionary[exc.error_id].second.data();
         break;
     case error_kind::IMPORT_EXPORT:
+        assert(exc.error_id < size(import_export_error::dictionary));
+        error_message_template = import_export_error::dictionary[exc.error_id].second.data();
         break;
-    case error_kind::EVALUATION:
+    case error_kind::EVALUATE:
+        assert(exc.error_id < size(evaluate_error::dictionary));
+        error_message_template = evaluate_error::dictionary[exc.error_id].second.data();
         break;
     case error_kind::COMPILE_TYPE:
+        assert(exc.error_id < size(compile_type_error::dictionary));
+        error_message_template = compile_type_error::dictionary[exc.error_id].second.data();
         break;
     case error_kind::CORE_MISC:
+        assert(exc.error_id < size(core_misc_error::dictionary));
+        error_message_template = core_misc_error::dictionary[exc.error_id].second.data();
         break;
     }
+    print_error_location(os, exc.location, file_id_to_name);
+    os << ": " << format(error_message_template, exc.params) << "\n";
+    // ignore error message parameters for now
 
     return os;
 }

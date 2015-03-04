@@ -9,15 +9,15 @@ namespace import_export_error
 
 constexpr std::pair<conststr, conststr> dictionary[] =
 {
-    {"import_invalid_argument_number", ""},
-    {"invalid_import_list", ""},
-    {"invalid_from_token", ""},
-    {"invalid_imported_module", ""},
-    {"invalid_imported_identifier", ""},
-    {"import_after_header", ""},
-    {"export_after_header", ""},
-    {"symbol_not_found", ""},
-    {"module_not_found", ""}
+    {"import_invalid_argument_number", "{0}: invalid number of arguments to \'import\': expected 3, got {1}"},
+    {"invalid_import_list", "expected a list (of imports)"},
+    {"invalid_from_token", "expected 'from'"},
+    {"invalid_imported_module", "expected an identifier (module name)"},
+    {"invalid_imported_identifier", "expected an identifier (name of symbol to import)"},
+    {"import_after_header", "import statement after file header not allowed"},
+    {"export_after_header", "export statement after file header not allowed"},
+    {"symbol_not_found", "symbol not found"},
+    {"module_not_found", "module not found"}
 };
 
 constexpr std::size_t id(conststr str)
