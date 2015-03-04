@@ -27,7 +27,7 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"empty_instruction", ""},
     {"invalid_instruction_constructor", ""},
     {"unknown_instruction_constructor", ""},
-    {"instruction_constructor_invalid_argument_number", ""},
+    {"instruction_constructor_invalid_argument_number", "invalid number of arguments to instruction constructor \'{0}\': expected {1}, got {2}"},
     {"invalid_instruction_type_parameter", ""},
     {"invalid_number_type", ""},
     {"invalid_comparison_kind", ""},
