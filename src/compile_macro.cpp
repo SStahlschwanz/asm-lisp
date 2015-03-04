@@ -79,14 +79,12 @@ pair<unique_ptr<Function>, unordered_map<identifier_id_t, named_value_info>> com
     const list_symbol& params_list = params_node.cast_else<list_symbol>([&]()
     {
         fatal<id("invalid_param_list")>(params_node.source());
-        //throw invalid_param_list{params_node.source()};
     });
     
     const symbol& resolved_return_symbol = resolve_refs(return_type_node);
     const type_symbol& return_type = resolved_return_symbol.cast_else<type_symbol>([&]()
     {
         fatal<id("invalid_return_type")>(resolved_return_symbol.source());
-        //throw invalid_return_type{resolved_return_symbol.source()};
     });
     
     vector<named_value_info> arg_infos;
@@ -95,23 +93,19 @@ pair<unique_ptr<Function>, unordered_map<identifier_id_t, named_value_info>> com
         const list_symbol& param_declaration = s.cast_else<list_symbol>([&]()
         {
             fatal<id("invalid_parameter_declaration")>(s.source());
-            //throw invalid_parameter_declaration{s.source()};
         });
         if(param_declaration.size() != 2)
             fatal<id("invalid_parameter_declaration_node_number")>(param_declaration.source());
-            //throw invalid_parameter_declaration_node_number{param_declaration.source()};
         
         const ref_symbol& param_name = param_declaration[0].cast_else<ref_symbol>([&]()
         {
             fatal<id("invalid_parameter_name")>(param_declaration[0].source());
-            //throw invalid_parameter_name{param_declaration[0].source()};
         });
 
         const symbol& resolved_param_type_symbol = resolve_refs(param_declaration[1]);
         const type_symbol& param_type = resolved_param_type_symbol.cast_else<type_symbol>([&]()
         {
             fatal<id("invalid_parameter_type")>(resolved_param_type_symbol.source());
-            //throw invalid_parameter_type{resolved_param_type_symbol.source()};
         });
         arg_infos.push_back(named_value_info{param_declaration, param_name, param_type.llvm_type(), 0});
     }
@@ -136,7 +130,6 @@ pair<unique_ptr<Function>, unordered_map<identifier_id_t, named_value_info>> com
         bool was_inserted;
         tie(ignore, was_inserted) = parameter_table.insert({arg_identifier, *info_it});
         if(!was_inserted)
-            //throw duplicate_parameter_name{info_it->name.source()};
             fatal<id("duplicate_parameter_name")>(info_it->name.source());
     }
     assert(info_it == arg_infos.end());
@@ -164,14 +157,12 @@ instruction_statement compile_number_instruction(const char* name, const list_sy
     const type_symbol& type = get<InstructionType>(result.instruction).type;
     if(!isa<IntegerType>(type.llvm_type()))
         fatal<id("invalid_number_type")>(type.source());
-        //throw invalid_number_type{type.source()};
     return result;
 }
 instruction_statement compile_cmp_instruction(const list_symbol& statement)
 {
     if(statement.size() != 3)
         fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), "cmp", 2, statement.size() - 1);
-        //throw instruction_constructor_invalid_argument_number{statement.source(), "cmp", 2, statement.size() - 1};
 
     const symbol& resolved_first_arg = resolve_refs(statement[1]);
     const symbol& resolved_second_arg = resolve_refs(statement[2]);
@@ -179,7 +170,6 @@ instruction_statement compile_cmp_instruction(const list_symbol& statement)
     const id_symbol& first_arg = resolved_first_arg.cast_else<id_symbol>([&]
     {
         fatal<id("invalid_comparison_kind")>(resolved_first_arg.source());
-        //throw invalid_comparison_kind{resolved_first_arg.source()};
     });
     size_t comparison_kind = first_arg.id();
     const size_t known_comparison_kinds[] =
@@ -193,12 +183,10 @@ instruction_statement compile_cmp_instruction(const list_symbol& statement)
     };
     if(find(begin(known_comparison_kinds), end(known_comparison_kinds), comparison_kind) == end(known_comparison_kinds))
         fatal<id("unknown_comparison_kind")>(resolved_first_arg.source());
-        //throw unknown_comparison_kind{resolved_first_arg.source()};
 
     const type_symbol& second_arg = resolved_second_arg.cast_else<type_symbol>([&]
     {
         fatal<id("invalid_instruction_type_parameter")>(resolved_second_arg.source());
-        //throw invalid_instruction_type_parameter{resolved_second_arg.source()};
     });
 
     return instruction_statement{statement, instruction_statement::cmp{comparison_kind, second_arg}};
@@ -215,7 +203,6 @@ instruction_statement compile_instruction(const symbol& node)
         const id_symbol& instruction_constructor = resolved_instruction_constructor.cast_else<id_symbol>([&]
         {
             fatal<id("invalid_instruction_constructor")>(statement[0].source());
-            //throw invalid_instruction_constructor{statement[0].source()};
         });
         switch(instruction_constructor.id())
         {
@@ -238,7 +225,6 @@ instruction_statement compile_instruction(const symbol& node)
         case unique_ids::COND_BRANCH:
             if(statement.size() != 1)
                 fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), "cond_branch", 0, statement.size() - 1);
-                //throw instruction_constructor_invalid_argument_number{statement.source(), "cond_branch", 0, statement.size() - 1};
             return instruction_statement{statement, instruction_statement::cond_branch{}};
         case unique_ids::CMP:
             return compile_cmp_instruction(statement);
@@ -246,7 +232,6 @@ instruction_statement compile_instruction(const symbol& node)
             throw not_implemented{"instruction"};
         default:
             fatal<id("unknown_instruction_constructor")>(instruction_constructor.source());
-            //throw unknown_instruction_constructor{instruction_constructor.source()};
         }
     }
     else
@@ -279,10 +264,8 @@ struct instruction_call_visitor
             optional<named_value_info> value = lookup_variable(name.identifier());
             if(!value)
                 fatal<id("variable_undefined")>(name.source());
-                //throw variable_undefined{name.source()};
             if(expected_type != value->llvm_value->getType())
                 fatal<id("variable_type_mismatch")>(name.source());
-                //throw variable_type_mismatch{name.source()};
             return value->llvm_value;
         }
         else if(arg_node.is<lit_symbol>())
@@ -290,7 +273,6 @@ struct instruction_call_visitor
             const lit_symbol& lit = arg_node.cast<lit_symbol>();
             if(!isa<IntegerType>(expected_type))
                 fatal<id("invalid_literal_for_type")>(arg_node.source());
-                //throw invalid_literal_for_type{arg_node.source()};
             
             long number;
             try
@@ -308,12 +290,10 @@ struct instruction_call_visitor
             catch(const out_of_range& exc)
             {
                 fatal<id("out_of_range_integer_constant")>(lit.source());
-                //throw out_of_range_integer_constant{lit.source()};
             }
             
             if(!ConstantInt::isValueValidForType(expected_type, number))
                 fatal<id("out_of_range_integer_constant")>(lit.source());
-                //throw out_of_range_integer_constant{lit.source()};
             return ConstantInt::getSigned(expected_type, number);
         }
     }
@@ -322,7 +302,6 @@ struct instruction_call_visitor
     {
         if(distance(args_begin, args_end) != 2)
             fatal<id("invalid_instruction_call_argument_number")>(call_statement.source(), "add", 2, 2);
-            //throw invalid_instruction_call_argument_number{call_statement.source(), "add", 2, 2};
         Value* arg1 = get_value(*args_begin, add.type.llvm_type());
         Value* arg2 = get_value(*(args_begin + 1), add.type.llvm_type());
         return builder.CreateAdd(arg1, arg2);
@@ -352,11 +331,9 @@ optional<named_value_info> compile_statement(const symbol& node, VariableLookupF
     const list_symbol& statement = node.cast_else<list_symbol>([&]
     {
         fatal<id("invalid_statement")>(node.source());
-        //throw invalid_statement{node.source()};
     });
     if(statement.empty())
         fatal<id("empty_statement")>(statement.source());
-        //throw empty_statement{statement.source()};
     
     const symbol& resolved_first_node = resolve_refs(statement[0]);
     // unresolvable first node is an error
@@ -365,17 +342,14 @@ optional<named_value_info> compile_statement(const symbol& node, VariableLookupF
         // this is a "let" statement
         if(statement.size() < 2)
             fatal<id("missing_variable_name")>(statement.source());
-            //throw missing_variable_name{statement.source()};
         const ref_symbol& variable_name = statement[1].cast_else<ref_symbol>([&]
         {
             fatal<id("invalid_variable_name")>(statement[1].source());
-            //throw invalid_variable_name{statement[1].source()};
         });
         list_symbol::const_iterator instr_begin = statement.begin() + 2;
         list_symbol::const_iterator instr_end = statement.end();
         if(instr_begin == instr_end)
             fatal<id("missing_instruction")>(statement.source());
-            //throw missing_instruction{statement.source()};
         Value* value = compile_instruction_call(instr_begin, instr_end, lookup_variable, builder);
         return named_value_info{statement, variable_name, 0, value};
     }
@@ -397,23 +371,19 @@ block_info compile_block(const symbol& block_node, const unordered_map<identifie
     const list_symbol& block_definition = block_node.cast_else<list_symbol>([&]()
     {
         fatal<id("invalid_block_definition")>(block_node.source());
-        //throw invalid_block_definition{block_node.source()};
     });
 
     if(block_definition.size() != 2)
         fatal<id("invalid_block_definition_argument_number")>(block_definition.source());
-        //throw invalid_block_definition_argument_number{block_definition.source()};
     
     const ref_symbol& block_name = block_definition[0].cast_else<ref_symbol>([&]
     {
         fatal<id("invalid_block_name")>(block_definition[0].source());
-        //throw invalid_block_name{block_definition[0].source()};
     });
 
     const list_symbol& block_body = block_definition[1].cast_else<list_symbol>([&]
     {
         fatal<id("invalid_block_body")>(block_definition[1].source());
-        //throw invalid_block_body{block_definition[1].source()};
     });
     
     unique_ptr<BasicBlock> block{BasicBlock::Create(context.llvm(), context.to_string(block_name.identifier()))};
@@ -445,7 +415,6 @@ block_info compile_block(const symbol& block_node, const unordered_map<identifie
             tie(ignore, was_inserted) = local_variable_table.insert({identifier, move(*value)});
             if(!was_inserted)
                 fatal<id("locally_duplicate_variable_name")>(value->name.source());
-                //throw locally_duplicate_variable_name{value->name.source()};
         }
     }
 }
@@ -508,7 +477,6 @@ macro_symbol compile_macro(list_symbol::const_iterator begin, list_symbol::const
 {
     if(distance(begin, end) != 3)
         fatal<id("invalid_argument_number")>(blank());
-        //throw invalid_argument_number{};
     
     unique_ptr<Function> function;
     unordered_map<identifier_id_t, named_value_info> parameter_table;
