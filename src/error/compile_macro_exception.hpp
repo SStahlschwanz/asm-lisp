@@ -179,6 +179,111 @@ struct unknown_comparison_kind
       : compile_macro_exception{"compile_macro_unknown_comparioon_kind", to_error_parameter(src)}
     {}
 };
+struct invalid_block_name
+  : compile_macro_exception
+{
+    invalid_block_name(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_invalid_block_name", to_error_parameter(src)}
+    {}
+};
+struct invalid_block_body
+  : compile_macro_exception
+{
+    invalid_block_body(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_invalid_block_body", to_error_parameter(src)}
+    {}
+};
+struct empty_statement
+  : compile_macro_exception
+{
+    empty_statement(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_empty_statement", to_error_parameter(src)}
+    {}
+};
+struct let_invalid_argument_number
+  : compile_macro_exception
+{
+    let_invalid_argument_number(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_let_invalid_argument_number", to_error_parameter(src)}
+    {}
+};
+struct invalid_variable_name
+  : compile_macro_exception
+{
+    invalid_variable_name(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_invalid_variable_name", to_error_parameter(src)}
+    {}
+};
+struct invalid_statement
+  : compile_macro_exception
+{
+    invalid_statement(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_invalid_statement", to_error_parameter(src)}
+    {}
+};
+struct missing_variable_name
+  : compile_macro_exception
+{
+    missing_variable_name(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_missing_variable_name", to_error_parameter(src)}
+    {}
+};
+struct missing_instruction
+  : compile_macro_exception
+{
+    missing_instruction(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_missing_instruction", to_error_parameter(src)}
+    {}
+};
+struct locally_duplicate_variable_name
+  : compile_macro_exception
+{
+    locally_duplicate_variable_name(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_locally_duplicate_variable_name", to_error_parameter(src)}
+    {}
+};
+struct invalid_instruction_call_argument_number
+  : compile_macro_exception
+{
+    invalid_instruction_call_argument_number(const symbol_source& src, const char* name, size_t expected_number, size_t got_number)
+      : compile_macro_exception{"compile_macro_locally_invalid_instruction_call_argument_number", to_error_parameter(src), std::string{name}, expected_number, got_number}
+    {}
+};
+struct variable_undefined
+  : compile_macro_exception
+{
+    variable_undefined(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_variable_undefined", to_error_parameter(src)}
+    {}
+};
+struct variable_type_mismatch
+  : compile_macro_exception
+{
+    variable_type_mismatch(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_variable_type_mismatch", to_error_parameter(src)}
+    {}
+};
+struct invalid_literal_for_type
+  : compile_macro_exception
+{
+    invalid_literal_for_type(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_invalid_literal_for_type", to_error_parameter(src)}
+    {}
+};
+struct invalid_integer_constant
+  : compile_macro_exception
+{
+    invalid_integer_constant(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_invalid_integer_constant", to_error_parameter(src)}
+    {}
+};
+struct out_of_range_integer_constant
+  : compile_macro_exception
+{
+    out_of_range_integer_constant(const symbol_source& src)
+      : compile_macro_exception{"compile_macro_out_of_range_integer_constant", to_error_parameter(src)}
+    {}
+};
 
 }
 

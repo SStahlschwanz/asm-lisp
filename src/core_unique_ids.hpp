@@ -28,6 +28,8 @@ enum
     GT,
     GE,
 
+    LET,
+
     FIRST_UNUSED
 };
 

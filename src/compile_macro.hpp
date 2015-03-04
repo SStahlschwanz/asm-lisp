@@ -14,19 +14,20 @@ macro_symbol compile_macro(list_symbol::const_iterator begin, list_symbol::const
 
 namespace llvm
 {
-struct Value;
-struct Function;
+class Value;
+class Function;
+class Type;
 }
 
-struct value_info
+struct named_value_info
 {
     const list_symbol& definition;
     const ref_symbol& name;
-    const type_symbol& type;
+    llvm::Type* llvm_type;
     llvm::Value* llvm_value;
 };
 
-std::pair<std::unique_ptr<llvm::Function>, std::unordered_map<identifier_id_t, value_info>> compile_signature(const symbol& params_node, const symbol& return_type_node, compilation_context& context);
+std::pair<std::unique_ptr<llvm::Function>, std::unordered_map<identifier_id_t, named_value_info>> compile_signature(const symbol& params_node, const symbol& return_type_node, compilation_context& context);
 
 
 struct instruction_statement
@@ -94,6 +95,9 @@ struct instruction_statement
 };
 
 instruction_statement compile_instruction(const symbol& node);
+
+
+named_value_info compile_named_statement(const symbol& node);
 
 #endif
 

@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(compile_signature_test)
     const any_symbol return_type1 = int64_type;
     
     unique_ptr<Function> function1;
-    unordered_map<identifier_id_t, value_info> parameter_table1;
+    unordered_map<identifier_id_t, named_value_info> parameter_table1;
     tie(function1, parameter_table1) = compile_signature(params1, return_type1, context);
     
     BOOST_CHECK(function1 != nullptr);
