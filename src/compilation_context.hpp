@@ -48,7 +48,9 @@ private:
     std::unordered_map<std::string, identifier_id_t> identifier_table;
     //std::unique_ptr<llvm::Module> macro_module;
     llvm::Module* macro_module;
-    std::unique_ptr<llvm::ExecutionEngine> execution_engine;
+    llvm::ExecutionEngine* execution_engine;
+
+    void llvm_init();
 };
 
 #endif
