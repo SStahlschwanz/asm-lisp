@@ -74,7 +74,7 @@ const symbol& resolve_refs(const symbol& s)
 }
 
 
-pair<unique_ptr<Function>, unordered_map<identifier_id_t, named_value_info>> compile_signature(const symbol& params_node, const symbol& return_type_node, compilation_context& context)
+pair<Function*, unordered_map<identifier_id_t, named_value_info>> compile_signature(const symbol& params_node, const symbol& return_type_node, compilation_context& context)
 {
     const list_symbol& params_list = params_node.cast_else<list_symbol>([&]()
     {
@@ -116,7 +116,8 @@ pair<unique_ptr<Function>, unordered_map<identifier_id_t, named_value_info>> com
         arg_types.push_back(info.llvm_type);
     
     FunctionType* function_type = FunctionType::get(return_type.llvm_type(), arg_types, false);
-    unique_ptr<Function> function{Function::Create(function_type, Function::ExternalLinkage)};
+    Function* function = Function::Create(function_type, Function::InternalLinkage, "macro", &context.llvm_macro_module());
+    //unique_ptr<Function> function{Function::Create(function_type, Function::InternalLinkage)};
     unordered_map<identifier_id_t, named_value_info> parameter_table;
     
     auto arg_it = function->arg_begin();
@@ -296,20 +297,61 @@ struct instruction_call_visitor
                 fatal<id("out_of_range_integer_constant")>(lit.source());
             return ConstantInt::getSigned(expected_type, number);
         }
+        else
+            fatal<id("invalid_value")>(arg_node.source());
     }
-
-    Value* operator()(const instruction_statement::add& add)
+    
+    void check_arity(const char* instruction_name, size_t expected_argument_number)
     {
-        if(distance(args_begin, args_end) != 2)
-            fatal<id("invalid_instruction_call_argument_number")>(call_statement.source(), "add", 2, 2);
-        Value* arg1 = get_value(*args_begin, add.type.llvm_type());
-        Value* arg2 = get_value(*(args_begin + 1), add.type.llvm_type());
+        size_t argument_number = distance(args_begin, args_end);
+        if(argument_number != expected_argument_number)
+            fatal<id("invalid_instruction_call_argument_number")>(call_statement.source(), instruction_name, expected_argument_number, argument_number);
+    }
+    Value* operator()(const instruction_statement::add& inst)
+    {
+        check_arity("add", 2);
+        Value* arg1 = get_value(*args_begin, inst.type.llvm_type());
+        Value* arg2 = get_value(*(args_begin + 1), inst.type.llvm_type());
         return builder.CreateAdd(arg1, arg2);
     }
+    Value* operator()(const instruction_statement::sub& inst)
+    {
+        check_arity("sub", 2);
+        Value* arg1 = get_value(*args_begin, inst.type.llvm_type());
+        Value* arg2 = get_value(*(args_begin + 1), inst.type.llvm_type());
+        return builder.CreateSub(arg1, arg2);
+    }
+    Value* operator()(const instruction_statement::mul& inst)
+    {
+        check_arity("mul", 2);
+        Value* arg1 = get_value(*args_begin, inst.type.llvm_type());
+        Value* arg2 = get_value(*(args_begin + 1), inst.type.llvm_type());
+        return builder.CreateMul(arg1, arg2);
+    }
+    Value* operator()(const instruction_statement::div& inst)
+    {
+        check_arity("div", 2);
+        Value* arg1 = get_value(*args_begin, inst.type.llvm_type());
+        Value* arg2 = get_value(*(args_begin + 1), inst.type.llvm_type());
+        return builder.CreateSDiv(arg1, arg2);
+    }
 
+    Value* operator()(const instruction_statement::alloc& inst)
+    {
+        check_arity("alloc", 0);
+        return builder.CreateAlloca(inst.type.llvm_type());
+    }
+
+    Value* operator()(const instruction_statement::return_inst& inst)
+    {
+        check_arity("return", 1);
+        Value* arg = get_value(*args_begin, inst.type.llvm_type());
+        return builder.CreateRet(arg);
+    }
     template<class T>
     Value* operator()(const T& obj)
     {
+        assert(false);
         return nullptr;
     }
 };
@@ -354,7 +396,10 @@ optional<named_value_info> compile_statement(const symbol& node, VariableLookupF
         return named_value_info{statement, variable_name, 0, value};
     }
     else
+    {
         compile_instruction_call(statement.begin(), statement.end(), lookup_variable, builder);
+        return none;
+    }
 }
 
 struct block_info
@@ -366,7 +411,7 @@ struct block_info
 };
 
 
-block_info compile_block(const symbol& block_node, const unordered_map<identifier_id_t, named_value_info>& global_variable_table, compilation_context& context)
+pair<block_info, unique_ptr<BasicBlock>> compile_block(const symbol& block_node, const unordered_map<identifier_id_t, named_value_info>& global_variable_table, compilation_context& context)
 {
     const list_symbol& block_definition = block_node.cast_else<list_symbol>([&]()
     {
@@ -399,7 +444,7 @@ block_info compile_block(const symbol& block_node, const unordered_map<identifie
 
         // search in local variables
         auto find_it2 = local_variable_table.find(identifier);
-        if(find_it1 != local_variable_table.end())
+        if(find_it2 != local_variable_table.end())
             return find_it2->second;
 
         return none;
@@ -417,14 +462,20 @@ block_info compile_block(const symbol& block_node, const unordered_map<identifie
                 fatal<id("locally_duplicate_variable_name")>(value->name.source());
         }
     }
+    
+    block_info info{block_name, move(local_variable_table), false, block.get()};
+    return {move(info), move(block)};
 }
-/*
+
+
 void compile_body(const symbol& body_node, Function& function, unordered_map<identifier_id_t, named_value_info> parameter_table, compilation_context& context)
 {
-    const list_symbol& block_list = body_node.cast_else<list_symbol>(
-            invalid_block_list{body_node});
+    const list_symbol& block_list = body_node.cast_else<list_symbol>([&]
+    {
+        fatal<id("invalid_block_list")>(body_node.source());
+    });
     if(block_list.empty())
-        throw empty_body{block_list};
+        fatal<id("empty_body")>(block_list.source());
     
     unordered_map<identifier_id_t, named_value_info>& function_global_variables = parameter_table;
     unordered_map<identifier_id_t, block_info> block_map;
@@ -435,11 +486,11 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<ide
         for(const auto& p : variable_table)
         {
             identifier_id_t variable_name = p.first;
-            const named_value_info& value_info = p.second;
+            const named_value_info& info = p.second;
             // check in function global variables
             auto global_table_it = function_global_variables.find(variable_name);
             if(global_table_it != function_global_variables.end())
-                throw duplicate_variable_name{value_info.name.source()};
+                fatal<id("duplicate_variable_name")>(info.name.source());
             
             // check in other blocks
             for(const auto& other_block_p : block_map)
@@ -447,42 +498,44 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<ide
                 const block_info& other_block = other_block_p.second;
                 auto table_it = other_block.variable_table.find(variable_name);
                 if(table_it != other_block.variable_table.end())
-                    throw duplicate_variable_name{value_info.name.source()};
+                    fatal<id("duplicate_variable_name")>(info.name.source());
             }
         }
     };
-
-    auto block_node_it = block_list.begin();
-    block_info entry_block = compile_block(*block_node_it, function_global_variables, context);
-    check_for_duplicates(entry_block.variable_table);
-    function_global_variables.insert(entry_block.variable_table.begin(), entry_block.variable_table.end());
-    entry_block.is_entry_block = true;
-    identifier_id_t first_block_name = entry_block.block_name.identifier();
-    block_map.insert({first_block_name, move(entry_block)});
-    ++block_node_it;
-
-    for( ; block_node_it != block_list.end(); ++block_node_it)
+    
+    bool is_first_iteration = true;
+    for(const symbol& block_node : block_list)
     {
-        block_info block = compile_block(*block_node_it, function_global_variables, context);
+        pair<block_info, unique_ptr<BasicBlock>> block_p = compile_block(block_node, function_global_variables, context);
+        block_info& block = block_p.first;
         check_for_duplicates(block.variable_table);
-        block.is_entry_block = false;
-        bool was_inserted;
-        tie(ignore, was_inserted) = block_map.insert({block.block_name.identifier(), move(block)});
-        if(!was_inserted)
-            throw duplicate_block_name{block.block_name.source()};
+        if(is_first_iteration)
+        {
+            block.is_entry_block = true;
+            function_global_variables.insert(block.variable_table.begin(), block.variable_table.end());
+            is_first_iteration = false;
+        }
+        
+        identifier_id_t block_name = block.block_name.identifier();
+        function.getBasicBlockList().push_back(block.llvm_block);
+        block_map.insert({block_name, move(block)});
+        block_p.second.release();
     }
 }
-*/
-macro_symbol compile_macro(list_symbol::const_iterator begin, list_symbol::const_iterator end, compilation_context& context)
+
+llvm::Function* compile_macro(list_symbol::const_iterator begin, list_symbol::const_iterator end, compilation_context& context)
 {
     if(distance(begin, end) != 3)
         fatal<id("invalid_argument_number")>(blank());
     
-    unique_ptr<Function> function;
+    Function* function;
+    //unique_ptr<Function> function;
     unordered_map<identifier_id_t, named_value_info> parameter_table;
     tie(function, parameter_table) = compile_signature(*begin, *(begin + 1), context);
     
-    //const symbol& body_node = *(begin + 2);
-    //compile_body(body_node, *function, move(parameter_table), context);
+    const symbol& body_node = *(begin + 2);
+    compile_body(body_node, *function, move(parameter_table), context);
+    //verifyFunction(*function);
+    return function;
 }
 

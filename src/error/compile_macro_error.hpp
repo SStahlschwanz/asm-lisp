@@ -41,12 +41,13 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"missing_variable_name", ""},
     {"missing_instruction", ""},
     {"locally_duplicate_variable_name", ""},
-    {"invalid_instruction_call_argument_number", ""},
+    {"invalid_instruction_call_argument_number", "invalid number of arguments for instruction '{0}': expected '{1}', got '{2}'"},
     {"variable_undefined", ""},
     {"variable_type_mismatch", ""},
     {"invalid_literal_for_type", ""},
     {"invalid_integer_constant", ""},
-    {"out_of_range_integer_constant", ""}
+    {"out_of_range_integer_constant", ""},
+    {"invalid_value", ""}
 };
 
 constexpr std::size_t id(conststr str)

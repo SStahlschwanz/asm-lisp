@@ -8,16 +8,17 @@
 #include <memory>
 #include <unordered_map>
 
-macro_symbol compile_macro(list_symbol::const_iterator begin, list_symbol::const_iterator end, compilation_context& context);
-
-// in header because of unit test:
-
 namespace llvm
 {
 class Value;
 class Function;
 class Type;
 }
+
+llvm::Function* compile_macro(list_symbol::const_iterator begin, list_symbol::const_iterator end, compilation_context& context);
+
+// in header because of unit test:
+
 
 struct named_value_info
 {
@@ -27,7 +28,7 @@ struct named_value_info
     llvm::Value* llvm_value;
 };
 
-std::pair<std::unique_ptr<llvm::Function>, std::unordered_map<identifier_id_t, named_value_info>> compile_signature(const symbol& params_node, const symbol& return_type_node, compilation_context& context);
+std::pair<llvm::Function*, std::unordered_map<identifier_id_t, named_value_info>> compile_signature(const symbol& params_node, const symbol& return_type_node, compilation_context& context);
 
 
 struct instruction_statement
@@ -93,7 +94,7 @@ struct instruction_statement
         call
     > instruction;
 };
-
+;
 instruction_statement compile_instruction(const symbol& node);
 
 

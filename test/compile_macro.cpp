@@ -11,6 +11,7 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Value.h>
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
 
 #include <memory>
 #include <unordered_map>
@@ -36,7 +37,7 @@ typedef ref_symbol ref;
 typedef list_symbol list;
 
 
-
+/*
 BOOST_AUTO_TEST_CASE(compile_signature_test)
 {
     const type_symbol int64_type{IntegerType::get(context.llvm(), 64)};
@@ -53,7 +54,7 @@ BOOST_AUTO_TEST_CASE(compile_signature_test)
     };
     const any_symbol return_type1 = int64_type;
     
-    unique_ptr<Function> function1;
+    Function* function1;
     unordered_map<identifier_id_t, named_value_info> parameter_table1;
     tie(function1, parameter_table1) = compile_signature(params1, return_type1, context);
     
@@ -97,5 +98,51 @@ BOOST_AUTO_TEST_CASE(compile_instruction_test)
     const instruction_statement got3 = compile_instruction(instruction3);
     BOOST_CHECK(get<instruction_statement::cmp>(got3.instruction).cmp_kind == unique_ids::LT);
     BOOST_CHECK(get<instruction_statement::cmp>(got3.instruction).type == int64_type);
+}
+*/
+BOOST_AUTO_TEST_CASE(compile_macro_test)
+{
+    const type_symbol int64_type{IntegerType::get(context.llvm(), 64)};
+    const ref a{"a"_id};
+    const ref b{"b"_id};
+    const ref c{"c"_id};
+    
+    const list_symbol params =
+    {
+        list{a, int64_type},
+        list{b, int64_type},
+        list{c, int64_type}
+    };
+    const type_symbol return_type = int64_type;
+    
+    const list_symbol add_int64 = {id_symbol{unique_ids::ADD}, int64_type};
+    const list_symbol sub_int64 = {id_symbol{unique_ids::SUB}, int64_type};
+    const id_symbol let{unique_ids::LET};
+    const ref block1{"block1"_id};
+    const ref d{"d"_id};
+    const ref e{"e"_id};
+    const list_symbol return_int64 = {id_symbol{unique_ids::RETURN}, int64_type};
+    const list_symbol body =
+    {
+        list{block1, list
+        {
+            list{let, d, add_int64, a, b},
+            list{let, e, sub_int64, d, c},
+            list{return_int64, e}
+        }}
+    };
+    const list_symbol macro =
+    {
+        params,
+        return_type,
+        body
+    };
+
+    Function* function = compile_macro(macro.begin(), macro.end(), context);
+    function->dump();
+    /*
+    void* compiled_func = context.llvm_execution_engine().getPointerToFunction(function);
+    BOOST_CHECK(compiled_func);
+    */
 }
 
