@@ -49,6 +49,7 @@ using llvm::isa;
 using llvm::IntegerType;
 using llvm::IRBuilder;
 using llvm::ConstantInt;
+using llvm::PointerType;
 
 using boost::get;
 using boost::apply_visitor;
@@ -340,6 +341,45 @@ struct instruction_call_visitor
     {
         check_arity("alloc", 0);
         return builder.CreateAlloca(inst.type.llvm_type());
+    }
+    Value* operator()(const instruction_statement::store& inst)
+    {
+        check_arity("store", 2);
+        Value* arg1 = get_value(*args_begin, inst.type.llvm_type());
+        Type* ptr_type = PointerType::getUnqual(inst.type.llvm_type());
+        Value* arg2 = get_value(*(args_begin + 1), ptr_type);
+        return builder.CreateStore(arg1, arg2);
+    }
+    Value* operator()(const instruction_statement::load& inst)
+    {
+        check_arity("load", 1);
+        Type* ptr_type = PointerType::getUnqual(inst.type.llvm_type());
+        Value* arg = get_value(*args_begin, ptr_type);
+        return builder.CreateLoad(arg);
+    }
+    Value* operator()(const instruction_statement::cmp& inst)
+    {
+        check_arity("cmp", 2);
+        Value* arg1 = get_value(*args_begin, inst.type.llvm_type());
+        Value* arg2 = get_value(*(args_begin + 1), inst.type.llvm_type());
+        switch(inst.cmp_kind)
+        {
+        case unique_ids::EQ:
+            return builder.CreateICmpEQ(arg1, arg2);
+        case unique_ids::NE:
+            return builder.CreateICmpNE(arg1, arg2);
+        case unique_ids::LT:
+            return builder.CreateICmpSLT(arg1, arg2);
+        case unique_ids::LE:
+            return builder.CreateICmpSLE(arg1, arg2);
+        case unique_ids::GT:
+            return builder.CreateICmpSGT(arg1, arg2);
+        case unique_ids::GE:
+            return builder.CreateICmpSGE(arg1, arg2);
+        default:
+            assert(false);
+            return nullptr;
+        }
     }
 
     Value* operator()(const instruction_statement::return_inst& inst)

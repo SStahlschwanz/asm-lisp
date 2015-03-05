@@ -104,6 +104,7 @@ BOOST_AUTO_TEST_CASE(compile_instruction_test)
 BOOST_AUTO_TEST_CASE(compile_macro_test)
 {
     const type_symbol int64_type{IntegerType::get(context.llvm(), 64)};
+    const type_symbol int1_type{IntegerType::get(context.llvm(), 1)};
     const ref a{"a"_id};
     const ref b{"b"_id};
     const ref c{"c"_id};
@@ -114,7 +115,7 @@ BOOST_AUTO_TEST_CASE(compile_macro_test)
         list{b, int64_type},
         list{c, int64_type}
     };
-    const type_symbol return_type = int64_type;
+    const type_symbol return_type = int1_type;
     
     const list_symbol add_int64 = {id_symbol{unique_ids::ADD}, int64_type};
     const list_symbol sub_int64 = {id_symbol{unique_ids::SUB}, int64_type};
@@ -122,17 +123,20 @@ BOOST_AUTO_TEST_CASE(compile_macro_test)
     const ref block1{"block1"_id};
     const ref d{"d"_id};
     const ref e{"e"_id};
-    const ref k{"k"_id};
-    const list_symbol return_int64 = {id_symbol{unique_ids::RETURN}, int64_type};
+    const ref f{"f"_id};
+    const ref g{"g"_id};
+    const list_symbol return_int1 = {id_symbol{unique_ids::RETURN}, int1_type};
     const list_symbol alloc_int64 = {id_symbol{unique_ids::ALLOC}, int64_type};
+    const list_symbol cmp_eq_int64 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::EQ}, int64_type};
     const list_symbol body =
     {
         list{block1, list
         {
             list{let, d, add_int64, a, b},
             list{let, e, add_int64, d, c},
-            list{let, k, alloc_int64},
-            list{return_int64, e}
+            list{let, f, alloc_int64},
+            list{let, g, cmp_eq_int64, a, b},
+            list{return_int1, g}
         }}
     };
     const list_symbol macro =
@@ -143,10 +147,10 @@ BOOST_AUTO_TEST_CASE(compile_macro_test)
     };
 
     Function* function = compile_macro(macro.begin(), macro.end(), context);
-    auto fptr = (uint64_t (*)(uint64_t, uint64_t, uint64_t)) context.llvm_execution_engine().getPointerToFunction(function);
+    auto fptr = (bool (*)(uint64_t, uint64_t, uint64_t)) context.llvm_execution_engine().getPointerToFunction(function);
 
     BOOST_CHECK(fptr);
-    std::cout << fptr(2, 5, 9) << std::endl;
+    std::cout << fptr(2, 2, 9) << std::endl;
     function->dump();
     /*
     void* compiled_func = context.llvm_execution_engine().getPointerToFunction(function);
