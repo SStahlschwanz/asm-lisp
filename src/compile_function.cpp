@@ -2,6 +2,7 @@
 #include "error/compile_macro_error.hpp"
 #include "error/core_misc_error.hpp"
 #include "core_unique_ids.hpp"
+#include "boost_variant_utils.hpp"
 
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/DerivedTypes.h>
@@ -235,24 +236,20 @@ instruction_statement compile_instruction(const symbol& node)
 }
 
 template<class VariableLookupFunctor>
-struct instruction_call_visitor
-  : static_visitor<Value*>
+pair<Value*, optional<incomplete_statement>> compile_instruction_call(list_symbol::const_iterator begin, list_symbol::const_iterator end, VariableLookupFunctor&& lookup_variable, IRBuilder<>& builder)
 {
-    VariableLookupFunctor& lookup_variable;
-    IRBuilder<>& builder;
-    list_symbol::const_iterator args_begin;
-    list_symbol::const_iterator args_end;
-    const symbol& call_statement;
+    assert(begin != end);
+    instruction_statement instruction = compile_instruction(*begin);
+    ++begin;
 
-    instruction_call_visitor(VariableLookupFunctor& lookup_variable, IRBuilder<>& builder, list_symbol::const_iterator args_begin, list_symbol::const_iterator args_end, const symbol& call_statement)
-      : lookup_variable(lookup_variable),
-        builder(builder),
-        args_begin(args_begin),
-        args_end(args_end),
-        call_statement(call_statement)
-    {}
+    size_t argument_number = distance(begin, end);
+    auto check_arity = [&](const char* instruction_name, size_t expected_argument_number)
+    {
+        if(argument_number != expected_argument_number)
+            fatal<id("invalid_instruction_call_argument_number")>(instruction.statement.source(), instruction_name, expected_argument_number, argument_number);
+    };
     
-    Value* get_value(const symbol& arg_node, Type* expected_type)
+    auto get_value = [&](const symbol& arg_node, Type* expected_type) -> Value*
     {
         if(arg_node.is<ref_symbol>())
         {
@@ -294,115 +291,96 @@ struct instruction_call_visitor
         }
         else
             fatal<id("invalid_value")>(arg_node.source());
-    }
+    };
     
-    void check_arity(const char* instruction_name, size_t expected_argument_number)
-    {
-        size_t argument_number = distance(args_begin, args_end);
-        if(argument_number != expected_argument_number)
-            fatal<id("invalid_instruction_call_argument_number")>(call_statement.source(), instruction_name, expected_argument_number, argument_number);
-    }
-    Value* operator()(const instruction_statement::add& inst)
+    typedef pair<Value*, optional<incomplete_statement>> return_type;
+    return visit<return_type>(instruction.instruction,
+    [&](const instruction_statement::add& inst) -> return_type
     {
         check_arity("add", 2);
-        Value* arg1 = get_value(*args_begin, inst.type.llvm_type());
-        Value* arg2 = get_value(*(args_begin + 1), inst.type.llvm_type());
-        return builder.CreateAdd(arg1, arg2);
-    }
-    Value* operator()(const instruction_statement::sub& inst)
+        Value* arg1 = get_value(*begin, inst.type.llvm_type());
+        Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type());
+        return {builder.CreateAdd(arg1, arg2), none};
+    },
+    [&](const instruction_statement::sub& inst) -> return_type
     {
         check_arity("sub", 2);
-        Value* arg1 = get_value(*args_begin, inst.type.llvm_type());
-        Value* arg2 = get_value(*(args_begin + 1), inst.type.llvm_type());
-        return builder.CreateSub(arg1, arg2);
-    }
-    Value* operator()(const instruction_statement::mul& inst)
+        Value* arg1 = get_value(*begin, inst.type.llvm_type());
+        Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type());
+        return {builder.CreateSub(arg1, arg2), none};
+    },
+    [&](const instruction_statement::mul& inst) -> return_type
     {
         check_arity("mul", 2);
-        Value* arg1 = get_value(*args_begin, inst.type.llvm_type());
-        Value* arg2 = get_value(*(args_begin + 1), inst.type.llvm_type());
-        return builder.CreateMul(arg1, arg2);
-    }
-    Value* operator()(const instruction_statement::div& inst)
+        Value* arg1 = get_value(*begin, inst.type.llvm_type());
+        Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type());
+        return {builder.CreateMul(arg1, arg2), none};
+    },
+    [&](const instruction_statement::div& inst) -> return_type
     {
         check_arity("div", 2);
-        Value* arg1 = get_value(*args_begin, inst.type.llvm_type());
-        Value* arg2 = get_value(*(args_begin + 1), inst.type.llvm_type());
-        return builder.CreateSDiv(arg1, arg2);
-    }
-
-    Value* operator()(const instruction_statement::alloc& inst)
+        Value* arg1 = get_value(*begin, inst.type.llvm_type());
+        Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type());
+        return {builder.CreateSDiv(arg1, arg2), none};
+    },
+    [&](const instruction_statement::alloc& inst) -> return_type
     {
         check_arity("alloc", 0);
-        return builder.CreateAlloca(inst.type.llvm_type());
-    }
-    Value* operator()(const instruction_statement::store& inst)
+        return {builder.CreateAlloca(inst.type.llvm_type()), none};
+    },
+    [&](const instruction_statement::store& inst) -> return_type
     {
         check_arity("store", 2);
-        Value* arg1 = get_value(*args_begin, inst.type.llvm_type());
+        Value* arg1 = get_value(*begin, inst.type.llvm_type());
         Type* ptr_type = PointerType::getUnqual(inst.type.llvm_type());
-        Value* arg2 = get_value(*(args_begin + 1), ptr_type);
-        return builder.CreateStore(arg1, arg2);
-    }
-    Value* operator()(const instruction_statement::load& inst)
+        Value* arg2 = get_value(*(begin + 1), ptr_type);
+        return {builder.CreateStore(arg1, arg2), none};
+    },
+    [&](const instruction_statement::load& inst) -> return_type
     {
         check_arity("load", 1);
         Type* ptr_type = PointerType::getUnqual(inst.type.llvm_type());
-        Value* arg = get_value(*args_begin, ptr_type);
-        return builder.CreateLoad(arg);
-    }
-    Value* operator()(const instruction_statement::cmp& inst)
+        Value* arg = get_value(*begin, ptr_type);
+        return {builder.CreateLoad(arg), none};
+    },
+    [&](const instruction_statement::cmp& inst) -> return_type
     {
         check_arity("cmp", 2);
-        Value* arg1 = get_value(*args_begin, inst.type.llvm_type());
-        Value* arg2 = get_value(*(args_begin + 1), inst.type.llvm_type());
+        Value* arg1 = get_value(*begin, inst.type.llvm_type());
+        Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type());
         switch(inst.cmp_kind)
         {
         case unique_ids::EQ:
-            return builder.CreateICmpEQ(arg1, arg2);
+            return {builder.CreateICmpEQ(arg1, arg2), none};
         case unique_ids::NE:
-            return builder.CreateICmpNE(arg1, arg2);
+            return {builder.CreateICmpNE(arg1, arg2), none};
         case unique_ids::LT:
-            return builder.CreateICmpSLT(arg1, arg2);
+            return {builder.CreateICmpSLT(arg1, arg2), none};
         case unique_ids::LE:
-            return builder.CreateICmpSLE(arg1, arg2);
+            return {builder.CreateICmpSLE(arg1, arg2), none};
         case unique_ids::GT:
-            return builder.CreateICmpSGT(arg1, arg2);
+            return {builder.CreateICmpSGT(arg1, arg2), none};
         case unique_ids::GE:
-            return builder.CreateICmpSGE(arg1, arg2);
+            return {builder.CreateICmpSGE(arg1, arg2), none};
         default:
             assert(false);
-            return nullptr;
+            return {nullptr, none};
         }
-    }
-
-    Value* operator()(const instruction_statement::return_inst& inst)
+    }, 
+    [&](const instruction_statement::return_inst& inst) -> return_type
     {
         check_arity("return", 1);
-        Value* arg = get_value(*args_begin, inst.type.llvm_type());
-        return builder.CreateRet(arg);
-    }
-    template<class T>
-    Value* operator()(const T& obj)
+        Value* arg = get_value(*begin, inst.type.llvm_type());
+        return {builder.CreateRet(arg), none};
+    },
+    [&](const auto& obj) -> return_type
     {
         assert(false);
-        return nullptr;
-    }
-};
-
-template<class VariableLookupFunctor>
-Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::const_iterator end, VariableLookupFunctor&& lookup_variable, IRBuilder<>& builder)
-{
-    assert(begin != end);
-    instruction_statement instruction = compile_instruction(*begin);
-    ++begin;
-    typedef typename std::remove_reference<VariableLookupFunctor>::type resolved_functor_type;
-    instruction_call_visitor<resolved_functor_type> visitor{lookup_variable, builder, begin, end, instruction.statement};
-    return apply_visitor(visitor, instruction.instruction);
+    });
 }
 
 template<class VariableLookupFunctor>
-optional<named_value_info> compile_statement(const symbol& node, VariableLookupFunctor&& lookup_variable, IRBuilder<>& builder)
+pair<optional<named_value_info>, optional<incomplete_statement>> compile_statement(const symbol& node, VariableLookupFunctor&& lookup_variable, IRBuilder<>& builder)
 {
     const list_symbol& statement = node.cast_else<list_symbol>([&]
     {
@@ -426,14 +404,14 @@ optional<named_value_info> compile_statement(const symbol& node, VariableLookupF
         list_symbol::const_iterator instr_end = statement.end();
         if(instr_begin == instr_end)
             fatal<id("missing_instruction")>(statement.source());
-        Value* value = compile_instruction_call(instr_begin, instr_end, lookup_variable, builder);
-        return named_value_info{statement, variable_name, value};
+        auto p = compile_instruction_call(instr_begin, instr_end, lookup_variable, builder);
+        Value* value = p.first;
+        optional<incomplete_statement>& incomplete = p.second;
+        return {named_value_info{statement, variable_name, value}, incomplete};
     }
-    else
-    {
-        compile_instruction_call(statement.begin(), statement.end(), lookup_variable, builder);
-        return none;
-    }
+    
+    compile_instruction_call(statement.begin(), statement.end(), lookup_variable, builder);
+    return {none, none};
 }
 
 
@@ -478,7 +456,9 @@ pair<block_info, unique_ptr<BasicBlock>> compile_block(const symbol& block_node,
 
     for(const symbol& s : block_body)
     {
-        optional<named_value_info> value = compile_statement(s, lookup_variable, builder);
+        auto p = compile_statement(s, lookup_variable, builder);
+        optional<named_value_info>& value = p.first;
+        optional<incomplete_statement>& incomplete = p.second;
         if(value)
         {
             identifier_id_t identifier = value->name.identifier();

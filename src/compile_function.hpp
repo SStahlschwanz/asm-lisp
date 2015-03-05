@@ -123,9 +123,28 @@ struct instruction_statement
     > instruction;
 };
 
+struct incomplete_cond_branch
+{
+    llvm::BranchInst* val;
+    const ref_symbol& true_block_name;
+    const ref_symbol& false_block_name;
+};
+struct incomplete_phi
+{
+    llvm::PHINode* val;
+    struct incoming
+    {
+        const ref_symbol& block_name;
+        const ref_symbol& variable_name;
+    };
+    std::vector<std::pair<const ref_symbol&, const ref_symbol&>> incoming;
+};
+
+typedef boost::variant<incomplete_cond_branch, incomplete_phi> incomplete_statement;
+
 instruction_statement compile_instruction(const symbol& node);
 template<class VariableLookupFunctor>
-boost::optional<named_value_info> compile_statement(const symbol& node, VariableLookupFunctor&& lookup_variable, llvm::IRBuilder<>& builder);
+std::pair<boost::optional<named_value_info>, boost::optional<incomplete_statement>> compile_statement(const symbol& node, VariableLookupFunctor&& lookup_variable, llvm::IRBuilder<>& builder);
 
 struct block_info
 {
