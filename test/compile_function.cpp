@@ -1,8 +1,8 @@
 #define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE compile_macro
+#define BOOST_TEST_MODULE compile_function
 #include <boost/test/unit_test.hpp>
 
-#include "../src/compile_macro.hpp"
+#include "../src/compile_function.hpp"
 #include "../src/core_unique_ids.hpp"
 #include "../src/error/compile_exception.hpp"
 
@@ -12,6 +12,7 @@
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Value.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/IR/Module.h>
 
 #include <memory>
 #include <unordered_map>
@@ -19,6 +20,8 @@
 #include <iterator>
 
 using std::pair;
+using std::tie;
+using std::ignore;
 using std::unique_ptr;
 using std::unordered_map;
 using std::advance;
@@ -38,7 +41,7 @@ typedef list_symbol list;
 
 
 #include <iostream>
-/*
+
 BOOST_AUTO_TEST_CASE(compile_signature_test)
 {
     const type_symbol int64_type{IntegerType::get(context.llvm(), 64)};
@@ -55,7 +58,7 @@ BOOST_AUTO_TEST_CASE(compile_signature_test)
     };
     const any_symbol return_type1 = int64_type;
     
-    Function* function1;
+    unique_ptr<Function> function1;
     unordered_map<identifier_id_t, named_value_info> parameter_table1;
     tie(function1, parameter_table1) = compile_signature(params1, return_type1, context);
     
@@ -100,7 +103,10 @@ BOOST_AUTO_TEST_CASE(compile_instruction_test)
     BOOST_CHECK(get<instruction_statement::cmp>(got3.instruction).cmp_kind == unique_ids::LT);
     BOOST_CHECK(get<instruction_statement::cmp>(got3.instruction).type == int64_type);
 }
-*/
+
+#include <llvm/Transforms/Utils/Cloning.h>
+using llvm::CloneFunction;
+
 BOOST_AUTO_TEST_CASE(compile_macro_test)
 {
     const type_symbol int64_type{IntegerType::get(context.llvm(), 64)};
@@ -145,13 +151,23 @@ BOOST_AUTO_TEST_CASE(compile_macro_test)
         return_type,
         body
     };
-
-    Function* function = compile_macro(macro.begin(), macro.end(), context);
+    
+    unique_ptr<Function> function_owner;
+    tie(function_owner, ignore) = compile_function(macro.begin(), macro.end(), context);
+    Function* function = function_owner.get();
+    context.llvm_macro_module().getFunctionList().push_back(function_owner.get());
+    function_owner.release();
     auto fptr = (bool (*)(uint64_t, uint64_t, uint64_t)) context.llvm_execution_engine().getPointerToFunction(function);
-
+    
+    llvm::ValueToValueMapTy vtvm;
+    Function* function2 = CloneFunction(function, vtvm, false);
+    function2->getBasicBlockList().front().front().setName("lskjdflskdjf");
+    function2->setName("func2");
+    context.llvm_macro_module().getFunctionList().push_back(function2);
     BOOST_CHECK(fptr);
     std::cout << fptr(2, 2, 9) << std::endl;
     function->dump();
+    context.llvm_macro_module().dump();
     /*
     void* compiled_func = context.llvm_execution_engine().getPointerToFunction(function);
     BOOST_CHECK(compiled_func);

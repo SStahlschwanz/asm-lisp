@@ -1,16 +1,12 @@
-#include "compile_macro.hpp"
+#include "compile_function.hpp"
 #include "error/compile_macro_error.hpp"
 #include "error/core_misc_error.hpp"
 #include "core_unique_ids.hpp"
 
-#include <llvm/IR/Function.h>
 #include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/Type.h>
 #include <llvm/IR/DerivedTypes.h>
-#include <llvm/IR/Value.h>
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/Module.h>
 
 #include <boost/optional.hpp>
 
@@ -75,7 +71,7 @@ const symbol& resolve_refs(const symbol& s)
 }
 
 
-pair<Function*, unordered_map<identifier_id_t, named_value_info>> compile_signature(const symbol& params_node, const symbol& return_type_node, compilation_context& context)
+pair<unique_ptr<Function>, unordered_map<identifier_id_t, named_value_info>> compile_signature(const symbol& params_node, const symbol& return_type_node, compilation_context& context)
 {
     const list_symbol& params_list = params_node.cast_else<list_symbol>([&]()
     {
@@ -89,6 +85,9 @@ pair<Function*, unordered_map<identifier_id_t, named_value_info>> compile_signat
     });
     
     vector<named_value_info> arg_infos;
+    arg_infos.reserve(params_list.size());
+    vector<Type*> arg_types;
+    arg_types.reserve(params_list.size());
     for(const symbol& s : params_list)
     {
         const list_symbol& param_declaration = s.cast_else<list_symbol>([&]()
@@ -108,17 +107,12 @@ pair<Function*, unordered_map<identifier_id_t, named_value_info>> compile_signat
         {
             fatal<id("invalid_parameter_type")>(resolved_param_type_symbol.source());
         });
-        arg_infos.push_back(named_value_info{param_declaration, param_name, param_type.llvm_type(), 0});
+        arg_infos.push_back(named_value_info{param_declaration, param_name, nullptr}); // llvm_value is set later
+        arg_types.push_back(param_type.llvm_type());
     }
     
-    vector<Type*> arg_types;
-    arg_types.reserve(arg_infos.size());
-    for(named_value_info& info : arg_infos)
-        arg_types.push_back(info.llvm_type);
-    
     FunctionType* function_type = FunctionType::get(return_type.llvm_type(), arg_types, false);
-    Function* function = Function::Create(function_type, Function::InternalLinkage, "macro", &context.llvm_macro_module());
-    //unique_ptr<Function> function{Function::Create(function_type, Function::InternalLinkage)};
+    unique_ptr<Function> function{Function::Create(function_type, Function::InternalLinkage)};
     unordered_map<identifier_id_t, named_value_info> parameter_table;
     
     auto arg_it = function->arg_begin();
@@ -433,7 +427,7 @@ optional<named_value_info> compile_statement(const symbol& node, VariableLookupF
         if(instr_begin == instr_end)
             fatal<id("missing_instruction")>(statement.source());
         Value* value = compile_instruction_call(instr_begin, instr_end, lookup_variable, builder);
-        return named_value_info{statement, variable_name, 0, value};
+        return named_value_info{statement, variable_name, value};
     }
     else
     {
@@ -441,14 +435,6 @@ optional<named_value_info> compile_statement(const symbol& node, VariableLookupF
         return none;
     }
 }
-
-struct block_info
-{
-    const ref_symbol& block_name;
-    unordered_map<identifier_id_t, named_value_info> variable_table;
-    bool is_entry_block;
-    BasicBlock* llvm_block;
-};
 
 
 pair<block_info, unique_ptr<BasicBlock>> compile_block(const symbol& block_node, const unordered_map<identifier_id_t, named_value_info>& global_variable_table, compilation_context& context)
@@ -563,19 +549,21 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<ide
     }
 }
 
-llvm::Function* compile_macro(list_symbol::const_iterator begin, list_symbol::const_iterator end, compilation_context& context)
+pair<unique_ptr<Function>, function_info> compile_function(list_symbol::const_iterator begin, list_symbol::const_iterator end, compilation_context& context)
 {
     if(distance(begin, end) != 3)
         fatal<id("invalid_argument_number")>(blank());
     
-    Function* function;
-    //unique_ptr<Function> function;
+    unique_ptr<Function> function;
     unordered_map<identifier_id_t, named_value_info> parameter_table;
     tie(function, parameter_table) = compile_signature(*begin, *(begin + 1), context);
     
     const symbol& body_node = *(begin + 2);
     compile_body(body_node, *function, move(parameter_table), context);
     //verifyFunction(*function);
-    return function;
+    function_info info;
+    info.uses_proc_instructions = true; // TODO
+    info.uses_macro_instructions = true; // TODO
+    return {move(function), move(info)};
 }
 
