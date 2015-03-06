@@ -48,20 +48,9 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"invalid_integer_constant", ""},
     {"out_of_range_integer_constant", ""},
     {"invalid_value", ""},
-    {"cond_branch_invalid_block_name", ""},
+    {"condbr_invalid_block_name", ""},
     {"block_not_found", ""},
-    {"branch_to_entry_block", ""},
-    {"phi_no_arguments", ""},
-    {"phi_invalid_incoming_node", ""},
-    {"phi_invalid_incoming_node_size", ""},
-    {"phi_invalid_incoming_variable_name", ""},
-    {"phi_invalid_incoming_block_name", ""},
-    {"phi_incoming_block_not_predecessor", ""},
-    {"phi_incoming_variable_not_defined", ""},
-    {"phi_incoming_block_twice", ""},
-    {"phi_incoming_variable_type_mismatch", ""},
-    {"phi_missing_incoming_for_predecessor", ""},
-    {"block_invalid_termination", ""}
+    {"branch_to_entry_block", ""}
 };
 
 constexpr std::size_t id(conststr str)

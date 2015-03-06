@@ -18,7 +18,6 @@ enum
     LOAD,
     COND_BRANCH,
     BRANCH,
-    PHI,
     CMP,
     RETURN,
     CALL,

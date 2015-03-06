@@ -108,7 +108,6 @@ const type_symbol int64_type{IntegerType::get(context.llvm(), 64)};
 const ref a{"a"_id};
 const ref b{"b"_id};
 
-const ref w{"w"_id};
 const ref x{"x"_id};
 const ref y{"y"_id};
 const ref z{"z"_id};
@@ -116,7 +115,6 @@ const ref z{"z"_id};
 const ref block1{"block1"_id};
 const ref block2{"block2"_id};
 const ref block3{"block3"_id};
-const ref block4{"block4"_id};
     
 const id_symbol let{unique_ids::LET};
 
@@ -127,7 +125,6 @@ const list_symbol alloc_int64 = {id_symbol{unique_ids::ALLOC}, int64_type};
 const list_symbol cmp_eq_int64 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::EQ}, int64_type};
 const list_symbol cond_branch = {id_symbol{unique_ids::COND_BRANCH}};
 const list_symbol branch = {id_symbol{unique_ids::BRANCH}};
-const list_symbol phi_int64 = {id_symbol{unique_ids::PHI}, int64_type};
 
 BOOST_AUTO_TEST_CASE(branch_test)
 {
@@ -173,65 +170,8 @@ BOOST_AUTO_TEST_CASE(branch_test)
     string str;
     raw_string_ostream os(str);
     //BOOST_CHECK_MESSAGE(verifyFunction(*function, &os), os.str());
-    // TODO: this fails - I don't know why, function->dump() looks good to me and verifyFunction doesn't produce a message
+    // TODO: this currently fails - I don't know why, function->dump() looks good to me and verifyFunction doesn't produce a message
 
-    auto fptr = (uint64_t (*)(uint64_t, uint64_t)) context.llvm_execution_engine().getPointerToFunction(function);
-    BOOST_CHECK(fptr);
-    BOOST_CHECK_EQUAL(fptr(2, 2), 2 + 2);
-    BOOST_CHECK_EQUAL(fptr(5, 3), 5 - 3);
-}
-
-BOOST_AUTO_TEST_CASE(phi_test)
-{
-    const list_symbol params =
-    {
-        list{a, int64_type},
-        list{b, int64_type},
-    };
-    
-    const type_symbol return_type = int64_type;
-    
-    const list_symbol body =
-    {
-        list{block1, list
-        {
-            list{let, x, cmp_eq_int64, a, b},
-            list{cond_branch, x, block2, block3}
-        }},
-        list{block2, list
-        {
-            list{let, y, add_int64, a, b},
-            list{branch, block4}
-        }},
-        list{block3, list
-        {
-            list{let, z, sub_int64, a, b},
-            list{branch, block4}
-        }},
-        list{block4, list
-        {
-            list{let, w, phi_int64, list{y, block2}, list{z, block3}},
-            list{return_int64, w}
-        }}
-    };
-    const list_symbol func_source =
-    {
-        params,
-        return_type,
-        body
-    };
-    
-    unique_ptr<Function> function_owner;
-    tie(function_owner, ignore) = compile_function(func_source.begin(), func_source.end(), context);
-    Function* function = function_owner.get();
-    context.llvm_macro_module().getFunctionList().push_back(function_owner.get());
-    function_owner.release();
-    
-    string str;
-    raw_string_ostream os(str);
-    //BOOST_CHECK_MESSAGE(verifyFunction(*function, &os), os.str());
-    // TODO: this fails - I don't know why, function->dump() looks good to me and verifyFunction doesn't produce a message
-    
     auto fptr = (uint64_t (*)(uint64_t, uint64_t)) context.llvm_execution_engine().getPointerToFunction(function);
     BOOST_CHECK(fptr);
     BOOST_CHECK_EQUAL(fptr(2, 2), 2 + 2);
