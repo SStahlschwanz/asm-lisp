@@ -120,37 +120,64 @@ string format(const string& format_string, const vector<error_parameter>& parame
 
 ostream& print_error(ostream& os, const compile_exception& exc, function<string (size_t)> file_id_to_name)
 {
+    const char* error_name;
     const char* error_message_template;
     switch(exc.kind)
     {
     case error_kind::PARSE:
+    {
         assert(exc.error_id < size(parse_error::dictionary));
-        error_message_template = parse_error::dictionary[exc.error_id].second.data();
-        break;
-    case error_kind::IMPORT_EXPORT:
-        assert(exc.error_id < size(import_export_error::dictionary));
-        error_message_template = import_export_error::dictionary[exc.error_id].second.data();
-        break;
-    case error_kind::EVALUATE:
-        assert(exc.error_id < size(evaluate_error::dictionary));
-        error_message_template = evaluate_error::dictionary[exc.error_id].second.data();
-        break;
-    case error_kind::COMPILE_TYPE:
-        assert(exc.error_id < size(compile_type_error::dictionary));
-        error_message_template = compile_type_error::dictionary[exc.error_id].second.data();
-        break;
-    case error_kind::CORE_MISC:
-        assert(exc.error_id < size(core_misc_error::dictionary));
-        error_message_template = core_misc_error::dictionary[exc.error_id].second.data();
-        break;
-    case error_kind::COMPILE_FUNCTION:
-        assert(exc.error_id < size(core_misc_error::dictionary));
-        error_message_template = compile_function_error::dictionary[exc.error_id].second.data();
+        const auto& entry = parse_error::dictionary[exc.error_id];
+        error_name = entry.first.data();
+        error_message_template = entry.second.data();
         break;
     }
+    case error_kind::IMPORT_EXPORT:
+    {
+        assert(exc.error_id < size(import_export_error::dictionary));
+        const auto& entry = import_export_error::dictionary[exc.error_id];
+        error_name = entry.first.data();
+        error_message_template = entry.second.data();
+        break;
+    }
+    case error_kind::EVALUATE:
+    {
+        assert(exc.error_id < size(evaluate_error::dictionary));
+        const auto& entry = evaluate_error::dictionary[exc.error_id];
+        error_name = entry.first.data();
+        error_message_template = entry.second.data();
+        break;
+    }
+    case error_kind::COMPILE_TYPE:
+    {
+        assert(exc.error_id < size(compile_type_error::dictionary));
+        const auto& entry = compile_type_error::dictionary[exc.error_id];
+        error_name = entry.first.data();
+        error_message_template = entry.second.data();
+        break;
+    }
+    case error_kind::CORE_MISC:
+    {
+        assert(exc.error_id < size(core_misc_error::dictionary));
+        const auto& entry = core_misc_error::dictionary[exc.error_id];
+        error_name = entry.first.data();
+        error_message_template = entry.second.data();
+        break;
+    }
+    case error_kind::COMPILE_FUNCTION:
+    {
+        assert(exc.error_id < size(compile_function_error::dictionary));
+        const auto& entry = compile_function_error::dictionary[exc.error_id];
+        error_name = entry.first.data();
+        error_message_template = entry.second.data();
+        break;
+    }
+    }
     print_error_location(os, exc.location, file_id_to_name);
-    os << ": " << format(error_message_template, exc.params) << "\n";
-    // ignore error message parameters for now
+    if(error_message_template != string{""})
+        os << ": " << format(error_message_template, exc.params) << "\n";
+    else
+        os << ": " << "<" << error_name << ">" << " (missing error message)\n";
 
     return os;
 }
