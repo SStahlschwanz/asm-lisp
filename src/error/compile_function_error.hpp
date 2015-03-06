@@ -48,7 +48,7 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"invalid_integer_constant", ""},
     {"out_of_range_integer_constant", ""},
     {"invalid_value", ""},
-    {"condbr_invalid_block_name", ""},
+    {"cond_branch_invalid_block_name", ""},
     {"block_not_found", ""},
     {"branch_to_entry_block", ""}
 };

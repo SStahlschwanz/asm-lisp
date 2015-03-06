@@ -383,16 +383,16 @@ pair<Value*, optional<incomplete_statement>> compile_instruction_call(list_symbo
     },
     [&](const instruction_statement::cond_branch& inst) -> return_type
     {
-        check_arity("condbr", 3);
+        check_arity("cond_branch", 3);
         Type* int1_type = IntegerType::get(builder.getContext(), 1);
         Value* boolean = get_value(*begin, int1_type);
         const ref_symbol& true_block_name = (begin + 1)->cast_else<ref_symbol>([&]
         {
-            fatal<id("condbr_invalid_block_name")>((begin + 1)->source());
+            fatal<id("cond_branch_invalid_block_name")>((begin + 1)->source());
         });
         const ref_symbol& false_block_name = (begin + 2)->cast_else<ref_symbol>([&]
         {
-            fatal<id("condbr_invalid_block_name")>((begin + 2)->source());
+            fatal<id("cond_branch_invalid_block_name")>((begin + 2)->source());
         });
         BranchInst* value = builder.CreateCondBr(boolean, builder.GetInsertBlock(), builder.GetInsertBlock());
         // the two target blocks are set lateron, but nullptr is not valid as parameter, so just use current block for now
@@ -404,7 +404,7 @@ pair<Value*, optional<incomplete_statement>> compile_instruction_call(list_symbo
         check_arity("branch", 1);
         const ref_symbol& block_name = begin->cast_else<ref_symbol>([&]
         {
-            fatal<id("condbr_invalid_block_name")>(begin->source());
+            fatal<id("cond_branch_invalid_block_name")>(begin->source());
         });
         BranchInst* value = builder.CreateBr(builder.GetInsertBlock());
         incomplete_branch incomplete{value, block_name};
