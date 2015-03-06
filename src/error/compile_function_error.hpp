@@ -1,10 +1,10 @@
-#ifndef COMPILE_MACRO_ERROR_HPP_
-#define COMPILE_MACRO_ERROR_HPP_
+#ifndef COMPILE_FUNCTION_ERROR_HPP_
+#define COMPILE_FUNCTION_ERROR_HPP_
 
 #include "error_utils.hpp"
 #include "compile_exception.hpp"
 
-namespace compile_macro_error
+namespace compile_function_error
 {
 
 constexpr std::pair<conststr, conststr> dictionary[] =
@@ -63,7 +63,7 @@ template<std::size_t error_id, class Location, class... ParamTypes>
 {
     static_assert(error_id < size(dictionary), "invalid error id");
     static_assert(error_id != std::numeric_limits<std::size_t>::max(), "invalid error id");
-    throw compile_exception{error_kind::COMPILE_MACRO, error_id, location, std::forward<ParamTypes>(params)...};
+    throw compile_exception{error_kind::COMPILE_FUNCTION, error_id, location, std::forward<ParamTypes>(params)...};
 }
 
 }

@@ -8,7 +8,7 @@ enum class error_kind
     EVALUATE,
     COMPILE_TYPE,
     CORE_MISC,
-    COMPILE_MACRO
+    COMPILE_FUNCTION
 };
 
 #endif

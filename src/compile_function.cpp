@@ -1,5 +1,5 @@
 #include "compile_function.hpp"
-#include "error/compile_macro_error.hpp"
+#include "error/compile_function_error.hpp"
 #include "error/core_misc_error.hpp"
 #include "core_unique_ids.hpp"
 #include "boost_variant_utils.hpp"
@@ -59,7 +59,7 @@ using boost::optional;
 using boost::none;
 using boost::blank;
 
-using namespace compile_macro_error;
+using namespace compile_function_error;
 
 const symbol& resolve_refs(const symbol& s)
 {
@@ -394,8 +394,8 @@ pair<Value*, optional<incomplete_statement>> compile_instruction_call(list_symbo
         {
             fatal<id("condbr_invalid_block_name")>((begin + 2)->source());
         });
-        //BranchInst* value = BranchInst::Create(builder.GetInsertBlock(), builder.GetInsertBlock());
         BranchInst* value = builder.CreateCondBr(boolean, builder.GetInsertBlock(), builder.GetInsertBlock());
+        // the two target blocks are set lateron, but nullptr is not valid as parameter, so just use current block for now
         incomplete_cond_branch incomplete{value, true_block_name, false_block_name};
         return {value, incomplete_statement{incomplete}};
     },
