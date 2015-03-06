@@ -175,7 +175,6 @@ struct block_info
 {
     const ref_symbol& block_name;
     std::unordered_map<identifier_id_t, named_value_info> variable_table;
-    bool is_entry_block;
     llvm::BasicBlock* llvm_block;
     std::vector<incomplete_statement> incomplete_statements;
 };

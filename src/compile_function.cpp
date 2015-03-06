@@ -545,7 +545,7 @@ pair<block_info, unique_ptr<BasicBlock>> compile_block(const symbol& block_node,
             incomplete_statements.push_back(std::move(*incomplete));
     }
     
-    block_info info{block_name, move(local_variable_table), false, block.get(), std::move(incomplete_statements)};
+    block_info info{block_name, move(local_variable_table), block.get(), std::move(incomplete_statements)};
     return {move(info), move(block)};
 }
 
@@ -595,7 +595,6 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<ide
 
         if(is_first_iteration)
         {
-            block.is_entry_block = true;
             function_global_variables.insert(block.variable_table.begin(), block.variable_table.end());
             is_first_iteration = false;
         }
