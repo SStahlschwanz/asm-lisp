@@ -549,7 +549,6 @@ pair<block_info, unique_ptr<BasicBlock>> compile_block(const symbol& block_node,
     return {move(info), move(block)};
 }
 
-
 void compile_body(const symbol& body_node, Function& function, unordered_map<identifier_id_t, named_value_info> parameter_table, compilation_context& context)
 {
     const list_symbol& block_list = body_node.cast_else<list_symbol>([&]
@@ -591,6 +590,9 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<ide
         pair<block_info, unique_ptr<BasicBlock>> block_p = compile_block(block_node, function_global_variables, context);
         block_info& block = block_p.first;
         check_for_duplicates(block.variable_table);
+        if(block.llvm_block->getTerminator() == nullptr) // block is not properly terminated or has terminator not at end
+            fatal<id("block_invalid_termination")>(block_node.source());
+
         if(is_first_iteration)
         {
             block.is_entry_block = true;

@@ -60,7 +60,8 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"phi_incoming_variable_not_defined", ""},
     {"phi_incoming_block_twice", ""},
     {"phi_incoming_variable_type_mismatch", ""},
-    {"phi_missing_incoming_for_predecessor", ""}
+    {"phi_missing_incoming_for_predecessor", ""},
+    {"block_invalid_termination", ""}
 };
 
 constexpr std::size_t id(conststr str)
