@@ -17,6 +17,7 @@ enum
     STORE,
     LOAD,
     COND_BRANCH,
+    BRANCH,
     CMP,
     RETURN,
     CALL,

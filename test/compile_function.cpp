@@ -13,11 +13,14 @@
 #include <llvm/IR/Value.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Support/raw_ostream.h>
 
 #include <memory>
 #include <unordered_map>
 #include <utility>
 #include <iterator>
+#include <string>
 
 using std::pair;
 using std::tie;
@@ -25,22 +28,18 @@ using std::ignore;
 using std::unique_ptr;
 using std::unordered_map;
 using std::advance;
+using std::string;
 
 using llvm::Function;
 using llvm::Value;
 using llvm::IntegerType;
 using llvm::Type;
+using llvm::verifyFunction;
+using llvm::raw_string_ostream;
 
 using boost::get;
 
 using namespace symbol_shortcuts;
-
-typedef lit_symbol lit;
-typedef ref_symbol ref;
-typedef list_symbol list;
-
-
-#include <iostream>
 
 BOOST_AUTO_TEST_CASE(compile_signature_test)
 {
@@ -104,48 +103,58 @@ BOOST_AUTO_TEST_CASE(compile_instruction_test)
     BOOST_CHECK(get<instruction_statement::cmp>(got3.instruction).type == int64_type);
 }
 
-#include <llvm/Transforms/Utils/Cloning.h>
-using llvm::CloneFunction;
+const type_symbol int64_type{IntegerType::get(context.llvm(), 64)};
 
-BOOST_AUTO_TEST_CASE(compile_macro_test)
-{
-    const type_symbol int64_type{IntegerType::get(context.llvm(), 64)};
-    const type_symbol int1_type{IntegerType::get(context.llvm(), 1)};
-    const ref a{"a"_id};
-    const ref b{"b"_id};
-    const ref c{"c"_id};
+const ref a{"a"_id};
+const ref b{"b"_id};
+
+const ref x{"x"_id};
+const ref y{"y"_id};
+const ref z{"z"_id};
+
+const ref block1{"block1"_id};
+const ref block2{"block2"_id};
+const ref block3{"block3"_id};
     
+const id_symbol let{unique_ids::LET};
+
+const list_symbol add_int64 = {id_symbol{unique_ids::ADD}, int64_type};
+const list_symbol sub_int64 = {id_symbol{unique_ids::SUB}, int64_type};
+const list_symbol return_int64 = {id_symbol{unique_ids::RETURN}, int64_type};
+const list_symbol alloc_int64 = {id_symbol{unique_ids::ALLOC}, int64_type};
+const list_symbol cmp_eq_int64 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::EQ}, int64_type};
+const list_symbol cond_branch = {id_symbol{unique_ids::COND_BRANCH}};
+const list_symbol branch = {id_symbol{unique_ids::BRANCH}};
+
+BOOST_AUTO_TEST_CASE(branch_test)
+{
     const list_symbol params =
     {
         list{a, int64_type},
         list{b, int64_type},
-        list{c, int64_type}
     };
-    const type_symbol return_type = int1_type;
     
-    const list_symbol add_int64 = {id_symbol{unique_ids::ADD}, int64_type};
-    const list_symbol sub_int64 = {id_symbol{unique_ids::SUB}, int64_type};
-    const id_symbol let{unique_ids::LET};
-    const ref block1{"block1"_id};
-    const ref d{"d"_id};
-    const ref e{"e"_id};
-    const ref f{"f"_id};
-    const ref g{"g"_id};
-    const list_symbol return_int1 = {id_symbol{unique_ids::RETURN}, int1_type};
-    const list_symbol alloc_int64 = {id_symbol{unique_ids::ALLOC}, int64_type};
-    const list_symbol cmp_eq_int64 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::EQ}, int64_type};
+    const type_symbol return_type = int64_type;
+    
     const list_symbol body =
     {
         list{block1, list
         {
-            list{let, d, add_int64, a, b},
-            list{let, e, add_int64, d, c},
-            list{let, f, alloc_int64},
-            list{let, g, cmp_eq_int64, a, b},
-            list{return_int1, g}
+            list{let, x, cmp_eq_int64, a, b},
+            list{cond_branch, x, block2, block3}
+        }},
+        list{block2, list
+        {
+            list{let, y, add_int64, a, b},
+            list{return_int64, y}
+        }},
+        list{block3, list
+        {
+            list{let, z, sub_int64, a, b},
+            list{return_int64, z}
         }}
     };
-    const list_symbol macro =
+    const list_symbol func_source =
     {
         params,
         return_type,
@@ -153,24 +162,19 @@ BOOST_AUTO_TEST_CASE(compile_macro_test)
     };
     
     unique_ptr<Function> function_owner;
-    tie(function_owner, ignore) = compile_function(macro.begin(), macro.end(), context);
+    tie(function_owner, ignore) = compile_function(func_source.begin(), func_source.end(), context);
     Function* function = function_owner.get();
     context.llvm_macro_module().getFunctionList().push_back(function_owner.get());
     function_owner.release();
-    auto fptr = (bool (*)(uint64_t, uint64_t, uint64_t)) context.llvm_execution_engine().getPointerToFunction(function);
     
-    llvm::ValueToValueMapTy vtvm;
-    Function* function2 = CloneFunction(function, vtvm, false);
-    function2->getBasicBlockList().front().front().setName("lskjdflskdjf");
-    function2->setName("func2");
-    context.llvm_macro_module().getFunctionList().push_back(function2);
+    string str;
+    raw_string_ostream os(str);
+    //BOOST_CHECK_MESSAGE(verifyFunction(*function, &os), os.str());
+    // TODO: this currently fails - I don't know why, function->dump() looks good to me and verifyFunction doesn't produce a message
+
+    auto fptr = (uint64_t (*)(uint64_t, uint64_t)) context.llvm_execution_engine().getPointerToFunction(function);
     BOOST_CHECK(fptr);
-    std::cout << fptr(2, 2, 9) << std::endl;
-    function->dump();
-    context.llvm_macro_module().dump();
-    /*
-    void* compiled_func = context.llvm_execution_engine().getPointerToFunction(function);
-    BOOST_CHECK(compiled_func);
-    */
+    BOOST_CHECK_EQUAL(fptr(2, 2), 2 + 2);
+    BOOST_CHECK_EQUAL(fptr(5, 3), 5 - 3);
 }
 

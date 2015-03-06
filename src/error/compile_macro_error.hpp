@@ -47,7 +47,10 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"invalid_literal_for_type", ""},
     {"invalid_integer_constant", ""},
     {"out_of_range_integer_constant", ""},
-    {"invalid_value", ""}
+    {"invalid_value", ""},
+    {"condbr_invalid_block_name", ""},
+    {"block_not_found", ""},
+    {"branch_to_entry_block", ""}
 };
 
 constexpr std::size_t id(conststr str)

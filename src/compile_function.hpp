@@ -83,6 +83,11 @@ struct instruction_statement
         static constexpr bool is_proc_only = false;
         static constexpr bool is_macro_only = false;
     };
+    struct branch
+    {
+        static constexpr bool is_proc_only = false;
+        static constexpr bool is_macro_only = false;
+    };
     struct cmp
     {
         static constexpr bool is_proc_only = false;
@@ -117,6 +122,7 @@ struct instruction_statement
         store,
         load,
         cond_branch,
+        branch,
         cmp,
         return_inst,
         call
@@ -125,13 +131,18 @@ struct instruction_statement
 
 struct incomplete_cond_branch
 {
-    llvm::BranchInst* val;
+    llvm::BranchInst* value;
     const ref_symbol& true_block_name;
     const ref_symbol& false_block_name;
 };
+struct incomplete_branch
+{
+    llvm::BranchInst* value;
+    const ref_symbol& block_name;
+};
 struct incomplete_phi
 {
-    llvm::PHINode* val;
+    llvm::PHINode* value;
     struct incoming
     {
         const ref_symbol& block_name;
@@ -140,7 +151,12 @@ struct incomplete_phi
     std::vector<std::pair<const ref_symbol&, const ref_symbol&>> incoming;
 };
 
-typedef boost::variant<incomplete_cond_branch, incomplete_phi> incomplete_statement;
+typedef boost::variant
+<
+    incomplete_cond_branch,
+    incomplete_branch,
+    incomplete_phi
+> incomplete_statement;
 
 instruction_statement compile_instruction(const symbol& node);
 template<class VariableLookupFunctor>
@@ -152,6 +168,7 @@ struct block_info
     std::unordered_map<identifier_id_t, named_value_info> variable_table;
     bool is_entry_block;
     llvm::BasicBlock* llvm_block;
+    std::vector<incomplete_statement> incomplete_statements;
 };
 std::pair<block_info, std::unique_ptr<llvm::BasicBlock>> compile_block(const symbol& block_node, const std::unordered_map<identifier_id_t, named_value_info>& global_variable_table, compilation_context& context);
 

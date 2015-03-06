@@ -8,6 +8,7 @@
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Verifier.h>
 
 #include <boost/optional.hpp>
 
@@ -47,6 +48,9 @@ using llvm::IntegerType;
 using llvm::IRBuilder;
 using llvm::ConstantInt;
 using llvm::PointerType;
+using llvm::BranchInst;
+using llvm::PHINode;
+using llvm::verifyFunction;
 
 using boost::get;
 using boost::apply_visitor;
@@ -223,6 +227,10 @@ instruction_statement compile_instruction(const symbol& node)
             if(statement.size() != 1)
                 fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), "cond_branch", 0, statement.size() - 1);
             return instruction_statement{statement, instruction_statement::cond_branch{}};
+        case unique_ids::BRANCH:
+            if(statement.size() != 1)
+                fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), "branch", 0, statement.size() - 1);
+            return instruction_statement{statement, instruction_statement::branch{}};
         case unique_ids::CMP:
             return compile_cmp_instruction(statement);
         case unique_ids::CALL:
@@ -373,6 +381,35 @@ pair<Value*, optional<incomplete_statement>> compile_instruction_call(list_symbo
         Value* arg = get_value(*begin, inst.type.llvm_type());
         return {builder.CreateRet(arg), none};
     },
+    [&](const instruction_statement::cond_branch& inst) -> return_type
+    {
+        check_arity("condbr", 3);
+        Type* int1_type = IntegerType::get(builder.getContext(), 1);
+        Value* boolean = get_value(*begin, int1_type);
+        const ref_symbol& true_block_name = (begin + 1)->cast_else<ref_symbol>([&]
+        {
+            fatal<id("condbr_invalid_block_name")>((begin + 1)->source());
+        });
+        const ref_symbol& false_block_name = (begin + 2)->cast_else<ref_symbol>([&]
+        {
+            fatal<id("condbr_invalid_block_name")>((begin + 2)->source());
+        });
+        //BranchInst* value = BranchInst::Create(builder.GetInsertBlock(), builder.GetInsertBlock());
+        BranchInst* value = builder.CreateCondBr(boolean, builder.GetInsertBlock(), builder.GetInsertBlock());
+        incomplete_cond_branch incomplete{value, true_block_name, false_block_name};
+        return {value, incomplete_statement{incomplete}};
+    },
+    [&](const instruction_statement::branch& inst) -> return_type
+    {
+        check_arity("branch", 1);
+        const ref_symbol& block_name = begin->cast_else<ref_symbol>([&]
+        {
+            fatal<id("condbr_invalid_block_name")>(begin->source());
+        });
+        BranchInst* value = builder.CreateBr(builder.GetInsertBlock());
+        incomplete_branch incomplete{value, block_name};
+        return {value, incomplete_statement{incomplete}};
+    },
     [&](const auto& obj) -> return_type
     {
         assert(false);
@@ -410,8 +447,11 @@ pair<optional<named_value_info>, optional<incomplete_statement>> compile_stateme
         return {named_value_info{statement, variable_name, value}, incomplete};
     }
     
-    compile_instruction_call(statement.begin(), statement.end(), lookup_variable, builder);
-    return {none, none};
+    auto p = compile_instruction_call(statement.begin(), statement.end(), lookup_variable, builder);
+    optional<incomplete_statement>& incomplete = p.second;
+    return {none, std::move(incomplete)};
+    //compile_instruction_call(statement.begin(), statement.end(), lookup_variable, builder);
+    //return {none, none};
 }
 
 
@@ -454,6 +494,7 @@ pair<block_info, unique_ptr<BasicBlock>> compile_block(const symbol& block_node,
         return none;
     };
 
+    vector<incomplete_statement> incomplete_statements;
     for(const symbol& s : block_body)
     {
         auto p = compile_statement(s, lookup_variable, builder);
@@ -467,9 +508,11 @@ pair<block_info, unique_ptr<BasicBlock>> compile_block(const symbol& block_node,
             if(!was_inserted)
                 fatal<id("locally_duplicate_variable_name")>(value->name.source());
         }
+        if(incomplete)
+            incomplete_statements.push_back(std::move(*incomplete));
     }
     
-    block_info info{block_name, move(local_variable_table), false, block.get()};
+    block_info info{block_name, move(local_variable_table), false, block.get(), std::move(incomplete_statements)};
     return {move(info), move(block)};
 }
 
@@ -524,8 +567,46 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<ide
         
         identifier_id_t block_name = block.block_name.identifier();
         function.getBasicBlockList().push_back(block.llvm_block);
-        block_map.insert({block_name, move(block)});
         block_p.second.release();
+        block_map.insert({block_name, move(block)});
+    }
+
+    for(auto& p : block_map)
+    {
+        block_info& binfo = p.second;
+        for(incomplete_statement& incomplete : binfo.incomplete_statements)
+        {
+            auto get_non_entry_block = [&](const ref_symbol& block_name) -> block_info&
+            {
+                auto block_it = block_map.find(block_name.identifier());
+                if(block_it == block_map.end())
+                    fatal<id("block_not_found")>(block_name.source());
+                if(block_it->second.llvm_block == &function.getBasicBlockList().front())
+                    fatal<id("branch_to_entry_block")>(block_name.source());
+                return block_it->second;
+            };
+
+            visit(incomplete,
+            [&](incomplete_cond_branch& cond_branch)
+            {
+                assert(cond_branch.value->getNumSuccessors() == 2);
+                block_info& true_block = get_non_entry_block(cond_branch.true_block_name);
+                cond_branch.value->setSuccessor(0, true_block.llvm_block);
+                block_info& false_block = get_non_entry_block(cond_branch.false_block_name);
+                cond_branch.value->setSuccessor(1, false_block.llvm_block);
+            },
+            [&](incomplete_branch& branch)
+            {
+                assert(branch.value->getNumSuccessors() == 1);
+                block_info& block = get_non_entry_block(branch.block_name);
+                branch.value->setSuccessor(0, block.llvm_block);
+            },
+            [&](incomplete_phi& phi)
+            {
+                // TODO
+                assert(false);
+            });
+        }
     }
 }
 
@@ -540,7 +621,7 @@ pair<unique_ptr<Function>, function_info> compile_function(list_symbol::const_it
     
     const symbol& body_node = *(begin + 2);
     compile_body(body_node, *function, move(parameter_table), context);
-    //verifyFunction(*function);
+    //verifyFunction(*function); not possible because function has to be embedded into module first
     function_info info;
     info.uses_proc_instructions = true; // TODO
     info.uses_macro_instructions = true; // TODO
