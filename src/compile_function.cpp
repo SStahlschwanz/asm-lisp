@@ -395,7 +395,7 @@ pair<Value*, optional<incomplete_statement>> compile_instruction_call(list_symbo
             fatal<id("cond_branch_invalid_block_name")>((begin + 2)->source());
         });
         BranchInst* value = builder.CreateCondBr(boolean, builder.GetInsertBlock(), builder.GetInsertBlock());
-        // the two target blocks are set lateron, but nullptr is not valid as parameter, so just use current block for now
+        // the two target blocks are set later on, but nullptr is not valid as parameter, so just use current block for now
         incomplete_cond_branch incomplete{value, true_block_name, false_block_name};
         return {value, incomplete_statement{incomplete}};
     },
