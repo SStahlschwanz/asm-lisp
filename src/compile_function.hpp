@@ -88,6 +88,13 @@ struct instruction_statement
         static constexpr bool is_proc_only = false;
         static constexpr bool is_macro_only = false;
     };
+    struct phi
+    {
+        static constexpr bool is_proc_only = false;
+        static constexpr bool is_macro_only = false;
+
+        const type_symbol& type;
+    };
     struct cmp
     {
         static constexpr bool is_proc_only = false;
@@ -123,6 +130,7 @@ struct instruction_statement
         load,
         cond_branch,
         branch,
+        phi,
         cmp,
         return_inst,
         call
@@ -145,10 +153,11 @@ struct incomplete_phi
     llvm::PHINode* value;
     struct incoming
     {
-        const ref_symbol& block_name;
         const ref_symbol& variable_name;
+        const ref_symbol& block_name;
     };
-    std::vector<std::pair<const ref_symbol&, const ref_symbol&>> incoming;
+    std::vector<incoming> incomings;
+    const symbol& statement;
 };
 
 typedef boost::variant

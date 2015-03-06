@@ -8,6 +8,7 @@
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/CFG.h>
 #include <llvm/IR/Verifier.h>
 
 #include <boost/optional.hpp>
@@ -231,6 +232,8 @@ instruction_statement compile_instruction(const symbol& node)
             if(statement.size() != 1)
                 fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), "branch", 0, statement.size() - 1);
             return instruction_statement{statement, instruction_statement::branch{}};
+        case unique_ids::PHI:
+            return compile_unary_typed_instruction<instruction_statement::phi>("phi", statement);
         case unique_ids::CMP:
             return compile_cmp_instruction(statement);
         case unique_ids::CALL:
@@ -410,6 +413,38 @@ pair<Value*, optional<incomplete_statement>> compile_instruction_call(list_symbo
         incomplete_branch incomplete{value, block_name};
         return {value, incomplete_statement{incomplete}};
     },
+    [&](const instruction_statement::phi& inst) -> return_type
+    {
+        if(begin == end)
+            fatal<id("phi_no_arguments")>(instruction.statement.source());
+        
+        incomplete_phi incomplete{0, {}, instruction.statement};
+        for(auto it = begin; it != end; ++it)
+        {
+            const list_symbol& incoming = it->cast_else<list_symbol>([&]
+            {
+                fatal<id("phi_invalid_incoming_node")>(it->source());
+            });
+            if(incoming.size() != 2)
+                fatal<id("phi_invalid_incoming_node_size")>(incoming.source());
+            
+            const ref_symbol& incoming_variable_name = incoming[0].cast_else<ref_symbol>([&]
+            {
+                fatal<id("phi_invalid_incoming_variable_name")>(incoming[0].source());
+            });
+            const ref_symbol& incoming_block_name = incoming[1].cast_else<ref_symbol>([&]
+            {
+                fatal<id("phi_invalid_incoming_block_name")>(incoming[1].source());
+            });
+
+            incomplete.incomings.push_back({incoming_variable_name, incoming_block_name});
+        }
+        
+        PHINode* value = builder.CreatePHI(inst.type.llvm_type(), 0);
+        incomplete.value = value;
+        return {value, incomplete_statement{move(incomplete)}};
+        
+    },
     [&](const auto& obj) -> return_type
     {
         assert(false);
@@ -450,8 +485,6 @@ pair<optional<named_value_info>, optional<incomplete_statement>> compile_stateme
     auto p = compile_instruction_call(statement.begin(), statement.end(), lookup_variable, builder);
     optional<incomplete_statement>& incomplete = p.second;
     return {none, std::move(incomplete)};
-    //compile_instruction_call(statement.begin(), statement.end(), lookup_variable, builder);
-    //return {none, none};
 }
 
 
@@ -571,21 +604,26 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<ide
         block_map.insert({block_name, move(block)});
     }
 
+    auto get_block = [&](const ref_symbol& block_name) -> block_info&
+    {
+        auto block_it = block_map.find(block_name.identifier());
+        if(block_it == block_map.end())
+            fatal<id("block_not_found")>(block_name.source());
+        return block_it->second;
+    };
+    auto get_non_entry_block = [&](const ref_symbol& block_name) -> block_info&
+    {
+        block_info& info = get_block(block_name);
+        if(info.llvm_block == &function.getBasicBlockList().front())
+            fatal<id("branch_to_entry_block")>(block_name.source());
+        return info;
+    };
+
     for(auto& p : block_map)
     {
         block_info& binfo = p.second;
         for(incomplete_statement& incomplete : binfo.incomplete_statements)
         {
-            auto get_non_entry_block = [&](const ref_symbol& block_name) -> block_info&
-            {
-                auto block_it = block_map.find(block_name.identifier());
-                if(block_it == block_map.end())
-                    fatal<id("block_not_found")>(block_name.source());
-                if(block_it->second.llvm_block == &function.getBasicBlockList().front())
-                    fatal<id("branch_to_entry_block")>(block_name.source());
-                return block_it->second;
-            };
-
             visit(incomplete,
             [&](incomplete_cond_branch& cond_branch)
             {
@@ -601,10 +639,52 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<ide
                 block_info& block = get_non_entry_block(branch.block_name);
                 branch.value->setSuccessor(0, block.llvm_block);
             },
-            [&](incomplete_phi& phi)
+            [&](incomplete_phi&)
             {
-                // TODO
-                assert(false);
+                // ignore this case for now:
+                // can only be handled when predecessors of blocks can be computed, which is after all branches have been set
+            });
+        }
+    }
+
+    for(auto& p : block_map)
+    {
+        block_info& binfo = p.second;
+        for(incomplete_statement& incomplete : binfo.incomplete_statements)
+        {
+            visit(incomplete, [&](incomplete_phi& phi)
+            {
+                BasicBlock* parent_block = phi.value->getParent();
+                vector<BasicBlock*> predecessors{pred_begin(parent_block), pred_end(parent_block)};
+                vector<int8_t> has_incoming_for_predecessor(predecessors.size(), false);
+                // has true iff phi node defines an incoming for the corresponding predecessor basic block with the same index
+                for(auto& inc : phi.incomings)
+                {
+                    // get predecessor block and check this
+                    block_info& block = get_block(inc.block_name);
+                    auto block_it = find(predecessors.begin(), predecessors.end(), block.llvm_block);
+                    if(block_it == predecessors.end())
+                        fatal<id("phi_incoming_block_not_predecessor")>(inc.block_name.source());
+                    size_t predecessor_index = block_it - predecessors.begin();
+                    if(has_incoming_for_predecessor[predecessor_index])
+                        fatal<id("phi_incoming_block_twice")>(inc.block_name.source());
+                    has_incoming_for_predecessor[predecessor_index] = true;
+
+                    auto value_info_it  = block.variable_table.find(inc.variable_name.identifier());
+                    if(value_info_it == block.variable_table.end())
+                        fatal<id("phi_incoming_variable_not_defined")>(inc.variable_name.source());
+                    named_value_info& value = value_info_it->second;
+                    if(value.llvm_value->getType() != phi.value->getType())
+                        fatal<id("phi_incoming_variable_type_mismatch")>(inc.variable_name.source());
+
+                    phi.value->addIncoming(value.llvm_value, block.llvm_block);
+                }
+                if(find(has_incoming_for_predecessor.begin(), has_incoming_for_predecessor.end(), false) != has_incoming_for_predecessor.end())
+                    fatal<id("phi_missing_incoming_for_predecessor")>(phi.statement.source());
+            },
+            [&](auto&)
+            {
+                // has already been done before
             });
         }
     }
