@@ -5,7 +5,7 @@ DEBUG_CPPFLAGS=$(COMMON_CPPFLAGS) -Wall -g -fcolor-diagnostics
 RELEASE_CPPFLAGS=$(COMMON_CPPFLAGS) -O3 -DNDEBUG
 
 LLVM_LD_FLAGS=-rdynamic $(shell llvm-config --ldflags)
-LLVM_LIBS=-L$(shell llvm-config --libdir) $(shell llvm-config --libs) -lz -lpthread -lffi -ltinfo -ldl -lm 
+LLVM_LIBS=-L$(shell llvm-config --libdir) $(shell llvm-config --libs core native jit) -lz -lpthread -lffi -ltinfo -ldl -lm 
 #																	  this is actually $(llvm_config --system-libs) without -ledit,
 #																	  which is not found on my machine
 
