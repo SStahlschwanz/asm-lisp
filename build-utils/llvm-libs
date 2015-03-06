@@ -1,8 +1,0 @@
-#!/bin/sh
-
-if llvm-config --version | grep -q "3.5"
-then
-	llvm-config --system-libs --libs
-else
-	llvm-config --libs
-fi

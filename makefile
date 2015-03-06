@@ -1,11 +1,13 @@
 CPP=clang++
-LLVM_CPP_FLAGS=-D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS
+LLVM_CPP_FLAGS=-D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I$(shell llvm-config --includedir)
 COMMON_CPPFLAGS=-std=c++14 $(LLVM_CPP_FLAGS)
 DEBUG_CPPFLAGS=$(COMMON_CPPFLAGS) -Wall -g -fcolor-diagnostics
 RELEASE_CPPFLAGS=$(COMMON_CPPFLAGS) -O3 -DNDEBUG
 
 LLVM_LD_FLAGS=-rdynamic $(shell llvm-config --ldflags)
-LLVM_LIBS=$(shell ./build-utils/llvm-libs)
+LLVM_LIBS=-L$(shell llvm-config --libdir) $(shell llvm-config --libs) -lz -lpthread -lffi -ltinfo -ldl -lm 
+#																	  this is actually $(llvm_config --system-libs) without -ledit,
+#																	  which is not found on my machine
 
 COMMON_LDFLAGS=$(LLVM_LD_FLAGS)
 COMMON_LIBS=-lboost_system -lboost_filesystem $(LLVM_LIBS)
