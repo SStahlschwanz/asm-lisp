@@ -121,14 +121,63 @@ const ref block4{"block4"_id};
     
 const id_symbol let{unique_ids::LET};
 
+const list_symbol alloc_int64 = {id_symbol{unique_ids::ALLOC}, int64_type};
+const list_symbol store_int64 = {id_symbol{unique_ids::STORE}, int64_type};
+const list_symbol load_int64 = {id_symbol{unique_ids::LOAD}, int64_type};
 const list_symbol add_int64 = {id_symbol{unique_ids::ADD}, int64_type};
 const list_symbol sub_int64 = {id_symbol{unique_ids::SUB}, int64_type};
 const list_symbol return_int64 = {id_symbol{unique_ids::RETURN}, int64_type};
-const list_symbol alloc_int64 = {id_symbol{unique_ids::ALLOC}, int64_type};
 const list_symbol cmp_eq_int64 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::EQ}, int64_type};
 const list_symbol cond_branch = {id_symbol{unique_ids::COND_BRANCH}};
 const list_symbol branch = {id_symbol{unique_ids::BRANCH}};
 const list_symbol phi_int64 = {id_symbol{unique_ids::PHI}, int64_type};
+
+template<class T>
+T get_compiled_function(const list_symbol& function_source)
+{
+    unique_ptr<Function> function_owner;
+    tie(function_owner, ignore) = compile_function(function_source.begin(), function_source.end(), context);
+    Function* function = function_owner.get();
+    context.llvm_macro_module().getFunctionList().push_back(function_owner.get());
+    function_owner.release();
+    
+    string str;
+    raw_string_ostream os(str);
+    //BOOST_CHECK_MESSAGE(verifyFunction(*function, &os), os.str());
+    // TODO: this fails - I don't know why, function->dump() looks good to me and verifyFunction doesn't produce a message
+
+    return (T) context.llvm_execution_engine().getPointerToFunction(function);
+}
+
+BOOST_AUTO_TEST_CASE(store_load_test)
+{
+    const list_symbol params =
+    {
+        list{a, int64_type}
+    };
+    const type_symbol return_type = int64_type;
+    const list_symbol body =
+    {
+        list{block1, list
+        {
+            list{let, x, alloc_int64},
+            list{store_int64, a, x},
+            list{let, y, load_int64, x},
+            list{return_int64, y}
+        }}
+    };
+
+    const list_symbol function_source = 
+    {
+        params,
+        return_type,
+        body
+    };
+
+    auto function_ptr = get_compiled_function<uint64_t (*)(uint64_t)>(function_source);
+    BOOST_CHECK(function_ptr(2) == 2);
+    BOOST_CHECK(function_ptr(1231) == 1231);
+}
 
 BOOST_AUTO_TEST_CASE(branch_test)
 {
@@ -165,21 +214,10 @@ BOOST_AUTO_TEST_CASE(branch_test)
         body
     };
     
-    unique_ptr<Function> function_owner;
-    tie(function_owner, ignore) = compile_function(func_source.begin(), func_source.end(), context);
-    Function* function = function_owner.get();
-    context.llvm_macro_module().getFunctionList().push_back(function_owner.get());
-    function_owner.release();
-    
-    string str;
-    raw_string_ostream os(str);
-    //BOOST_CHECK_MESSAGE(verifyFunction(*function, &os), os.str());
-    // TODO: this fails - I don't know why, function->dump() looks good to me and verifyFunction doesn't produce a message
-
-    auto fptr = (uint64_t (*)(uint64_t, uint64_t)) context.llvm_execution_engine().getPointerToFunction(function);
-    BOOST_CHECK(fptr);
-    BOOST_CHECK_EQUAL(fptr(2, 2), 2 + 2);
-    BOOST_CHECK_EQUAL(fptr(5, 3), 5 - 3);
+    auto compiled_function = get_compiled_function<uint64_t (*)(uint64_t, uint64_t)>(func_source);
+    BOOST_CHECK(compiled_function);
+    BOOST_CHECK_EQUAL(compiled_function(2, 2), 2 + 2);
+    BOOST_CHECK_EQUAL(compiled_function(5, 3), 5 - 3);
 }
 
 BOOST_AUTO_TEST_CASE(phi_test)
@@ -226,25 +264,18 @@ BOOST_AUTO_TEST_CASE(phi_test)
         }
     };
     
-    unique_ptr<Function> function_owner;
-    tie(function_owner, ignore) = compile_function(func1_source.begin(), func1_source.end(), context);
-    Function* function = function_owner.get();
-    context.llvm_macro_module().getFunctionList().push_back(function_owner.get());
-    function_owner.release();
-    
-    //BOOST_CHECK_MESSAGE(verifyFunction(*function, &os));
-    // TODO: this fails - I don't know why, function->dump() looks good to me and verifyFunction doesn't produce a message
-    
-    auto f1ptr = (uint64_t (*)(uint64_t, uint64_t)) context.llvm_execution_engine().getPointerToFunction(function);
-    BOOST_CHECK(f1ptr);
-    BOOST_CHECK_EQUAL(f1ptr(2, 2), 2 + 2);
-    BOOST_CHECK_EQUAL(f1ptr(5, 3), 5 - 3);
+    auto compiled_function1 = get_compiled_function<uint64_t (*)(uint64_t, uint64_t)>(func1_source);
+    BOOST_CHECK(compiled_function1);
+    BOOST_CHECK_EQUAL(compiled_function1(2, 2), 2 + 2);
+    BOOST_CHECK_EQUAL(compiled_function1(5, 3), 5 - 3);
+
 
     const list_symbol block4_invalid_def = {block4, list
     {
-        list{let, w, phi_int64, list{z, block3}}, // missing incoming specification for block2
+        list{let, w, phi_int64, list{z, block3}}, // missing incoming for block2
         list{return_int64, w}
     }};
+
     const list_symbol func2_source =
     {
         params,
