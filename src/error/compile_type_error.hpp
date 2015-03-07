@@ -9,6 +9,10 @@ namespace compile_type_error
 
 constexpr std::pair<conststr, conststr> dictionary[] =
 {
+    {"invalid_type_node", ""},
+    {"empty_list_type", ""},
+    {"invalid_type_constructor", ""},
+    {"invalid_type_constructor_argument_number", ""},
     {"int_invalid_argument_number", "invalid number of arguments to 'int': expected 1"},
     {"int_invalid_argument_symbol", "invalid argument: expected a literal (bit width)"},
     {"int_invalid_argument_literal", "invalid bit width: expected a positive integer"},

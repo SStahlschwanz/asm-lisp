@@ -62,13 +62,6 @@ module create_core_module(compilation_context& context)
     add_id_symbol("gt", unique_ids::GT);
     add_id_symbol("ge", unique_ids::GE);
 
-
-    auto int_func = [&](list_symbol::const_iterator begin, list_symbol::const_iterator end)
-    {
-        return compile_int(begin, end, context);
-    };
-    add_symbol("int", macro_symbol{int_func});
-
     return core;
 }
 

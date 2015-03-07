@@ -9,6 +9,7 @@ namespace unique_ids
 enum 
   : std::size_t
 {
+    // instruction constructors
     ADD = 1,
     SUB,
     MUL,
@@ -22,14 +23,19 @@ enum
     CMP,
     RETURN,
     CALL,
-
+    
+    // cmp kinds
     EQ,
     NE,
     LT,
     LE,
     GT,
     GE,
-
+    
+    // type constructors
+    INT,
+    
+    // key words
     LET,
 
     FIRST_UNUSED

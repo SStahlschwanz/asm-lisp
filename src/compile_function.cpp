@@ -3,6 +3,7 @@
 #include "error/core_misc_error.hpp"
 #include "core_unique_ids.hpp"
 #include "boost_variant_utils.hpp"
+#include "core_utils.hpp"
 
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/DerivedTypes.h>
@@ -61,20 +62,6 @@ using boost::none;
 using boost::blank;
 
 using namespace compile_function_error;
-
-const symbol& resolve_refs(const symbol& s)
-{
-    if(s.is<ref_symbol>())
-    {
-        const ref_symbol& r = s.cast<ref_symbol>();
-        if(r.refered() == 0)
-            core_misc_error::fatal<core_misc_error::id("identifier_not_defined")>(s.source());
-        else
-            return resolve_refs(*r.refered());
-    }
-    else
-        return s;
-}
 
 
 pair<unique_ptr<Function>, unordered_map<identifier_id_t, named_value_info>> compile_signature(const symbol& params_node, const symbol& return_type_node, compilation_context& context)

@@ -4,10 +4,23 @@
 #include "symbol.hpp"
 #include "compilation_context.hpp"
 
-type_symbol compile_int(list_symbol::const_iterator begin, list_symbol::const_iterator end,
-        compilation_context& context);
-type_symbol compile_struct(list_symbol::const_iterator begin, list_symbol::const_iterator end,
-        compilation_context& context);
+
+
+struct integer_type
+{
+    unsigned long bit_width;
+};
+
+typedef boost::variant<integer_type> type_kind;
+
+struct type_info
+{
+    const symbol& node;
+    type_kind kind;
+    llvm::Type* llvm_type;
+};
+
+type_info read_type(const symbol& type_node, llvm::LLVMContext& llvm_context);
 
 #endif
 
