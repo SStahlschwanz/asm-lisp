@@ -47,6 +47,11 @@ const ref a{"a"_id};
 const ref b{"b"_id};
 const ref c{"c"_id};
 
+const ref q{"q"_id};
+const ref r{"r"_id};
+const ref s{"s"_id};
+const ref t{"t"_id};
+const ref u{"u"_id};
 const ref v{"v"_id};
 const ref w{"w"_id};
 const ref x{"x"_id};
@@ -67,6 +72,7 @@ const list_symbol add_int64 = {id_symbol{unique_ids::ADD}, int64_type};
 const list_symbol sub_int64 = {id_symbol{unique_ids::SUB}, int64_type};
 const list_symbol return_int64 = {id_symbol{unique_ids::RETURN}, int64_type};
 const list_symbol cmp_eq_int64 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::EQ}, int64_type};
+const list_symbol cmp_ne_int64 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::NE}, int64_type};
 const list_symbol cond_branch = {id_symbol{unique_ids::COND_BRANCH}};
 const list_symbol branch = {id_symbol{unique_ids::BRANCH}};
 const list_symbol phi_int64 = {id_symbol{unique_ids::PHI}, int64_type};
@@ -286,3 +292,67 @@ BOOST_AUTO_TEST_CASE(phi_test)
     BOOST_CHECK_THROW(compile_function(func2_source.begin(), func2_source.end(), context), compile_exception);
     
 }
+
+
+BOOST_AUTO_TEST_CASE(a_times_b_test)
+{
+    const ref result_loc{"result_loc"_id};
+    const ref i_loc{"i_loc"_id};
+    const ref init_cmp{"init_cmp"_id};
+    const ref current_sum{"current_sum"_id};
+    const ref next_sum{"next_sum"_id};
+    const ref current_i{"current_i"_id};
+    const ref next_i{"next_i"_id};
+    const ref loop_cmp{"loop_cmp"_id};
+    const ref result{"result"_id};
+
+    const list params =
+    {
+        list{a, int64_type},
+        list{b, int64_type}
+    };
+    const symbol& return_type = int64_type;
+    const list_symbol body =
+    {
+        list{block1, list
+        {
+            list{let, result_loc, alloc_int64},
+            list{store_int64, lit{"0"}, result_loc}, // v speichert die Zwischenergebnisse und schließlich das Endergebnis der Add.
+            list{let, i_loc, alloc_int64},
+            list{store_int64, lit{"0"}, i_loc}, // w ist ein Zähler, der zählt, wie oft die erste Eingabe addiert werden muss
+            list{let, init_cmp, cmp_ne_int64, b, lit{"0"}}, // x = 1, falls b != 0, sonst: x = 0
+            list{cond_branch, init_cmp, block2, block3}
+            	
+        }},
+        list{block2, list
+        {
+		    list{let, current_sum, load_int64, result_loc}, // y = die aktuelle Summe
+		    list{let, next_sum, add_int64, current_sum, a}, //z ist die neue Summe, nach Addition mit a 
+		    list{store_int64, next_sum, result_loc},
+		    list{let, current_i, load_int64, i_loc}, // der Zähler wird aus dem letzten Block geladen, current_i genannt
+		    list{let, next_i, add_int64, current_i, lit{"1"}},
+		    list{store_int64, next_i, i_loc},
+		    list{let, loop_cmp, cmp_ne_int64, b, next_i},
+		    list{cond_branch, loop_cmp, block2, block3}
+        }},
+        list{block3, list
+        {
+            list{let, result, load_int64, result_loc},
+            list{return_int64, result}    
+        }}
+    };
+
+    const list_symbol function_source = 
+    {
+        params,
+        return_type,
+        body
+    };
+
+    auto function_ptr = get_compiled_function<uint64_t (*)(uint64_t, uint64_t)>(function_source);
+    BOOST_CHECK(function_ptr(2, 3) == 6);
+    BOOST_CHECK(function_ptr(0, 20) == 0);
+    BOOST_CHECK(function_ptr(33, 0) == 0);
+    BOOST_CHECK(function_ptr(0, 0) == 0);
+}
+
