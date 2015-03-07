@@ -34,6 +34,7 @@ enum
     
     // type constructors
     INT,
+    PTR,
     
     // key words
     LET,

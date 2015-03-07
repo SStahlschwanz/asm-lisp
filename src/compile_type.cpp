@@ -23,6 +23,7 @@ using boost::blank;
 using llvm::IntegerType;
 using llvm::LLVMContext;
 using llvm::Type;
+using llvm::PointerType;
 
 using namespace symbol_shortcuts;
 using namespace compile_type_error;
@@ -76,7 +77,7 @@ type_info compile_type(const symbol& node, LLVMContext& llvm_context)
             if(expected_argument_number != type_node.size() - 1)
                 fatal<id("invalid_type_constructor_argument_number")>(type_node.source());
         };
-
+        
         switch(type_constructor.id())
         {
         case unique_ids::INT:
@@ -87,8 +88,14 @@ type_info compile_type(const symbol& node, LLVMContext& llvm_context)
             Type* llvm_type = IntegerType::get(llvm_context, bit_width);
             return type_info{node, integer_type{bit_width}, llvm_type};
         }
+        case unique_ids::PTR:
+        {
+            check_arity("ptr", 0);
+            Type* llvm_type = PointerType::getUnqual(IntegerType::get(llvm_context, 8));
+            return type_info{node, pointer_type{}, llvm_type};
+        }
         default:
-            throw not_implemented{"some constructor"};
+            fatal<id("unknown_type_constructor")>(type_constructor.source());
         }
     }
 
@@ -96,7 +103,10 @@ type_info compile_type(const symbol& node, LLVMContext& llvm_context)
     {
         fatal<id("invalid_type_node")>(node.source());
     });
-
+    if(type_node.id() != unique_ids::PTR)
+        fatal<id("unknown_type_constructor")>(type_node.source());
+    Type* llvm_type = PointerType::getUnqual(IntegerType::get(llvm_context, 8));
+    return type_info{node, pointer_type{}, llvm_type}; 
 }
 
 /*

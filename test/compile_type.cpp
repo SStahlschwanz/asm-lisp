@@ -11,16 +11,16 @@
 #include <llvm/IR/DerivedTypes.h>
 
 using llvm::IntegerType;
+using llvm::PointerType;
 
 using namespace symbol_shortcuts;
 
 
 const id_symbol int_id{unique_ids::INT};
+const id_symbol ptr{unique_ids::PTR};
 
 BOOST_AUTO_TEST_CASE(int_test)
 {
-    compilation_context context;
-    
     const list type1{int_id, lit{"65"}};
     const ref type1_alias{"assd"_id, &type1};
     type_info result = compile_type(type1_alias, context.llvm());
@@ -40,5 +40,12 @@ BOOST_AUTO_TEST_CASE(int_test)
     
     const list type6{int_id, lit_symbol{"53"}, ref_symbol{""_id}};
     BOOST_CHECK_THROW(compile_type(type6, context.llvm()), compile_exception);
+}
+
+BOOST_AUTO_TEST_CASE(pointer_test)
+{
+    const list type1{ptr};
+    type_info result = compile_type(type1, context.llvm());
+    BOOST_CHECK(result.llvm_type == PointerType::getUnqual(IntegerType::get(context.llvm(), 8)));
 }
 

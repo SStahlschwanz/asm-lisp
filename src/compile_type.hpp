@@ -4,14 +4,14 @@
 #include "symbol.hpp"
 #include "compilation_context.hpp"
 
-
-
 struct integer_type
 {
     unsigned long bit_width;
 };
+struct pointer_type
+{};
 
-typedef boost::variant<integer_type> type_kind;
+typedef boost::variant<integer_type, pointer_type> type_kind;
 
 struct type_info
 {
