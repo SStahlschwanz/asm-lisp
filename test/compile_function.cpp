@@ -356,3 +356,27 @@ BOOST_AUTO_TEST_CASE(a_times_b_test)
     BOOST_CHECK(function_ptr(0, 0) == 0);
 }
 
+BOOST_AUTO_TEST_CASE(test_missing_let)
+{
+    const list params =
+    {
+        list{a, int64_type},
+        list{b, int64_type}
+    };
+    const symbol& return_type = int64_type;
+    const list_symbol body =
+    {
+        list{block1, list
+        {
+            list{x, add_int64, a, b}
+        }}
+    };
+
+    const list_symbol function_source = 
+    {
+        params,
+        return_type,
+        body
+    };
+    BOOST_CHECK_THROW(get_compiled_function<void*>(function_source), compile_exception);
+}
