@@ -194,14 +194,22 @@ struct phi_call
     std::vector<incoming> incomings;
     const symbol& statement;
 };
+struct ct_only_call
+{
+    const symbol& instruction_node;
+};
+struct rt_only_call
+{
+    const symbol& instruction_node;
+};
 
 struct special_calls_info
 {
     std::vector<branch_call> branches;
     std::vector<cond_branch_call> cond_branches;
     std::vector<phi_call> phis;
-    //std::vector<const symbol&> ct_only_instructions;
-    //std::vector<const symbol&> rt_only_instructions;
+    std::vector<ct_only_call> ct_only_instructions;
+    std::vector<rt_only_call> rt_only_instructions;
 };
 
 struct statement_context
