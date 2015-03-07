@@ -3,6 +3,7 @@
 
 #include "symbol.hpp"
 #include "compilation_context.hpp"
+#include "compile_type.hpp"
 
 #include <utility>
 #include <memory>
@@ -30,28 +31,28 @@ struct instruction_info
         static constexpr bool is_proc_only = false;
         static constexpr bool is_macro_only = false;
 
-        const type_symbol& type;
+        type_info type;
     };
     struct sub
     {
         static constexpr bool is_proc_only = false;
         static constexpr bool is_macro_only = false;
 
-        const type_symbol& type;
+        type_info type;
     };
     struct mul
     {
         static constexpr bool is_proc_only = false;
         static constexpr bool is_macro_only = false;
 
-        const type_symbol& type;
+        type_info type;
     };
     struct div
     {
         static constexpr bool is_proc_only = false;
         static constexpr bool is_macro_only = false;
 
-        const type_symbol& type;
+        type_info type;
     };
     
     struct alloc
@@ -59,21 +60,21 @@ struct instruction_info
         static constexpr bool is_proc_only = false;
         static constexpr bool is_macro_only = false;
 
-        const type_symbol& type;
+        type_info type;
     };
     struct store
     {
         static constexpr bool is_proc_only = false;
         static constexpr bool is_macro_only = false;
 
-        const type_symbol& type;
+        type_info type;
     };
     struct load
     {
         static constexpr bool is_proc_only = false;
         static constexpr bool is_macro_only = false;
 
-        const type_symbol& type;
+        type_info type;
     };
     struct cond_branch
     {
@@ -90,7 +91,7 @@ struct instruction_info
         static constexpr bool is_proc_only = false;
         static constexpr bool is_macro_only = false;
 
-        const type_symbol& type;
+        type_info type;
     };
     struct cmp
     {
@@ -98,21 +99,21 @@ struct instruction_info
         static constexpr bool is_macro_only = false;
 
         std::size_t cmp_kind;
-        const type_symbol& type;
+        type_info type;
     };
     struct return_inst
     {
         static constexpr bool is_proc_only = false;
         static constexpr bool is_macro_only = false;
 
-        const type_symbol& type;
+        type_info type;
     };
     struct call
     {
         static constexpr bool is_proc_only = false;
         static constexpr bool is_macro_only = false;
 
-        const type_symbol& type;
+        type_info type;
     };
 
     struct list_create
@@ -232,7 +233,7 @@ struct function_info
 };
 
 
-instruction_info parse_instruction(const symbol& node);
+instruction_info parse_instruction(const symbol& node, llvm::LLVMContext& llvm_context);
 
 boost::optional<named_value_info> compile_statement(const symbol& node, statement_context& st_context);
 

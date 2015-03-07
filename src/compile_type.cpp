@@ -58,7 +58,7 @@ unsigned long read_bit_width(const symbol& node)
     return width;
 }
 
-type_info read_type(const symbol& node, LLVMContext& llvm_context)
+type_info compile_type(const symbol& node, LLVMContext& llvm_context)
 {
     const symbol& resolved_node = resolve_refs(node);
     if(resolved_node.is<list_symbol>())

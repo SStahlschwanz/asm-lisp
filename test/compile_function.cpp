@@ -41,14 +41,38 @@ using boost::get;
 
 using namespace symbol_shortcuts;
 
+const list_symbol int64_type{id_symbol{unique_ids::INT}, lit{"64"}};
+
+const ref a{"a"_id};
+const ref b{"b"_id};
+const ref c{"c"_id};
+
+const ref v{"v"_id};
+const ref w{"w"_id};
+const ref x{"x"_id};
+const ref y{"y"_id};
+const ref z{"z"_id};
+
+const ref block1{"block1"_id};
+const ref block2{"block2"_id};
+const ref block3{"block3"_id};
+const ref block4{"block4"_id};
+    
+const id_symbol let{unique_ids::LET};
+
+const list_symbol alloc_int64 = {id_symbol{unique_ids::ALLOC}, int64_type};
+const list_symbol store_int64 = {id_symbol{unique_ids::STORE}, int64_type};
+const list_symbol load_int64 = {id_symbol{unique_ids::LOAD}, int64_type};
+const list_symbol add_int64 = {id_symbol{unique_ids::ADD}, int64_type};
+const list_symbol sub_int64 = {id_symbol{unique_ids::SUB}, int64_type};
+const list_symbol return_int64 = {id_symbol{unique_ids::RETURN}, int64_type};
+const list_symbol cmp_eq_int64 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::EQ}, int64_type};
+const list_symbol cond_branch = {id_symbol{unique_ids::COND_BRANCH}};
+const list_symbol branch = {id_symbol{unique_ids::BRANCH}};
+const list_symbol phi_int64 = {id_symbol{unique_ids::PHI}, int64_type};
+
 BOOST_AUTO_TEST_CASE(compile_signature_test)
 {
-    const type_symbol int64_type{IntegerType::get(context.llvm(), 64)};
-    const ref a{"a"_id};
-    const ref b{"b"_id};
-    const ref c{"c"_id};
-    
-
     const any_symbol params1 = list
     {
         list{a, int64_type},
@@ -82,55 +106,26 @@ BOOST_AUTO_TEST_CASE(compile_signature_test)
 BOOST_AUTO_TEST_CASE(compile_instruction_test)
 {
     Type* llvm_int64 = IntegerType::get(context.llvm(), 64);
-    const type_symbol int64_type{llvm_int64};
     
     const id_symbol add_constructor{unique_ids::ADD};
     const list_symbol instruction1{add_constructor, int64_type}; 
-    const instruction_info got1 = parse_instruction(instruction1);
-    BOOST_CHECK(get<instruction_info::add>(got1.kind).type == int64_type);
+    const instruction_info got1 = parse_instruction(instruction1, context.llvm());
+    BOOST_CHECK(get<instruction_info::add>(got1.kind).type.llvm_type == llvm_int64);
     
     const id_symbol div_constructor{unique_ids::DIV};
     const list_symbol instruction2{div_constructor, int64_type}; 
-    const instruction_info got2 = parse_instruction(instruction2);
-    BOOST_CHECK(get<instruction_info::div>(got2.kind).type == int64_type);
+    const instruction_info got2 = parse_instruction(instruction2, context.llvm());
+    BOOST_CHECK(get<instruction_info::div>(got2.kind).type.llvm_type == llvm_int64);
 
     const id_symbol cmp_constructor{unique_ids::CMP};
     const ref_symbol cmp_ref{"asdfasdf"_id, &cmp_constructor};
     const id_symbol lt{unique_ids::LT};
     const list_symbol instruction3{cmp_ref, lt, int64_type};
-    const instruction_info got3 = parse_instruction(instruction3);
+    const instruction_info got3 = parse_instruction(instruction3, context.llvm());
     BOOST_CHECK(get<instruction_info::cmp>(got3.kind).cmp_kind == unique_ids::LT);
-    BOOST_CHECK(get<instruction_info::cmp>(got3.kind).type == int64_type);
+    BOOST_CHECK(get<instruction_info::cmp>(got3.kind).type.llvm_type == llvm_int64);
 }
 
-const type_symbol int64_type{IntegerType::get(context.llvm(), 64)};
-
-const ref a{"a"_id};
-const ref b{"b"_id};
-
-const ref v{"v"_id};
-const ref w{"w"_id};
-const ref x{"x"_id};
-const ref y{"y"_id};
-const ref z{"z"_id};
-
-const ref block1{"block1"_id};
-const ref block2{"block2"_id};
-const ref block3{"block3"_id};
-const ref block4{"block4"_id};
-    
-const id_symbol let{unique_ids::LET};
-
-const list_symbol alloc_int64 = {id_symbol{unique_ids::ALLOC}, int64_type};
-const list_symbol store_int64 = {id_symbol{unique_ids::STORE}, int64_type};
-const list_symbol load_int64 = {id_symbol{unique_ids::LOAD}, int64_type};
-const list_symbol add_int64 = {id_symbol{unique_ids::ADD}, int64_type};
-const list_symbol sub_int64 = {id_symbol{unique_ids::SUB}, int64_type};
-const list_symbol return_int64 = {id_symbol{unique_ids::RETURN}, int64_type};
-const list_symbol cmp_eq_int64 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::EQ}, int64_type};
-const list_symbol cond_branch = {id_symbol{unique_ids::COND_BRANCH}};
-const list_symbol branch = {id_symbol{unique_ids::BRANCH}};
-const list_symbol phi_int64 = {id_symbol{unique_ids::PHI}, int64_type};
 
 template<class T>
 T get_compiled_function(const list_symbol& function_source)
@@ -155,7 +150,7 @@ BOOST_AUTO_TEST_CASE(store_load_test)
     {
         list{a, int64_type}
     };
-    const type_symbol return_type = int64_type;
+    const symbol& return_type = int64_type;
     const list_symbol body =
     {
         list{block1, list
@@ -187,7 +182,7 @@ BOOST_AUTO_TEST_CASE(branch_test)
         list{b, int64_type},
     };
     
-    const type_symbol return_type = int64_type;
+    const symbol& return_type = int64_type;
     
     const list_symbol body =
     {
@@ -228,7 +223,7 @@ BOOST_AUTO_TEST_CASE(phi_test)
         list{b, int64_type},
     };
     
-    const type_symbol return_type = int64_type;
+    const symbol& return_type = int64_type;
 
     const list_symbol block1_def = {block1, list
     {

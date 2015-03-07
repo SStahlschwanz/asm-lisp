@@ -71,11 +71,7 @@ pair<unique_ptr<Function>, unordered_map<identifier_id_t, named_value_info>> com
         fatal<id("invalid_param_list")>(params_node.source());
     });
     
-    const symbol& resolved_return_symbol = resolve_refs(return_type_node);
-    const type_symbol& return_type = resolved_return_symbol.cast_else<type_symbol>([&]()
-    {
-        fatal<id("invalid_return_type")>(resolved_return_symbol.source());
-    });
+    type_info return_type = compile_type(return_type_node, context.llvm());
     
     vector<named_value_info> arg_infos;
     arg_infos.reserve(params_list.size());
@@ -95,16 +91,12 @@ pair<unique_ptr<Function>, unordered_map<identifier_id_t, named_value_info>> com
             fatal<id("invalid_parameter_name")>(param_declaration[0].source());
         });
 
-        const symbol& resolved_param_type_symbol = resolve_refs(param_declaration[1]);
-        const type_symbol& param_type = resolved_param_type_symbol.cast_else<type_symbol>([&]()
-        {
-            fatal<id("invalid_parameter_type")>(resolved_param_type_symbol.source());
-        });
+        type_info param_type = compile_type(param_declaration[1], context.llvm());
         arg_infos.push_back(named_value_info{param_declaration, param_name, nullptr}); // llvm_value is set later
-        arg_types.push_back(param_type.llvm_type());
+        arg_types.push_back(param_type.llvm_type);
     }
     
-    FunctionType* function_type = FunctionType::get(return_type.llvm_type(), arg_types, false);
+    FunctionType* function_type = FunctionType::get(return_type.llvm_type, arg_types, false);
     unique_ptr<Function> function{Function::Create(function_type, Function::InternalLinkage)};
     unordered_map<identifier_id_t, named_value_info> parameter_table;
     
@@ -127,34 +119,29 @@ pair<unique_ptr<Function>, unordered_map<identifier_id_t, named_value_info>> com
 }
 
 template<class InstructionType>
-instruction_info parse_unary_typed_instruction(const char* name, const list_symbol& statement)
+instruction_info parse_unary_typed_instruction(const char* name, const list_symbol& statement, LLVMContext& llvm_context)
 {
     if(statement.size() != 2)
         fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), name, 1, statement.size() - 1);
 
-    const symbol& resolved_param = resolve_refs(statement[1]);
-    const type_symbol& type = resolved_param.cast_else<type_symbol>([&]
-    {
-        fatal<id("invalid_instruction_type_parameter")>(resolved_param.source());
-    });
+    type_info type = compile_type(statement[1], llvm_context);
     return instruction_info{statement, InstructionType{type}};
 }
 template<class InstructionType>
-instruction_info parse_number_instruction(const char* name, const list_symbol& statement)
+instruction_info parse_number_instruction(const char* name, const list_symbol& statement, LLVMContext& llvm_context)
 {
-    instruction_info result = parse_unary_typed_instruction<InstructionType>(name, statement);
-    const type_symbol& type = get<InstructionType>(result.kind).type;
-    if(!isa<IntegerType>(type.llvm_type()))
-        fatal<id("invalid_number_type")>(type.source());
+    instruction_info result = parse_unary_typed_instruction<InstructionType>(name, statement, llvm_context);
+    type_info type = get<InstructionType>(result.kind).type;
+    if(!isa<IntegerType>(type.llvm_type))
+        fatal<id("invalid_number_type")>(type.node.source());
     return result;
 }
-instruction_info parse_cmp_instruction(const list_symbol& statement)
+instruction_info parse_cmp_instruction(const list_symbol& statement, LLVMContext& llvm_context)
 {
     if(statement.size() != 3)
         fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), "cmp", 2, statement.size() - 1);
 
     const symbol& resolved_first_arg = resolve_refs(statement[1]);
-    const symbol& resolved_second_arg = resolve_refs(statement[2]);
     
     const id_symbol& first_arg = resolved_first_arg.cast_else<id_symbol>([&]
     {
@@ -173,15 +160,12 @@ instruction_info parse_cmp_instruction(const list_symbol& statement)
     if(find(begin(known_comparison_kinds), end(known_comparison_kinds), comparison_kind) == end(known_comparison_kinds))
         fatal<id("unknown_comparison_kind")>(resolved_first_arg.source());
 
-    const type_symbol& second_arg = resolved_second_arg.cast_else<type_symbol>([&]
-    {
-        fatal<id("invalid_instruction_type_parameter")>(resolved_second_arg.source());
-    });
+    type_info type = compile_type(statement[2], llvm_context);
 
-    return instruction_info{statement, instruction_info::cmp{comparison_kind, second_arg}};
+    return instruction_info{statement, instruction_info::cmp{comparison_kind, move(type)}};
 }
 
-instruction_info parse_instruction(const symbol& node)
+instruction_info parse_instruction(const symbol& node, LLVMContext& llvm_context)
 {
     if(node.is<list_symbol>())
     {
@@ -196,21 +180,21 @@ instruction_info parse_instruction(const symbol& node)
         switch(instruction_constructor.id())
         {
         case unique_ids::ADD:
-            return parse_number_instruction<instruction_info::add>("add", statement);
+            return parse_number_instruction<instruction_info::add>("add", statement, llvm_context);
         case unique_ids::SUB:
-            return parse_number_instruction<instruction_info::sub>("sub", statement);
+            return parse_number_instruction<instruction_info::sub>("sub", statement, llvm_context);
         case unique_ids::MUL:
-            return parse_number_instruction<instruction_info::mul>("mul", statement);
+            return parse_number_instruction<instruction_info::mul>("mul", statement, llvm_context);
         case unique_ids::DIV:
-            return parse_number_instruction<instruction_info::div>("div", statement);
+            return parse_number_instruction<instruction_info::div>("div", statement, llvm_context);
         case unique_ids::ALLOC:
-            return parse_unary_typed_instruction<instruction_info::alloc>("alloc", statement);
+            return parse_unary_typed_instruction<instruction_info::alloc>("alloc", statement, llvm_context);
         case unique_ids::STORE:
-            return parse_unary_typed_instruction<instruction_info::store>("store", statement);
+            return parse_unary_typed_instruction<instruction_info::store>("store", statement, llvm_context);
         case unique_ids::LOAD:
-            return parse_unary_typed_instruction<instruction_info::load>("load", statement);
+            return parse_unary_typed_instruction<instruction_info::load>("load", statement, llvm_context);
         case unique_ids::RETURN:
-            return parse_unary_typed_instruction<instruction_info::return_inst>("return", statement);
+            return parse_unary_typed_instruction<instruction_info::return_inst>("return", statement, llvm_context);
         case unique_ids::COND_BRANCH:
             if(statement.size() != 1)
                 fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), "cond_branch", 0, statement.size() - 1);
@@ -220,9 +204,9 @@ instruction_info parse_instruction(const symbol& node)
                 fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), "branch", 0, statement.size() - 1);
             return instruction_info{statement, instruction_info::branch{}};
         case unique_ids::PHI:
-            return parse_unary_typed_instruction<instruction_info::phi>("phi", statement);
+            return parse_unary_typed_instruction<instruction_info::phi>("phi", statement, llvm_context);
         case unique_ids::CMP:
-            return parse_cmp_instruction(statement);
+            return parse_cmp_instruction(statement, llvm_context);
         case unique_ids::CALL:
             throw not_implemented{"instruction"};
         default:
@@ -235,13 +219,13 @@ instruction_info parse_instruction(const symbol& node)
 
 Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::const_iterator end, statement_context& st_context)
 {
+    IRBuilder<>& builder = st_context.builder;
+
     assert(begin != end);
-    instruction_info instruction = parse_instruction(*begin);
+    instruction_info instruction = parse_instruction(*begin, builder.getContext());
     ++begin;
 
     size_t argument_number = distance(begin, end);
-
-    IRBuilder<>& builder = st_context.builder;
 
     auto check_arity = [&](const char* instruction_name, size_t expected_argument_number)
     {
@@ -298,44 +282,44 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
     [&](const instruction_info::add& inst)
     {
         check_arity("add", 2);
-        Value* arg1 = get_value(*begin, inst.type.llvm_type());
-        Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type());
+        Value* arg1 = get_value(*begin, inst.type.llvm_type);
+        Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type);
         return builder.CreateAdd(arg1, arg2);
     },
     [&](const instruction_info::sub& inst)
     {
         check_arity("sub", 2);
-        Value* arg1 = get_value(*begin, inst.type.llvm_type());
-        Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type());
+        Value* arg1 = get_value(*begin, inst.type.llvm_type);
+        Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type);
         return builder.CreateSub(arg1, arg2);
     },
     [&](const instruction_info::mul& inst)
     {
         check_arity("mul", 2);
-        Value* arg1 = get_value(*begin, inst.type.llvm_type());
-        Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type());
+        Value* arg1 = get_value(*begin, inst.type.llvm_type);
+        Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type);
         return builder.CreateMul(arg1, arg2);
     },
     [&](const instruction_info::div& inst)
     {
         check_arity("div", 2);
-        Value* arg1 = get_value(*begin, inst.type.llvm_type());
-        Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type());
+        Value* arg1 = get_value(*begin, inst.type.llvm_type);
+        Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type);
         return builder.CreateSDiv(arg1, arg2);
     },
     [&](const instruction_info::alloc& inst)
     {
         check_arity("alloc", 0);
-        Value* typed_pointer = builder.CreateAlloca(inst.type.llvm_type());
+        Value* typed_pointer = builder.CreateAlloca(inst.type.llvm_type);
         return builder.CreatePointerCast(typed_pointer, pointer_type);
     },
     [&](const instruction_info::store& inst)
     {
         check_arity("store", 2);
-        Value* arg1 = get_value(*begin, inst.type.llvm_type());
+        Value* arg1 = get_value(*begin, inst.type.llvm_type);
         Value* arg2 = get_value(*(begin + 1), pointer_type);
         
-        Type* typed_pointer_type = PointerType::getUnqual(inst.type.llvm_type());
+        Type* typed_pointer_type = PointerType::getUnqual(inst.type.llvm_type);
         Value* typed_pointer = builder.CreatePointerCast(arg2, typed_pointer_type);
         return builder.CreateStore(arg1, typed_pointer);
     },
@@ -344,15 +328,15 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
         check_arity("load", 1);
         Value* arg = get_value(*begin, pointer_type);
 
-        Type* typed_pointer_type = PointerType::getUnqual(inst.type.llvm_type());
+        Type* typed_pointer_type = PointerType::getUnqual(inst.type.llvm_type);
         Value* typed_pointer = builder.CreatePointerCast(arg, typed_pointer_type);
         return builder.CreateLoad(typed_pointer);
     },
     [&](const instruction_info::cmp& inst) -> Value*
     {
         check_arity("cmp", 2);
-        Value* arg1 = get_value(*begin, inst.type.llvm_type());
-        Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type());
+        Value* arg1 = get_value(*begin, inst.type.llvm_type);
+        Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type);
         switch(inst.cmp_kind)
         {
         case unique_ids::EQ:
@@ -375,7 +359,7 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
     [&](const instruction_info::return_inst& inst)
     {
         check_arity("return", 1);
-        Value* arg = get_value(*begin, inst.type.llvm_type());
+        Value* arg = get_value(*begin, inst.type.llvm_type);
         return builder.CreateRet(arg);
     },
     [&](const instruction_info::cond_branch& inst)
@@ -434,7 +418,7 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
             phi.incomings.push_back({incoming_variable_name, incoming_block_name});
         }
         
-        PHINode* value = builder.CreatePHI(inst.type.llvm_type(), 0);
+        PHINode* value = builder.CreatePHI(inst.type.llvm_type, 0);
         phi.value = value;
         st_context.special_calls.phis.push_back(move(phi));
         return value;

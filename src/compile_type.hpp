@@ -20,7 +20,7 @@ struct type_info
     llvm::Type* llvm_type;
 };
 
-type_info read_type(const symbol& type_node, llvm::LLVMContext& llvm_context);
+type_info compile_type(const symbol& type_node, llvm::LLVMContext& llvm_context);
 
 #endif
 
