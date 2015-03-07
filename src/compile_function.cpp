@@ -305,6 +305,8 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
     };
     
     
+    Type* pointer_type = PointerType::get(IntegerType::get(builder.getContext(), 8), 0);
+
     return visit<Value*>(instruction.kind,
     [&](const instruction_info::add& inst)
     {
@@ -337,22 +339,27 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
     [&](const instruction_info::alloc& inst)
     {
         check_arity("alloc", 0);
-        return builder.CreateAlloca(inst.type.llvm_type());
+        Value* typed_pointer = builder.CreateAlloca(inst.type.llvm_type());
+        return builder.CreatePointerCast(typed_pointer, pointer_type);
     },
     [&](const instruction_info::store& inst)
     {
         check_arity("store", 2);
         Value* arg1 = get_value(*begin, inst.type.llvm_type());
-        Type* ptr_type = PointerType::getUnqual(inst.type.llvm_type());
-        Value* arg2 = get_value(*(begin + 1), ptr_type);
-        return builder.CreateStore(arg1, arg2);
+        Value* arg2 = get_value(*(begin + 1), pointer_type);
+        
+        Type* typed_pointer_type = PointerType::getUnqual(inst.type.llvm_type());
+        Value* typed_pointer = builder.CreatePointerCast(arg2, typed_pointer_type);
+        return builder.CreateStore(arg1, typed_pointer);
     },
     [&](const instruction_info::load& inst)
     {
         check_arity("load", 1);
-        Type* ptr_type = PointerType::getUnqual(inst.type.llvm_type());
-        Value* arg = get_value(*begin, ptr_type);
-        return builder.CreateLoad(arg);
+        Value* arg = get_value(*begin, pointer_type);
+
+        Type* typed_pointer_type = PointerType::getUnqual(inst.type.llvm_type());
+        Value* typed_pointer = builder.CreatePointerCast(arg, typed_pointer_type);
+        return builder.CreateLoad(typed_pointer);
     },
     [&](const instruction_info::cmp& inst) -> Value*
     {
