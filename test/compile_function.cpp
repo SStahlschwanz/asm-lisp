@@ -86,21 +86,21 @@ BOOST_AUTO_TEST_CASE(compile_instruction_test)
     
     const id_symbol add_constructor{unique_ids::ADD};
     const list_symbol instruction1{add_constructor, int64_type}; 
-    const instruction_statement got1 = compile_instruction(instruction1);
-    BOOST_CHECK(get<instruction_statement::add>(got1.instruction).type == int64_type);
+    const instruction_info got1 = parse_instruction(instruction1);
+    BOOST_CHECK(get<instruction_info::add>(got1.kind).type == int64_type);
     
     const id_symbol div_constructor{unique_ids::DIV};
     const list_symbol instruction2{div_constructor, int64_type}; 
-    const instruction_statement got2 = compile_instruction(instruction2);
-    BOOST_CHECK(get<instruction_statement::div>(got2.instruction).type == int64_type);
+    const instruction_info got2 = parse_instruction(instruction2);
+    BOOST_CHECK(get<instruction_info::div>(got2.kind).type == int64_type);
 
     const id_symbol cmp_constructor{unique_ids::CMP};
     const ref_symbol cmp_ref{"asdfasdf"_id, &cmp_constructor};
     const id_symbol lt{unique_ids::LT};
     const list_symbol instruction3{cmp_ref, lt, int64_type};
-    const instruction_statement got3 = compile_instruction(instruction3);
-    BOOST_CHECK(get<instruction_statement::cmp>(got3.instruction).cmp_kind == unique_ids::LT);
-    BOOST_CHECK(get<instruction_statement::cmp>(got3.instruction).type == int64_type);
+    const instruction_info got3 = parse_instruction(instruction3);
+    BOOST_CHECK(get<instruction_info::cmp>(got3.kind).cmp_kind == unique_ids::LT);
+    BOOST_CHECK(get<instruction_info::cmp>(got3.kind).type == int64_type);
 }
 
 const type_symbol int64_type{IntegerType::get(context.llvm(), 64)};

@@ -23,10 +23,7 @@ struct named_value_info
     llvm::Value* llvm_value;
 };
 
-std::pair<std::unique_ptr<llvm::Function>, std::unordered_map<identifier_id_t, named_value_info>> compile_signature(const symbol& params_node, const symbol& return_type_node, compilation_context& context);
-
-
-struct instruction_statement
+struct instruction_info
 {
     struct add
     {
@@ -172,21 +169,21 @@ struct instruction_statement
         list_pop,
         list_get,
         list_set
-    > instruction;
+    > kind;
 };
 
-struct incomplete_cond_branch
+struct cond_branch_call
 {
     llvm::BranchInst* value;
     const ref_symbol& true_block_name;
     const ref_symbol& false_block_name;
 };
-struct incomplete_branch
+struct branch_call
 {
     llvm::BranchInst* value;
     const ref_symbol& block_name;
 };
-struct incomplete_phi
+struct phi_call
 {
     llvm::PHINode* value;
     struct incoming
@@ -198,32 +195,42 @@ struct incomplete_phi
     const symbol& statement;
 };
 
-typedef boost::variant
-<
-    incomplete_cond_branch,
-    incomplete_branch,
-    incomplete_phi
-> incomplete_statement;
+struct special_calls_info
+{
+    std::vector<branch_call> branches;
+    std::vector<cond_branch_call> cond_branches;
+    std::vector<phi_call> phis;
+    //std::vector<const symbol&> ct_only_instructions;
+    //std::vector<const symbol&> rt_only_instructions;
+};
 
-instruction_statement compile_instruction(const symbol& node);
-template<class VariableLookupFunctor>
-std::pair<boost::optional<named_value_info>, boost::optional<incomplete_statement>> compile_statement(const symbol& node, VariableLookupFunctor&& lookup_variable, llvm::IRBuilder<>& builder);
-
+struct statement_context
+{
+    llvm::IRBuilder<>& builder;
+    std::function<named_value_info& (const ref_symbol&)> lookup_variable;
+    special_calls_info& special_calls;
+};
 struct block_info
 {
     const ref_symbol& block_name;
     std::unordered_map<identifier_id_t, named_value_info> variable_table;
     llvm::BasicBlock* llvm_block;
-    std::vector<incomplete_statement> incomplete_statements;
 };
-std::pair<block_info, std::unique_ptr<llvm::BasicBlock>> compile_block(const symbol& block_node, const std::unordered_map<identifier_id_t, named_value_info>& global_variable_table, compilation_context& context);
-
 struct function_info
 {
     bool uses_proc_instructions;
     bool uses_macro_instructions;
     llvm::Function* llvm_function;
 };
+
+
+instruction_info parse_instruction(const symbol& node);
+
+boost::optional<named_value_info> compile_statement(const symbol& node, statement_context& st_context);
+
+block_info compile_block(const symbol& block_node, llvm::BasicBlock& llvm_block, const std::function<named_value_info& (identifier_id_t)>& lookup_global_variable, special_calls_info& special_calls, compilation_context& context);
+
+std::pair<std::unique_ptr<llvm::Function>, std::unordered_map<identifier_id_t, named_value_info>> compile_signature(const symbol& params_node, const symbol& return_type_node, compilation_context& context);
 
 std::pair<std::unique_ptr<llvm::Function>, function_info> compile_function(list_symbol::const_iterator begin, list_symbol::const_iterator end, compilation_context& context);
 

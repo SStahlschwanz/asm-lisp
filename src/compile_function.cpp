@@ -140,7 +140,7 @@ pair<unique_ptr<Function>, unordered_map<identifier_id_t, named_value_info>> com
 }
 
 template<class InstructionType>
-instruction_statement compile_unary_typed_instruction(const char* name, const list_symbol& statement)
+instruction_info parse_unary_typed_instruction(const char* name, const list_symbol& statement)
 {
     if(statement.size() != 2)
         fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), name, 1, statement.size() - 1);
@@ -150,18 +150,18 @@ instruction_statement compile_unary_typed_instruction(const char* name, const li
     {
         fatal<id("invalid_instruction_type_parameter")>(resolved_param.source());
     });
-    return instruction_statement{statement, InstructionType{type}};
+    return instruction_info{statement, InstructionType{type}};
 }
 template<class InstructionType>
-instruction_statement compile_number_instruction(const char* name, const list_symbol& statement)
+instruction_info parse_number_instruction(const char* name, const list_symbol& statement)
 {
-    instruction_statement result = compile_unary_typed_instruction<InstructionType>(name, statement);
-    const type_symbol& type = get<InstructionType>(result.instruction).type;
+    instruction_info result = parse_unary_typed_instruction<InstructionType>(name, statement);
+    const type_symbol& type = get<InstructionType>(result.kind).type;
     if(!isa<IntegerType>(type.llvm_type()))
         fatal<id("invalid_number_type")>(type.source());
     return result;
 }
-instruction_statement compile_cmp_instruction(const list_symbol& statement)
+instruction_info parse_cmp_instruction(const list_symbol& statement)
 {
     if(statement.size() != 3)
         fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), "cmp", 2, statement.size() - 1);
@@ -191,10 +191,10 @@ instruction_statement compile_cmp_instruction(const list_symbol& statement)
         fatal<id("invalid_instruction_type_parameter")>(resolved_second_arg.source());
     });
 
-    return instruction_statement{statement, instruction_statement::cmp{comparison_kind, second_arg}};
+    return instruction_info{statement, instruction_info::cmp{comparison_kind, second_arg}};
 }
 
-instruction_statement compile_instruction(const symbol& node)
+instruction_info parse_instruction(const symbol& node)
 {
     if(node.is<list_symbol>())
     {
@@ -209,33 +209,33 @@ instruction_statement compile_instruction(const symbol& node)
         switch(instruction_constructor.id())
         {
         case unique_ids::ADD:
-            return compile_number_instruction<instruction_statement::add>("add", statement);
+            return parse_number_instruction<instruction_info::add>("add", statement);
         case unique_ids::SUB:
-            return compile_number_instruction<instruction_statement::sub>("sub", statement);
+            return parse_number_instruction<instruction_info::sub>("sub", statement);
         case unique_ids::MUL:
-            return compile_number_instruction<instruction_statement::mul>("mul", statement);
+            return parse_number_instruction<instruction_info::mul>("mul", statement);
         case unique_ids::DIV:
-            return compile_number_instruction<instruction_statement::div>("div", statement);
+            return parse_number_instruction<instruction_info::div>("div", statement);
         case unique_ids::ALLOC:
-            return compile_unary_typed_instruction<instruction_statement::alloc>("alloc", statement);
+            return parse_unary_typed_instruction<instruction_info::alloc>("alloc", statement);
         case unique_ids::STORE:
-            return compile_unary_typed_instruction<instruction_statement::store>("store", statement);
+            return parse_unary_typed_instruction<instruction_info::store>("store", statement);
         case unique_ids::LOAD:
-            return compile_unary_typed_instruction<instruction_statement::load>("load", statement);
+            return parse_unary_typed_instruction<instruction_info::load>("load", statement);
         case unique_ids::RETURN:
-            return compile_unary_typed_instruction<instruction_statement::return_inst>("return", statement);
+            return parse_unary_typed_instruction<instruction_info::return_inst>("return", statement);
         case unique_ids::COND_BRANCH:
             if(statement.size() != 1)
                 fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), "cond_branch", 0, statement.size() - 1);
-            return instruction_statement{statement, instruction_statement::cond_branch{}};
+            return instruction_info{statement, instruction_info::cond_branch{}};
         case unique_ids::BRANCH:
             if(statement.size() != 1)
                 fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), "branch", 0, statement.size() - 1);
-            return instruction_statement{statement, instruction_statement::branch{}};
+            return instruction_info{statement, instruction_info::branch{}};
         case unique_ids::PHI:
-            return compile_unary_typed_instruction<instruction_statement::phi>("phi", statement);
+            return parse_unary_typed_instruction<instruction_info::phi>("phi", statement);
         case unique_ids::CMP:
-            return compile_cmp_instruction(statement);
+            return parse_cmp_instruction(statement);
         case unique_ids::CALL:
             throw not_implemented{"instruction"};
         default:
@@ -246,14 +246,16 @@ instruction_statement compile_instruction(const symbol& node)
         throw not_implemented{"instruction is not a list"};
 }
 
-template<class VariableLookupFunctor>
-pair<Value*, optional<incomplete_statement>> compile_instruction_call(list_symbol::const_iterator begin, list_symbol::const_iterator end, VariableLookupFunctor&& lookup_variable, IRBuilder<>& builder)
+Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::const_iterator end, statement_context& st_context)
 {
     assert(begin != end);
-    instruction_statement instruction = compile_instruction(*begin);
+    instruction_info instruction = parse_instruction(*begin);
     ++begin;
 
     size_t argument_number = distance(begin, end);
+
+    IRBuilder<>& builder = st_context.builder;
+
     auto check_arity = [&](const char* instruction_name, size_t expected_argument_number)
     {
         if(argument_number != expected_argument_number)
@@ -265,12 +267,10 @@ pair<Value*, optional<incomplete_statement>> compile_instruction_call(list_symbo
         if(arg_node.is<ref_symbol>())
         {
             const ref_symbol& name = arg_node.cast<ref_symbol>();
-            optional<named_value_info> value = lookup_variable(name.identifier());
-            if(!value)
-                fatal<id("variable_undefined")>(name.source());
-            if(expected_type != value->llvm_value->getType())
+            named_value_info& value = st_context.lookup_variable(name);
+            if(expected_type != value.llvm_value->getType())
                 fatal<id("variable_type_mismatch")>(name.source());
-            return value->llvm_value;
+            return value.llvm_value;
         }
         else if(arg_node.is<lit_symbol>())
         {
@@ -304,57 +304,57 @@ pair<Value*, optional<incomplete_statement>> compile_instruction_call(list_symbo
             fatal<id("invalid_value")>(arg_node.source());
     };
     
-    typedef pair<Value*, optional<incomplete_statement>> return_type;
-    return visit<return_type>(instruction.instruction,
-    [&](const instruction_statement::add& inst) -> return_type
+    
+    return visit<Value*>(instruction.kind,
+    [&](const instruction_info::add& inst)
     {
         check_arity("add", 2);
         Value* arg1 = get_value(*begin, inst.type.llvm_type());
         Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type());
-        return {builder.CreateAdd(arg1, arg2), none};
+        return builder.CreateAdd(arg1, arg2);
     },
-    [&](const instruction_statement::sub& inst) -> return_type
+    [&](const instruction_info::sub& inst)
     {
         check_arity("sub", 2);
         Value* arg1 = get_value(*begin, inst.type.llvm_type());
         Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type());
-        return {builder.CreateSub(arg1, arg2), none};
+        return builder.CreateSub(arg1, arg2);
     },
-    [&](const instruction_statement::mul& inst) -> return_type
+    [&](const instruction_info::mul& inst)
     {
         check_arity("mul", 2);
         Value* arg1 = get_value(*begin, inst.type.llvm_type());
         Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type());
-        return {builder.CreateMul(arg1, arg2), none};
+        return builder.CreateMul(arg1, arg2);
     },
-    [&](const instruction_statement::div& inst) -> return_type
+    [&](const instruction_info::div& inst)
     {
         check_arity("div", 2);
         Value* arg1 = get_value(*begin, inst.type.llvm_type());
         Value* arg2 = get_value(*(begin + 1), inst.type.llvm_type());
-        return {builder.CreateSDiv(arg1, arg2), none};
+        return builder.CreateSDiv(arg1, arg2);
     },
-    [&](const instruction_statement::alloc& inst) -> return_type
+    [&](const instruction_info::alloc& inst)
     {
         check_arity("alloc", 0);
-        return {builder.CreateAlloca(inst.type.llvm_type()), none};
+        return builder.CreateAlloca(inst.type.llvm_type());
     },
-    [&](const instruction_statement::store& inst) -> return_type
+    [&](const instruction_info::store& inst)
     {
         check_arity("store", 2);
         Value* arg1 = get_value(*begin, inst.type.llvm_type());
         Type* ptr_type = PointerType::getUnqual(inst.type.llvm_type());
         Value* arg2 = get_value(*(begin + 1), ptr_type);
-        return {builder.CreateStore(arg1, arg2), none};
+        return builder.CreateStore(arg1, arg2);
     },
-    [&](const instruction_statement::load& inst) -> return_type
+    [&](const instruction_info::load& inst)
     {
         check_arity("load", 1);
         Type* ptr_type = PointerType::getUnqual(inst.type.llvm_type());
         Value* arg = get_value(*begin, ptr_type);
-        return {builder.CreateLoad(arg), none};
+        return builder.CreateLoad(arg);
     },
-    [&](const instruction_statement::cmp& inst) -> return_type
+    [&](const instruction_info::cmp& inst) -> Value*
     {
         check_arity("cmp", 2);
         Value* arg1 = get_value(*begin, inst.type.llvm_type());
@@ -362,29 +362,29 @@ pair<Value*, optional<incomplete_statement>> compile_instruction_call(list_symbo
         switch(inst.cmp_kind)
         {
         case unique_ids::EQ:
-            return {builder.CreateICmpEQ(arg1, arg2), none};
+            return builder.CreateICmpEQ(arg1, arg2);
         case unique_ids::NE:
-            return {builder.CreateICmpNE(arg1, arg2), none};
+            return builder.CreateICmpNE(arg1, arg2);
         case unique_ids::LT:
-            return {builder.CreateICmpSLT(arg1, arg2), none};
+            return builder.CreateICmpSLT(arg1, arg2);
         case unique_ids::LE:
-            return {builder.CreateICmpSLE(arg1, arg2), none};
+            return builder.CreateICmpSLE(arg1, arg2);
         case unique_ids::GT:
-            return {builder.CreateICmpSGT(arg1, arg2), none};
+            return builder.CreateICmpSGT(arg1, arg2);
         case unique_ids::GE:
-            return {builder.CreateICmpSGE(arg1, arg2), none};
+            return builder.CreateICmpSGE(arg1, arg2);
         default:
             assert(false);
-            return {nullptr, none};
+            return nullptr;
         }
     }, 
-    [&](const instruction_statement::return_inst& inst) -> return_type
+    [&](const instruction_info::return_inst& inst)
     {
         check_arity("return", 1);
         Value* arg = get_value(*begin, inst.type.llvm_type());
-        return {builder.CreateRet(arg), none};
+        return builder.CreateRet(arg);
     },
-    [&](const instruction_statement::cond_branch& inst) -> return_type
+    [&](const instruction_info::cond_branch& inst)
     {
         check_arity("cond_branch", 3);
         Type* int1_type = IntegerType::get(builder.getContext(), 1);
@@ -399,10 +399,10 @@ pair<Value*, optional<incomplete_statement>> compile_instruction_call(list_symbo
         });
         BranchInst* value = builder.CreateCondBr(boolean, builder.GetInsertBlock(), builder.GetInsertBlock());
         // the two target blocks are set later on, but nullptr is not valid as parameter, so just use current block for now
-        incomplete_cond_branch incomplete{value, true_block_name, false_block_name};
-        return {value, incomplete_statement{incomplete}};
+        st_context.special_calls.cond_branches.push_back(cond_branch_call{value, true_block_name, false_block_name});
+        return value;
     },
-    [&](const instruction_statement::branch& inst) -> return_type
+    [&](const instruction_info::branch& inst)
     {
         check_arity("branch", 1);
         const ref_symbol& block_name = begin->cast_else<ref_symbol>([&]
@@ -410,15 +410,15 @@ pair<Value*, optional<incomplete_statement>> compile_instruction_call(list_symbo
             fatal<id("cond_branch_invalid_block_name")>(begin->source());
         });
         BranchInst* value = builder.CreateBr(builder.GetInsertBlock());
-        incomplete_branch incomplete{value, block_name};
-        return {value, incomplete_statement{incomplete}};
+        st_context.special_calls.branches.push_back(branch_call{value, block_name});
+        return value;
     },
-    [&](const instruction_statement::phi& inst) -> return_type
+    [&](const instruction_info::phi& inst)
     {
         if(begin == end)
             fatal<id("phi_no_arguments")>(instruction.statement.source());
         
-        incomplete_phi incomplete{0, {}, instruction.statement};
+        phi_call phi{0, {}, instruction.statement};
         for(auto it = begin; it != end; ++it)
         {
             const list_symbol& incoming = it->cast_else<list_symbol>([&]
@@ -437,22 +437,23 @@ pair<Value*, optional<incomplete_statement>> compile_instruction_call(list_symbo
                 fatal<id("phi_invalid_incoming_block_name")>(incoming[1].source());
             });
 
-            incomplete.incomings.push_back({incoming_variable_name, incoming_block_name});
+            phi.incomings.push_back({incoming_variable_name, incoming_block_name});
         }
         
         PHINode* value = builder.CreatePHI(inst.type.llvm_type(), 0);
-        incomplete.value = value;
-        return {value, incomplete_statement{move(incomplete)}};
+        phi.value = value;
+        st_context.special_calls.phis.push_back(move(phi));
+        return value;
         
     },
-    [&](const auto& obj) -> return_type
+    [&](const auto& obj)
     {
         assert(false);
+        return nullptr;
     });
 }
 
-template<class VariableLookupFunctor>
-pair<optional<named_value_info>, optional<incomplete_statement>> compile_statement(const symbol& node, VariableLookupFunctor&& lookup_variable, IRBuilder<>& builder)
+optional<named_value_info> compile_statement(const symbol& node, statement_context& st_context)
 {
     const list_symbol& statement = node.cast_else<list_symbol>([&]
     {
@@ -461,8 +462,7 @@ pair<optional<named_value_info>, optional<incomplete_statement>> compile_stateme
     if(statement.empty())
         fatal<id("empty_statement")>(statement.source());
     
-    const symbol& resolved_first_node = resolve_refs(statement[0]);
-    // unresolvable first node is an error
+    const symbol& resolved_first_node = resolve_refs(statement[0]); // unresolvable first node is an error
     if(resolved_first_node.is<id_symbol>() && resolved_first_node.cast<id_symbol>().id() == unique_ids::LET)
     {
         // this is a "let" statement
@@ -476,19 +476,16 @@ pair<optional<named_value_info>, optional<incomplete_statement>> compile_stateme
         list_symbol::const_iterator instr_end = statement.end();
         if(instr_begin == instr_end)
             fatal<id("missing_instruction")>(statement.source());
-        auto p = compile_instruction_call(instr_begin, instr_end, lookup_variable, builder);
-        Value* value = p.first;
-        optional<incomplete_statement>& incomplete = p.second;
-        return {named_value_info{statement, variable_name, value}, incomplete};
+        Value* value = compile_instruction_call(instr_begin, instr_end, st_context);
+        return named_value_info{statement, variable_name, value};
     }
     
-    auto p = compile_instruction_call(statement.begin(), statement.end(), lookup_variable, builder);
-    optional<incomplete_statement>& incomplete = p.second;
-    return {none, std::move(incomplete)};
+    compile_instruction_call(statement.begin(), statement.end(), st_context);
+    return none;
 }
 
 
-pair<block_info, unique_ptr<BasicBlock>> compile_block(const symbol& block_node, const unordered_map<identifier_id_t, named_value_info>& global_variable_table, compilation_context& context)
+block_info compile_block(const symbol& block_node, BasicBlock& llvm_block, const std::function<named_value_info* (identifier_id_t)>& lookup_global_variable, special_calls_info& special_calls, compilation_context& context)
 {
     const list_symbol& block_definition = block_node.cast_else<list_symbol>([&]()
     {
@@ -508,31 +505,27 @@ pair<block_info, unique_ptr<BasicBlock>> compile_block(const symbol& block_node,
         fatal<id("invalid_block_body")>(block_definition[1].source());
     });
     
-    unique_ptr<BasicBlock> block{BasicBlock::Create(context.llvm(), context.to_string(block_name.identifier()))};
-    IRBuilder<> builder{block.get()};
+    llvm_block.setName(context.to_string(block_name.identifier()));
+    IRBuilder<> builder{&llvm_block};
 
     unordered_map<identifier_id_t, named_value_info> local_variable_table;
-    auto lookup_variable = [&](identifier_id_t identifier) -> optional<named_value_info>
+    auto lookup_variable = [&](const ref_symbol& name) -> named_value_info&
     {
-        // search in global variables
-        auto find_it1 = global_variable_table.find(identifier);
-        if(find_it1 != global_variable_table.end())
-            return find_it1->second;
-
-        // search in local variables
-        auto find_it2 = local_variable_table.find(identifier);
-        if(find_it2 != local_variable_table.end())
-            return find_it2->second;
-
-        return none;
+        named_value_info* value = lookup_global_variable(name.identifier());
+        if(value)
+            return *value;
+        auto find_it = local_variable_table.find(name.identifier());
+        if(find_it == local_variable_table.end())
+            fatal<id("variable_undefined")>(name.source());
+        
+        return find_it->second;
     };
 
-    vector<incomplete_statement> incomplete_statements;
+    statement_context st_context = {builder, lookup_variable, special_calls};
+
     for(const symbol& s : block_body)
     {
-        auto p = compile_statement(s, lookup_variable, builder);
-        optional<named_value_info>& value = p.first;
-        optional<incomplete_statement>& incomplete = p.second;
+        optional<named_value_info> value = compile_statement(s, st_context);
         if(value)
         {
             identifier_id_t identifier = value->name.identifier();
@@ -541,15 +534,15 @@ pair<block_info, unique_ptr<BasicBlock>> compile_block(const symbol& block_node,
             if(!was_inserted)
                 fatal<id("locally_duplicate_variable_name")>(value->name.source());
         }
-        if(incomplete)
-            incomplete_statements.push_back(std::move(*incomplete));
     }
     
-    block_info info{block_name, move(local_variable_table), block.get(), std::move(incomplete_statements)};
-    return {move(info), move(block)};
+    if(llvm_block.getTerminator() == nullptr) // block is not properly terminated or has terminator not at end
+        fatal<id("block_invalid_termination")>(block_node.source());
+    
+    return block_info{block_name, move(local_variable_table), &llvm_block};
 }
 
-void compile_body(const symbol& body_node, Function& function, unordered_map<identifier_id_t, named_value_info> parameter_table, compilation_context& context)
+void compile_body(const symbol& body_node, Function& function, unordered_map<identifier_id_t, named_value_info>& parameter_table, compilation_context& context)
 {
     const list_symbol& block_list = body_node.cast_else<list_symbol>([&]
     {
@@ -558,7 +551,6 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<ide
     if(block_list.empty())
         fatal<id("empty_body")>(block_list.source());
     
-    unordered_map<identifier_id_t, named_value_info>& function_global_variables = parameter_table;
     unordered_map<identifier_id_t, block_info> block_map;
 
     // check whether variables in this variable_table have already been defined
@@ -569,9 +561,9 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<ide
             identifier_id_t variable_name = p.first;
             const named_value_info& info = p.second;
             // check in function global variables
-            auto global_table_it = function_global_variables.find(variable_name);
-            if(global_table_it != function_global_variables.end())
-                fatal<id("duplicate_variable_name")>(info.name.source());
+            auto param_table_it = parameter_table.find(variable_name);
+            if(param_table_it != parameter_table.end())
+                fatal<id("globally_duplicate_variable_name")>(info.name.source());
             
             // check in other blocks
             for(const auto& other_block_p : block_map)
@@ -579,29 +571,36 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<ide
                 const block_info& other_block = other_block_p.second;
                 auto table_it = other_block.variable_table.find(variable_name);
                 if(table_it != other_block.variable_table.end())
-                    fatal<id("duplicate_variable_name")>(info.name.source());
+                    fatal<id("globally_duplicate_variable_name")>(info.name.source());
             }
         }
     };
-    
+
+    special_calls_info special_calls;
+
+    std::function<named_value_info* (identifier_id_t)> lookup_global_variable = [&](identifier_id_t identifier) -> named_value_info*
+    {
+        auto find_it = parameter_table.find(identifier);
+        if(find_it != parameter_table.end())
+            return &find_it->second;
+
+        return nullptr;
+    };
+
     bool is_first_iteration = true;
     for(const symbol& block_node : block_list)
     {
-        pair<block_info, unique_ptr<BasicBlock>> block_p = compile_block(block_node, function_global_variables, context);
-        block_info& block = block_p.first;
+        BasicBlock& llvm_block = *BasicBlock::Create(context.llvm(), "", &function);
+        block_info block = compile_block(block_node, llvm_block, lookup_global_variable, special_calls, context);
         check_for_duplicates(block.variable_table);
-        if(block.llvm_block->getTerminator() == nullptr) // block is not properly terminated or has terminator not at end
-            fatal<id("block_invalid_termination")>(block_node.source());
 
         if(is_first_iteration)
         {
-            function_global_variables.insert(block.variable_table.begin(), block.variable_table.end());
+            parameter_table.insert(block.variable_table.begin(), block.variable_table.end());
             is_first_iteration = false;
         }
         
         identifier_id_t block_name = block.block_name.identifier();
-        function.getBasicBlockList().push_back(block.llvm_block);
-        block_p.second.release();
         block_map.insert({block_name, move(block)});
     }
 
@@ -620,74 +619,50 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<ide
         return info;
     };
 
-    for(auto& p : block_map)
+
+    for(auto& branch : special_calls.branches)
     {
-        block_info& binfo = p.second;
-        for(incomplete_statement& incomplete : binfo.incomplete_statements)
-        {
-            visit(incomplete,
-            [&](incomplete_cond_branch& cond_branch)
-            {
-                assert(cond_branch.value->getNumSuccessors() == 2);
-                block_info& true_block = get_non_entry_block(cond_branch.true_block_name);
-                cond_branch.value->setSuccessor(0, true_block.llvm_block);
-                block_info& false_block = get_non_entry_block(cond_branch.false_block_name);
-                cond_branch.value->setSuccessor(1, false_block.llvm_block);
-            },
-            [&](incomplete_branch& branch)
-            {
-                assert(branch.value->getNumSuccessors() == 1);
-                block_info& block = get_non_entry_block(branch.block_name);
-                branch.value->setSuccessor(0, block.llvm_block);
-            },
-            [&](incomplete_phi&)
-            {
-                // ignore this case for now:
-                // can only be handled when predecessors of blocks can be computed, which is after all branches have been set
-            });
-        }
+        assert(branch.value->getNumSuccessors() == 1);
+        block_info& block = get_non_entry_block(branch.block_name);
+        branch.value->setSuccessor(0, block.llvm_block);
     }
-
-    for(auto& p : block_map)
+    for(auto& cond_branch : special_calls.cond_branches)
     {
-        block_info& binfo = p.second;
-        for(incomplete_statement& incomplete : binfo.incomplete_statements)
+        assert(cond_branch.value->getNumSuccessors() == 2);
+        block_info& true_block = get_non_entry_block(cond_branch.true_block_name);
+        cond_branch.value->setSuccessor(0, true_block.llvm_block);
+        block_info& false_block = get_non_entry_block(cond_branch.false_block_name);
+        cond_branch.value->setSuccessor(1, false_block.llvm_block);
+    }
+    for(auto& phi : special_calls.phis)
+    {
+        BasicBlock* parent_block = phi.value->getParent();
+        vector<BasicBlock*> predecessors{pred_begin(parent_block), pred_end(parent_block)};
+        vector<int8_t> has_incoming_for_predecessor(predecessors.size(), false); // don't use {}, this will call the initializer_list constructor
+        // has true iff phi node defines an incoming for the corresponding predecessor basic block with the same index
+        for(auto& inc : phi.incomings)
         {
-            visit(incomplete, [&](incomplete_phi& phi)
-            {
-                BasicBlock* parent_block = phi.value->getParent();
-                vector<BasicBlock*> predecessors{pred_begin(parent_block), pred_end(parent_block)};
-                vector<int8_t> has_incoming_for_predecessor(predecessors.size(), false);
-                // has true iff phi node defines an incoming for the corresponding predecessor basic block with the same index
-                for(auto& inc : phi.incomings)
-                {
-                    // get predecessor block and check this
-                    block_info& block = get_block(inc.block_name);
-                    auto block_it = find(predecessors.begin(), predecessors.end(), block.llvm_block);
-                    if(block_it == predecessors.end())
-                        fatal<id("phi_incoming_block_not_predecessor")>(inc.block_name.source());
-                    size_t predecessor_index = block_it - predecessors.begin();
-                    if(has_incoming_for_predecessor[predecessor_index])
-                        fatal<id("phi_incoming_block_twice")>(inc.block_name.source());
-                    has_incoming_for_predecessor[predecessor_index] = true;
+            // get predecessor block and check this
+            block_info& block = get_block(inc.block_name);
+            auto block_it = find(predecessors.begin(), predecessors.end(), block.llvm_block);
+            if(block_it == predecessors.end())
+                fatal<id("phi_incoming_block_not_predecessor")>(inc.block_name.source());
+            size_t predecessor_index = block_it - predecessors.begin();
+            if(has_incoming_for_predecessor[predecessor_index])
+                fatal<id("phi_incoming_block_twice")>(inc.block_name.source());
+            has_incoming_for_predecessor[predecessor_index] = true;
 
-                    auto value_info_it  = block.variable_table.find(inc.variable_name.identifier());
-                    if(value_info_it == block.variable_table.end())
-                        fatal<id("phi_incoming_variable_not_defined")>(inc.variable_name.source());
-                    named_value_info& value = value_info_it->second;
-                    if(value.llvm_value->getType() != phi.value->getType())
-                        fatal<id("phi_incoming_variable_type_mismatch")>(inc.variable_name.source());
+            auto value_info_it  = block.variable_table.find(inc.variable_name.identifier());
+            if(value_info_it == block.variable_table.end())
+                fatal<id("phi_incoming_variable_not_defined")>(inc.variable_name.source());
+            named_value_info& value = value_info_it->second;
+            if(value.llvm_value->getType() != phi.value->getType())
+                fatal<id("phi_incoming_variable_type_mismatch")>(inc.variable_name.source());
 
-                    phi.value->addIncoming(value.llvm_value, block.llvm_block);
-                }
-                if(find(has_incoming_for_predecessor.begin(), has_incoming_for_predecessor.end(), false) != has_incoming_for_predecessor.end())
-                    fatal<id("phi_missing_incoming_for_predecessor")>(phi.statement.source());
-            },
-            [&](auto&)
-            {
-                // has already been done before
-            });
+            phi.value->addIncoming(value.llvm_value, block.llvm_block);
         }
+        if(find(has_incoming_for_predecessor.begin(), has_incoming_for_predecessor.end(), false) != has_incoming_for_predecessor.end())
+            fatal<id("phi_missing_incoming_for_predecessor")>(phi.statement.source());
     }
 }
 
@@ -701,7 +676,7 @@ pair<unique_ptr<Function>, function_info> compile_function(list_symbol::const_it
     tie(function, parameter_table) = compile_signature(*begin, *(begin + 1), context);
     
     const symbol& body_node = *(begin + 2);
-    compile_body(body_node, *function, move(parameter_table), context);
+    compile_body(body_node, *function, parameter_table, context);
     //verifyFunction(*function); not possible because function has to be embedded into module first
     function_info info;
     info.uses_proc_instructions = true; // TODO
