@@ -28,123 +28,72 @@ struct instruction_info
 {
     struct add
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = false;
-
         type_info type;
     };
     struct sub
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = false;
-
         type_info type;
     };
     struct mul
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = false;
-
         type_info type;
     };
     struct div
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = false;
-
         type_info type;
     };
     
     struct alloc
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = false;
-
         type_info type;
     };
     struct store
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = false;
-
         type_info type;
     };
     struct load
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = false;
-
         type_info type;
     };
     struct cond_branch
-    {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = false;
-    };
+    {};
     struct branch
-    {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = false;
-    };
+    {};
     struct phi
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = false;
-
         type_info type;
     };
     struct cmp
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = false;
-
         std::size_t cmp_kind;
         type_info type;
     };
     struct return_inst
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = false;
-
         type_info type;
     };
     struct call
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = false;
-
         type_info type;
     };
 
     struct list_create
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = true;
     };
     struct list_size
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = true;
     };
     struct list_push
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = true;
     };
     struct list_pop
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = true;
     };
     struct list_get
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = true;
     };
     struct list_set
     {
-        static constexpr bool is_proc_only = false;
-        static constexpr bool is_macro_only = true;
     };
     
     const symbol& statement;
