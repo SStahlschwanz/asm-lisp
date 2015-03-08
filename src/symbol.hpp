@@ -13,9 +13,7 @@
 class id_symbol;
 class lit_symbol;
 class ref_symbol;
-class owning_ref_symbol;
 class list_symbol;
-class type_symbol;
 class macro_symbol;
 
 class any_symbol;
@@ -32,9 +30,7 @@ namespace symbol_shortcuts
 
 typedef lit_symbol lit;
 typedef ref_symbol ref;
-typedef owning_ref_symbol owning_ref;
 typedef list_symbol list;
-typedef type_symbol type;
 typedef macro_symbol macro;
 
 }
@@ -46,10 +42,8 @@ public:
     {
         ID,
         LITERAL,
-        OWNING_REFERENCE,
         REFERENCE,
         LIST,
-        TYPE,
         MACRO
     };
     
@@ -115,10 +109,8 @@ private:
     friend class ::symbol;
     friend class ::id_symbol;
     friend class ::lit_symbol;
-    friend class ::owning_ref_symbol;
     friend class ::ref_symbol;
     friend class ::list_symbol;
-    friend class ::type_symbol;
     friend class ::macro_symbol;
 
     symbol_impl(type_value type_val)
@@ -245,70 +237,6 @@ private:
     std::string s;
 };
 static_assert(std::is_nothrow_move_constructible<lit_symbol>::value, "");
-
-class owning_ref_symbol
-  : public symbol_detail::symbol_impl
-{
-public:
-    static constexpr type_value type_id = OWNING_REFERENCE;
-    owning_ref_symbol(identifier_id_t identifier_id, std::unique_ptr<any_symbol> reference)
-      : symbol_detail::symbol_impl(type_id),
-        identifier_id(identifier_id),
-        r(std::move(reference))
-    {}
-
-    owning_ref_symbol(const owning_ref_symbol& that)
-      : symbol_detail::symbol_impl(type_id),
-        identifier_id(that.identifier_id)
-    {
-        if(that.r)
-            r = std::make_unique<any_symbol>(*that.r);
-        else
-            r = nullptr;
-    }
-    owning_ref_symbol(owning_ref_symbol&& that) noexcept
-      : symbol_detail::symbol_impl{std::move(that)},
-        identifier_id{that.identifier_id},
-        r{std::move(that.r)}
-    {}
-    
-    explicit owning_ref_symbol(identifier_id_t identifier_id)
-      : owning_ref_symbol(identifier_id, nullptr)
-    {}
-    
-    owning_ref_symbol& operator=(owning_ref_symbol that)
-    {
-        std::swap(identifier_id, that.identifier_id);
-        std::swap(r, that.r);
-        return *this;
-    }
-    
-    symbol* refered();
-    const symbol* refered() const;
-    void refered(std::unique_ptr<any_symbol> reference)
-    {
-        r = std::move(reference);
-    }
-    identifier_id_t identifier() const
-    {
-        return identifier_id;
-    }
-    void identifier(identifier_id_t new_identifier_id)
-    {
-        identifier_id = new_identifier_id;
-    }
-
-    bool operator==(const owning_ref_symbol& that) const;
-    bool operator!=(const owning_ref_symbol& that) const
-    {
-        return !(*this == that);
-    }
-
-private:
-    identifier_id_t identifier_id;
-    std::unique_ptr<any_symbol> r;
-};
-static_assert(std::is_nothrow_move_constructible<owning_ref_symbol>::value, "");
 
 class ref_symbol
   : public symbol_detail::symbol_impl
@@ -457,43 +385,6 @@ private:
 };
 static_assert(std::is_nothrow_move_constructible<list_symbol>::value, "");
 
-namespace llvm
-{
-class Type;
-}
-
-class type_symbol
-  : public symbol_detail::symbol_impl
-{
-public:
-    static constexpr type_value type_id = TYPE;
-    
-    type_symbol(llvm::Type* llvm_t)
-      : symbol_detail::symbol_impl(type_id),
-        llvm_t(llvm_t)
-    {}
-    bool operator==(const type_symbol& that) const
-    {
-        return llvm_t == that.llvm_t;
-    }
-    bool operator!=(const type_symbol& that) const
-    {
-        return !(*this == that);
-    }
-
-    llvm::Type* llvm_type() const
-    {
-        return llvm_t;
-    }
-    void llvm_type(llvm::Type* new_type)
-    {
-        llvm_t = new_type;
-    }
-
-private:
-    llvm::Type* llvm_t;
-};
-
 class macro_symbol
   : public symbol_detail::symbol_impl
 {
@@ -564,14 +455,8 @@ void symbol::visit(FunctorType&& f)
     case REFERENCE:
         f(cast<ref_symbol>());
         break;
-    case OWNING_REFERENCE:
-        f(cast<owning_ref_symbol>());
-        break;
     case LIST:
         f(cast<list_symbol>());
-        break;
-    case TYPE:
-        f(cast<type_symbol>());
         break;
     case MACRO:
         f(cast<macro_symbol>());
@@ -591,14 +476,10 @@ inline bool operator==(const symbol& lhs, const symbol& rhs)
         return lhs.cast<id_symbol>() == rhs.cast<id_symbol>();
     case symbol::LITERAL:
         return lhs.cast<lit_symbol>() == rhs.cast<lit_symbol>();
-    case symbol::OWNING_REFERENCE:
-        return lhs.cast<owning_ref_symbol>() == rhs.cast<owning_ref_symbol>();
     case symbol::REFERENCE:
         return lhs.cast<ref_symbol>() == rhs.cast<ref_symbol>();
     case symbol::LIST:
         return lhs.cast<list_symbol>() == rhs.cast<list_symbol>();
-    case symbol::TYPE:
-        return lhs.cast<type_symbol>() == rhs.cast<type_symbol>();
     case symbol::MACRO:
         return lhs.cast<macro_symbol>() == rhs.cast<macro_symbol>();
     }
@@ -627,9 +508,8 @@ constexpr size_t constexpr_max_for_symbol(size_t a, size_t b, TS... s)
 }
 
 constexpr const size_t max_symbol_size = constexpr_max_for_symbol(
-        sizeof(lit_symbol), sizeof(owning_ref_symbol),
-        sizeof(ref_symbol), sizeof(list_symbol),
-        sizeof(macro_symbol), sizeof(type_symbol),
+        sizeof(lit_symbol), sizeof(ref_symbol),
+        sizeof(list_symbol), sizeof(macro_symbol),
         sizeof(id_symbol));
 
 class any_symbol
@@ -705,19 +585,6 @@ private:
 };
 
 
-
-inline symbol* owning_ref_symbol::refered()
-{
-    return r.get();
-}
-inline const symbol* owning_ref_symbol::refered() const
-{
-    return r.get();
-}
-inline bool owning_ref_symbol::operator==(const owning_ref_symbol& that) const
-{
-    return identifier_id == that.identifier_id && ((r == nullptr && that.r == nullptr) || *r == *that.r);
-}
 
 inline list_symbol::list_symbol(std::initializer_list<any_symbol> l)
   : list_symbol(std::vector<any_symbol>{l.begin(), l.end()})

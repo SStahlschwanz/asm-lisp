@@ -196,15 +196,6 @@ struct print_symbol_visitor
     {
         os << indentation << "lit\"" << string{lit.begin(), lit.end()} << "\"\n";
     }
-    void operator()(const owning_ref_symbol& ref) const
-    {
-        os << indentation << "owning_ref\"" << context.to_string(ref.identifier()) << "\"\n";
-        if(ref.refered())
-        {
-            string new_indentation = indentation + "  ";
-            ref.refered()->visit(print_symbol_visitor{os, new_indentation, context});
-        }
-    }
     void operator()(const ref_symbol& ref) const
     {
         os << indentation << "ref\"" << context.to_string(ref.identifier()) << "\"\n";
@@ -225,11 +216,6 @@ struct print_symbol_visitor
     {
         os << indentation << "macro\n";
     }
-    void operator()(const type_symbol&) const
-    {
-        os << indentation << "type\n";
-    }
-
 };
 
 ostream& print_symbol(ostream& os, const symbol& s, compilation_context& context)
