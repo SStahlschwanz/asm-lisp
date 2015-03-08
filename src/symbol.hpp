@@ -131,6 +131,7 @@ template<class Data>
 class symbol_impl_with_data
   : public symbol_with_data<Data>
 {
+    static_assert(std::is_nothrow_constructible<Data>::value, "");
 private:
     friend class ::symbol_with_data<Data>;
     friend class ::id_symbol_with_data<Data>;
@@ -163,6 +164,10 @@ public:
     id_symbol_with_data()
       : id_symbol_with_data(0)
     {}
+    id_symbol_with_data(const id_symbol_with_data&) = default;
+    id_symbol_with_data(id_symbol_with_data&& that) noexcept
+      : id_symbol_with_data{that.i}
+    {}
     bool operator==(const id_symbol_with_data& that) const
     {
         return i == that.i;
@@ -183,6 +188,7 @@ public:
 private:
     size_t i;
 };
+static_assert(std::is_nothrow_move_constructible<id_symbol>::value, "");
 
 template<class Data>
 class lit_symbol_with_data
@@ -265,7 +271,7 @@ public:
 private:
     std::string s;
 };
-//static_assert(std::is_nothrow_move_constructible<lit_symbol>::value, "");
+static_assert(std::is_nothrow_move_constructible<lit_symbol>::value, "");
 
 template<class Data>
 class ref_symbol_with_data
@@ -337,7 +343,7 @@ private:
     identifier_id_t identifier_id;
     const symbol_with_data<Data>* r;
 };
-//static_assert(std::is_nothrow_move_constructible<ref_symbol_with_data>::value, "");
+static_assert(std::is_nothrow_move_constructible<ref_symbol>::value, "");
 
 template<class Data> 
 class list_symbol_with_data
@@ -413,7 +419,7 @@ public:
 private:
     std::vector<any_symbol_with_data<Data>> v;
 };
-//static_assert(std::is_nothrow_move_constructible<list_symbol_with_data>::value, "");
+static_assert(std::is_nothrow_move_constructible<list_symbol>::value, "");
 
 template<class Data>
 class macro_symbol_with_data
@@ -423,17 +429,17 @@ public:
     static constexpr symbol_type_id type_id = symbol_type_id::LIST;
     
     typedef std::function<any_symbol (list_symbol::const_iterator, list_symbol::const_iterator)> macro_function;
+
     macro_symbol_with_data(macro_function function)
       : symbol_detail::symbol_impl_with_data<Data>(type_id),
         func(std::move(function))
     {}
+    macro_symbol_with_data(const macro_symbol_with_data&) = default;
+    macro_symbol_with_data(macro_symbol&& that) noexcept
+      : macro_symbol{std::move(that.func)}
+    {}
 
     any_symbol operator()(list_symbol::const_iterator begin, list_symbol::const_iterator end) const;
-    /*
-    {
-        return func(begin, end);
-    }
-    */
     bool operator==(const macro_symbol_with_data& that) const
     {
         // TODO
@@ -447,6 +453,7 @@ public:
 private:
     macro_function func;
 };
+static_assert(std::is_nothrow_move_constructible<macro_symbol>::value, "");
 
 template<class Data>
 symbol_detail::symbol_impl_with_data<Data>& symbol_with_data<Data>::impl()
