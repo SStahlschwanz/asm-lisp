@@ -23,6 +23,13 @@ enum
     CMP,
     RETURN,
     CALL,
+
+    LIST_CREATE,
+    LIST_SIZE,
+    LIST_PUSH,
+    LIST_POP,
+    LIST_GET,
+    LIST_SET,
     
     // cmp kinds
     EQ,
