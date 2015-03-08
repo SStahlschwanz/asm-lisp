@@ -43,6 +43,8 @@ build-dirs:
 	mkdir -p test-build
 	mkdir -p test-build/obj
 	mkdir -p test-build/dep
+	mkdir -p test-build/bin
+	mkdir -p test-build/output
 
 # convenience targets
 debug: build/debug/bin
@@ -88,21 +90,23 @@ test-build/dep/%.dep: test/%.cpp
 test-build/obj/%.o: test-build/dep/%.dep
 	$(CPP) $(DEBUG_CPPFLAGS) -Isrc -c $(patsubst test-build/obj/%.o,test/%.cpp,$@) -o $@
 
-TEST_BINARIES=$(patsubst test/%.cpp,test-build/%,$(ALL_TESTS))
-
 # binaries for tests
-.SECONDARY: $(TEST_BINARIES)
-test-build/%: $(filter-out %main.o,$(DEBUG_OBJS)) test-build/obj/%.o
+.SECONDARY: $(patsubst test/%.cpp,test-build/bin/%,$(ALL_TESTS))
+test-build/bin/%: $(filter-out %main.o,$(DEBUG_OBJS)) test-build/obj/%.o
 	$(CPP) $(DEBUG_LDFLAGS) -o $@ $^ $(DEBUG_LIBS)
 
-test-%: test-build/%
-	valgrind -q $^
+# output of tests
+.SECONDARY: $(patsubst test/%.cpp,test-build/output/%,$(ALL_TESTS))
+test-build/output/%: test-build/bin/%
+	valgrind -q $^ &> $@  || true
 
-full-test: $(TEST_BINARIES)
-	for test in $(TEST_BINARIES); \
+test-%: test-build/output/%
+	cat $^
+
+full-test: $(patsubst test/%.cpp,test-build/output/%, $(ALL_TESTS))
+	for output in $^; \
 	do \
-	  echo "$${test}:"; \
-	  valgrind -q $$test; \
-	  echo ""; \
-	  echo ""; \
+		echo $$output; \
+		cat $$output; \
 	done
+	
