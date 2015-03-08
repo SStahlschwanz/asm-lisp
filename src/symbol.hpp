@@ -10,38 +10,20 @@
 #include "symbol_source.hpp"
 #include "compilation_context.hpp"
 
-template<class>
-class symbol_with_data;
-template<class>
-class id_symbol_with_data;
-template<class>
-class lit_symbol_with_data;
-template<class>
-class ref_symbol_with_data;
-template<class>
-class list_symbol_with_data;
-template<class>
-class macro_symbol_with_data;
-template<class>
-class any_symbol_with_data;
+class id_symbol;
+class lit_symbol;
+class ref_symbol;
+class list_symbol;
+class macro_symbol;
+
+class any_symbol;
 
 namespace symbol_detail
 {
 
-template<class>
-class symbol_impl_with_data;
+class symbol_impl;
 
 }
-
-struct empty_symbol_data
-{};
-typedef symbol_with_data<empty_symbol_data> symbol;
-typedef lit_symbol_with_data<empty_symbol_data> lit_symbol;
-typedef ref_symbol_with_data<empty_symbol_data> ref_symbol;
-typedef list_symbol_with_data<empty_symbol_data> list_symbol;
-typedef id_symbol_with_data<empty_symbol_data> id_symbol;
-typedef macro_symbol_with_data<empty_symbol_data> macro_symbol;
-typedef any_symbol_with_data<empty_symbol_data> any_symbol;
 
 namespace symbol_shortcuts
 {
@@ -53,21 +35,19 @@ typedef macro_symbol macro;
 
 }
 
-
-enum class symbol_type_id
-{
-    ID,
-    LITERAL,
-    REFERENCE,
-    LIST,
-    MACRO
-};
-
-template<class Data>
-class symbol_with_data
+class symbol
 {
 public:
-    symbol_type_id type() const;
+    enum type_value
+    {
+        ID,
+        LITERAL,
+        REFERENCE,
+        LIST,
+        MACRO
+    };
+    
+    type_value type() const;
     const symbol_source& source() const;
     void source(const symbol_source& new_source);
     
@@ -78,7 +58,7 @@ public:
     template<class SymbolType>
     const SymbolType& cast() const
     {
-        return const_cast<symbol_with_data*>(this)->cast<SymbolType>();
+        return const_cast<symbol*>(this)->cast<SymbolType>();
     }
     template<class SymbolType, class FunctorType>
     SymbolType& cast_else(FunctorType&& functor)
@@ -95,7 +75,7 @@ public:
     template<class SymbolType, class FunctorType>
     const SymbolType& cast_else(FunctorType&& functor) const
     {
-        return const_cast<symbol_with_data*>(this)->cast_else<SymbolType>(
+        return const_cast<symbol*>(this)->cast_else<SymbolType>(
                 std::forward<FunctorType>(functor));
     }
 
@@ -104,75 +84,62 @@ public:
     template<class FunctorType>
     void visit(FunctorType&& functor) const
     {
-        const_cast<symbol_with_data*>(this)->visit([&](auto& obj)
+        const_cast<symbol*>(this)->visit([&](auto& obj)
         {
             typedef typename std::decay<decltype(obj)>::type actual_type;
             functor(const_cast<const actual_type&>(obj));
         });
     }
-
-    Data& data();
-    const Data& data() const;
 private:
-    template<class>
-    friend class any_symbol_with_data;
-    template<class>
-    friend class symbol_detail::symbol_impl_with_data;
-    ~symbol_with_data()
+    friend class any_symbol;
+    friend class symbol_detail::symbol_impl;
+    ~symbol()
     {}
-    
-    symbol_detail::symbol_impl_with_data<Data>& impl();
-    const symbol_detail::symbol_impl_with_data<Data>& impl() const;
+
+    symbol_detail::symbol_impl& impl();
+    const symbol_detail::symbol_impl& impl() const;
 };
 
 namespace symbol_detail
 {
-template<class Data>
-class symbol_impl_with_data
-  : public symbol_with_data<Data>
+class symbol_impl
+  : public symbol
 {
-    static_assert(std::is_nothrow_constructible<Data>::value, "");
 private:
-    friend class ::symbol_with_data<Data>;
-    friend class ::id_symbol_with_data<Data>;
-    friend class ::lit_symbol_with_data<Data>;
-    friend class ::ref_symbol_with_data<Data>;
-    friend class ::list_symbol_with_data<Data>;
-    friend class ::macro_symbol_with_data<Data>;
+    friend class ::symbol;
+    friend class ::id_symbol;
+    friend class ::lit_symbol;
+    friend class ::ref_symbol;
+    friend class ::list_symbol;
+    friend class ::macro_symbol;
 
-    symbol_impl_with_data(symbol_type_id type_val)
+    symbol_impl(type_value type_val)
       : t(type_val)
     {}
-    ~symbol_impl_with_data() = default;
-    symbol_type_id t;
+    ~symbol_impl() = default;
+
+    type_value t;
     symbol_source source_value;
-    Data d;
 };
 }
-
-template<class Data>
-class id_symbol_with_data
-  : public symbol_detail::symbol_impl_with_data<Data>
+class id_symbol
+  : public symbol_detail::symbol_impl
 {
 public:
-    static constexpr symbol_type_id type_id = symbol_type_id::ID;
+    static constexpr type_value type_id = ID;
 
-    id_symbol_with_data(size_t new_id)
-      : symbol_detail::symbol_impl_with_data<Data>(type_id),
+    id_symbol(size_t new_id)
+      : symbol_detail::symbol_impl(type_id),
         i(new_id)
     {}
-    id_symbol_with_data()
-      : id_symbol_with_data(0)
+    id_symbol()
+      : id_symbol(0)
     {}
-    id_symbol_with_data(const id_symbol_with_data&) = default;
-    id_symbol_with_data(id_symbol_with_data&& that) noexcept
-      : id_symbol_with_data{that.i}
-    {}
-    bool operator==(const id_symbol_with_data& that) const
+    bool operator==(const id_symbol& that) const
     {
         return i == that.i;
     }
-    bool operator!=(const id_symbol_with_data& that) const
+    bool operator!=(const id_symbol& that) const
     {
         return !(*this == that);
     }
@@ -188,33 +155,31 @@ public:
 private:
     size_t i;
 };
-static_assert(std::is_nothrow_move_constructible<id_symbol>::value, "");
 
-template<class Data>
-class lit_symbol_with_data
-  : public symbol_detail::symbol_impl_with_data<Data>
+class lit_symbol
+  : public symbol_detail::symbol_impl
 {
 public:
-    static constexpr symbol_type_id type_id = symbol_type_id::LITERAL;
+    static constexpr type_value type_id = LITERAL;
 
-    lit_symbol_with_data(std::string str)
-      : symbol_detail::symbol_impl_with_data<Data>(type_id),
+    lit_symbol(std::string str)
+      : symbol_detail::symbol_impl(type_id),
         s(std::move(str))
     {}
-    lit_symbol_with_data(const char* str)
-      : lit_symbol_with_data(std::string{str})
+    lit_symbol(const char* str)
+      : lit_symbol(std::string{str})
     {}
-    lit_symbol_with_data()
-      : lit_symbol_with_data("")
+    lit_symbol()
+      : lit_symbol("")
     {}
     
-    lit_symbol_with_data(lit_symbol_with_data&& that) noexcept
-      : symbol_detail::symbol_impl_with_data<Data>(std::move(that)),
+    lit_symbol(lit_symbol&& that) noexcept
+      : symbol_detail::symbol_impl(std::move(that)),
         s(std::move(that.s))
     {}
-    lit_symbol_with_data(const lit_symbol_with_data&) = default;
+    lit_symbol(const lit_symbol&) = default;
 
-    lit_symbol_with_data& operator=(lit_symbol_with_data that)
+    lit_symbol& operator=(lit_symbol that)
     {
         std::swap(s, that.s);
         return *this;
@@ -259,11 +224,11 @@ public:
         return s.empty();
     }
 
-    bool operator==(const lit_symbol_with_data& that) const
+    bool operator==(const lit_symbol& that) const
     {
         return s == that.s;
     }
-    bool operator!=(const lit_symbol_with_data& that) const
+    bool operator!=(const lit_symbol& that) const
     {
         return !(*this == that);
     }
@@ -273,48 +238,47 @@ private:
 };
 static_assert(std::is_nothrow_move_constructible<lit_symbol>::value, "");
 
-template<class Data>
-class ref_symbol_with_data
-  : public symbol_detail::symbol_impl_with_data<Data>
+class ref_symbol
+  : public symbol_detail::symbol_impl
 {
 public:
-    static constexpr symbol_type_id type_id = symbol_type_id::REFERENCE;
-    ref_symbol_with_data(identifier_id_t identifier_id, const symbol_with_data<Data>* reference)
-      : symbol_detail::symbol_impl_with_data<Data>(type_id),
+    static constexpr type_value type_id = REFERENCE;
+    ref_symbol(identifier_id_t identifier_id, const symbol* reference)
+      : symbol_detail::symbol_impl(type_id),
         identifier_id(identifier_id),
         r(reference)
     {}
 #ifndef NDEBUG
-    ref_symbol_with_data(identifier_id_t identifier_id, std::string str, const symbol_with_data<Data>* reference)
-      : symbol_detail::symbol_impl_with_data<Data>(type_id),
+    ref_symbol(identifier_id_t identifier_id, std::string str, const symbol* reference)
+      : symbol_detail::symbol_impl(type_id),
         s(std::move(str)),
         identifier_id(identifier_id),
         r(reference)
     {}
 #endif
 
-    ref_symbol_with_data(const ref_symbol_with_data&) = default;
-    ref_symbol_with_data(ref_symbol_with_data&& that) noexcept
-      : symbol_detail::symbol_impl_with_data<Data>(std::move(that)),
+    ref_symbol(const ref_symbol&) = default;
+    ref_symbol(ref_symbol&& that) noexcept
+      : symbol_detail::symbol_impl(std::move(that)),
         identifier_id(that.identifier_id),
         r(that.r)
     {}
 
-    explicit ref_symbol_with_data(identifier_id_t identifier_id)
-      : ref_symbol_with_data(identifier_id, nullptr)
+    explicit ref_symbol(identifier_id_t identifier_id)
+      : ref_symbol(identifier_id, nullptr)
     {}
-    ref_symbol_with_data& operator=(ref_symbol_with_data that)
+    ref_symbol& operator=(ref_symbol that)
     {
         std::swap(identifier_id, that.identifier_id);
         std::swap(r, that.r);
         return *this;
     }
     
-    const symbol_with_data<Data>* refered() const
+    const symbol* refered() const
     {
         return r;
     }
-    void refered(const symbol_with_data<Data>* new_reference)
+    void refered(const symbol* new_reference)
     {
         r = new_reference;
     }
@@ -327,11 +291,11 @@ public:
         identifier_id = new_identifier_id;
     }
 
-    bool operator==(const ref_symbol_with_data& that) const
+    bool operator==(const ref_symbol& that) const
     {
         return identifier_id == that.identifier_id && r == that.r;
     }
-    bool operator!=(const ref_symbol_with_data& that) const
+    bool operator!=(const ref_symbol& that) const
     {
         return !(*this == that);
     }
@@ -341,39 +305,39 @@ private:
     std::string s;
 #endif
     identifier_id_t identifier_id;
-    const symbol_with_data<Data>* r;
+    const symbol* r;
 };
 static_assert(std::is_nothrow_move_constructible<ref_symbol>::value, "");
 
-template<class Data> 
-class list_symbol_with_data
-  : public symbol_detail::symbol_impl_with_data<Data>
+ 
+class list_symbol
+  : public symbol_detail::symbol_impl
 {
 public:
-    static constexpr symbol_type_id type_id = symbol_type_id::LIST;
-    list_symbol_with_data(std::vector<any_symbol_with_data<Data>> vec)
-      : symbol_detail::symbol_impl_with_data<Data>(type_id),
+    static constexpr type_value type_id = LIST;
+    list_symbol(std::vector<any_symbol> vec)
+      : symbol_detail::symbol_impl(type_id),
         v(std::move(vec))
     {}
-    list_symbol_with_data()
-      : list_symbol_with_data(std::vector<any_symbol_with_data<Data>>{})
+    list_symbol()
+      : list_symbol(std::vector<any_symbol>{})
     {}
-    list_symbol_with_data(std::initializer_list<any_symbol_with_data<Data>> l);
+    list_symbol(std::initializer_list<any_symbol> l);
     
-    list_symbol_with_data(const list_symbol_with_data&) = default;
-    list_symbol_with_data(list_symbol_with_data&& that) noexcept
-      : symbol_detail::symbol_impl_with_data<Data>(std::move(that)),
+    list_symbol(const list_symbol&) = default;
+    list_symbol(list_symbol&& that) noexcept
+      : symbol_detail::symbol_impl(std::move(that)),
         v(std::move(that.v))
     {}
 
-    list_symbol_with_data& operator=(list_symbol_with_data that)
+    list_symbol& operator=(list_symbol that)
     {
         std::swap(v, that.v);
         return *this;
     }
 
-    typedef typename std::vector<any_symbol_with_data<Data>>::iterator iterator;
-    typedef typename std::vector<any_symbol_with_data<Data>>::const_iterator const_iterator;
+    typedef std::vector<any_symbol>::iterator iterator;
+    typedef std::vector<any_symbol>::const_iterator const_iterator;
     iterator begin()
     {
         return v.begin();
@@ -390,10 +354,10 @@ public:
     {
         return v.end();
     }
-    any_symbol_with_data<Data>& operator[](size_t i);
-    const any_symbol_with_data<Data>& operator[](size_t i) const;
-    void push_back(symbol_with_data<Data>&& s);
-    void push_back(const symbol_with_data<Data>& s);
+    any_symbol& operator[](size_t i);
+    const any_symbol& operator[](size_t i) const;
+    void push_back(symbol&& s);
+    void push_back(const symbol& s);
     void pop_back()
     {
         v.pop_back();
@@ -407,152 +371,131 @@ public:
         return v.empty();
     }
 
-    bool operator==(const list_symbol_with_data<Data>& that) const
+    bool operator==(const list_symbol& that) const
     {
         return v == that.v;
     }
-    bool operator!=(const list_symbol_with_data<Data>& that) const
+    bool operator!=(const list_symbol& that) const
     {
         return !(*this == that);
     }
 
 private:
-    std::vector<any_symbol_with_data<Data>> v;
+    std::vector<any_symbol> v;
 };
 static_assert(std::is_nothrow_move_constructible<list_symbol>::value, "");
 
-template<class Data>
-class macro_symbol_with_data
-  : public symbol_detail::symbol_impl_with_data<Data>
+class macro_symbol
+  : public symbol_detail::symbol_impl
 {
 public:
-    static constexpr symbol_type_id type_id = symbol_type_id::LIST;
+    static constexpr type_value type_id = MACRO;
+
+    typedef std::function<any_symbol (list_symbol::const_iterator begin, list_symbol::const_iterator end)> macro_function;
+
+    macro_symbol(macro_function func)
+      : symbol_detail::symbol_impl(MACRO),
+        f(std::move(func))
+    {}
+    macro_symbol(const macro_symbol&) = default;
+    macro_symbol(macro_symbol&& that) noexcept
+      : macro_symbol(std::move(that.f))
+    {}
     
-    typedef std::function<any_symbol (list_symbol::const_iterator, list_symbol::const_iterator)> macro_function;
-
-    macro_symbol_with_data(macro_function function)
-      : symbol_detail::symbol_impl_with_data<Data>(type_id),
-        func(std::move(function))
-    {}
-    macro_symbol_with_data(const macro_symbol_with_data&) = default;
-    macro_symbol_with_data(macro_symbol&& that) noexcept
-      : macro_symbol{std::move(that.func)}
-    {}
-
     any_symbol operator()(list_symbol::const_iterator begin, list_symbol::const_iterator end) const;
-    bool operator==(const macro_symbol_with_data& that) const
+    bool operator==(const macro_symbol& that) const
     {
         // TODO
         assert(false);
     }
-    bool operator!=(const macro_symbol_with_data& that) const
+    bool operator!=(const macro_symbol& that) const
     {
         return !(*this == that);
     }
-
 private:
-    macro_function func;
+    macro_function f;
 };
 static_assert(std::is_nothrow_move_constructible<macro_symbol>::value, "");
 
-template<class Data>
-symbol_detail::symbol_impl_with_data<Data>& symbol_with_data<Data>::impl()
+inline symbol_detail::symbol_impl& symbol::impl()
 {
-    return *static_cast<symbol_detail::symbol_impl_with_data<Data>*>(this);
+    return *static_cast<symbol_detail::symbol_impl*>(this);
 }
-template<class Data>
-const symbol_detail::symbol_impl_with_data<Data>& symbol_with_data<Data>::impl() const
+inline const symbol_detail::symbol_impl& symbol::impl() const
 {
-    return *static_cast<const symbol_detail::symbol_impl_with_data<Data>*>(this);
+    return *static_cast<const symbol_detail::symbol_impl*>(this);
 }
-template<class Data>
-symbol_type_id symbol_with_data<Data>::type() const
+inline symbol::type_value symbol::type() const
 {
     return impl().t;
 }
-template<class Data>
-const symbol_source& symbol_with_data<Data>::source() const
+inline const symbol_source& symbol::source() const
 {
     return impl().source_value;
 }
-template<class Data>
-void symbol_with_data<Data>::source(const symbol_source& new_source)
+inline void symbol::source(const symbol_source& new_source)
 {
     impl().source_value = new_source;
 }
-template<class Data> template<class SymbolType>
-bool symbol_with_data<Data>::is() const
+template<class SymbolType>
+inline bool symbol::is() const
 {
     return type() == SymbolType::type_id;
 }
-template<class Data> template<class SymbolType>
-SymbolType& symbol_with_data<Data>::cast()
+template<class SymbolType>
+SymbolType& symbol::cast()
 {
     assert(is<SymbolType>());
     return *static_cast<SymbolType*>(this);
 }
-template<class Data> template<class FunctorType>
-void symbol_with_data<Data>::visit(FunctorType&& f)
+template<class FunctorType>
+void symbol::visit(FunctorType&& f)
 {
     switch(type())
     {
-    case symbol_type_id::ID:
-        f(cast<id_symbol_with_data<Data>>());
+    case ID:
+        f(cast<id_symbol>());
         break;
-    case symbol_type_id::LITERAL:
-        f(cast<lit_symbol_with_data<Data>>());
+    case LITERAL:
+        f(cast<lit_symbol>());
         break;
-    case symbol_type_id::REFERENCE:
-        f(cast<ref_symbol_with_data<Data>>());
+    case REFERENCE:
+        f(cast<ref_symbol>());
         break;
-    case symbol_type_id::LIST:
-        f(cast<list_symbol_with_data<Data>>());
+    case LIST:
+        f(cast<list_symbol>());
         break;
-    case symbol_type_id::MACRO:
-        f(cast<macro_symbol_with_data<Data>>());
+    case MACRO:
+        f(cast<macro_symbol>());
         break;
     }
 }
 
-template<class Data>
-Data& symbol_with_data<Data>::data()
-{
-    return impl().d;
-}
-template<class Data>
-const Data& symbol_with_data<Data>::data() const
-{
-    return impl().d;
-}
 
-template<class Data>
-inline bool operator==(const symbol_with_data<Data>& lhs, const symbol_with_data<Data>& rhs)
+inline bool operator==(const symbol& lhs, const symbol& rhs)
 {
     if(lhs.type() != rhs.type())
         return false;
     
     switch(lhs.type())
     {
-    case symbol_type_id::ID:
-        return lhs.template cast<id_symbol_with_data<Data>>() == rhs.template cast<id_symbol_with_data<Data>>();
-    case symbol_type_id::LITERAL:
-        return lhs.template cast<lit_symbol_with_data<Data>>() == rhs.template cast<lit_symbol_with_data<Data>>();
-    case symbol_type_id::REFERENCE:
-        return lhs.template cast<ref_symbol_with_data<Data>>() == rhs.template cast<ref_symbol_with_data<Data>>();
-    case symbol_type_id::LIST:
-        return lhs.template cast<list_symbol_with_data<Data>>() == rhs.template cast<list_symbol_with_data<Data>>();
-    case symbol_type_id::MACRO:
-        return lhs.template cast<macro_symbol_with_data<Data>>() == rhs.template cast<macro_symbol_with_data<Data>>();
+    case symbol::ID:
+        return lhs.cast<id_symbol>() == rhs.cast<id_symbol>();
+    case symbol::LITERAL:
+        return lhs.cast<lit_symbol>() == rhs.cast<lit_symbol>();
+    case symbol::REFERENCE:
+        return lhs.cast<ref_symbol>() == rhs.cast<ref_symbol>();
+    case symbol::LIST:
+        return lhs.cast<list_symbol>() == rhs.cast<list_symbol>();
+    case symbol::MACRO:
+        return lhs.cast<macro_symbol>() == rhs.cast<macro_symbol>();
     }
 }
-template<class Data>
-inline bool operator!=(const symbol_with_data<Data>& lhs, const symbol_with_data<Data>& rhs)
+inline bool operator!=(const symbol& lhs, const symbol& rhs)
 {
     return !(lhs == rhs);
 }
 
-namespace symbol_detail
-{
 
 constexpr size_t constexpr_max_for_symbol(size_t a, size_t b)
 {
@@ -571,44 +514,42 @@ constexpr size_t constexpr_max_for_symbol(size_t a, size_t b, TS... s)
     return constexpr_max_for_symbol(a, constexpr_max_for_symbol(b, s...));
 }
 
-}
+constexpr const size_t max_symbol_size = constexpr_max_for_symbol(
+        sizeof(lit_symbol), sizeof(ref_symbol),
+        sizeof(list_symbol), sizeof(macro_symbol),
+        sizeof(id_symbol));
 
-template<class Data>
-class any_symbol_with_data
-  : public symbol_with_data<Data>
+class any_symbol
+  : public symbol
 {
-    constexpr static const size_t max_symbol_size = symbol_detail::constexpr_max_for_symbol(
-        sizeof(lit_symbol_with_data<Data>), sizeof(ref_symbol_with_data<Data>),
-        sizeof(list_symbol_with_data<Data>), sizeof(macro_symbol_with_data<Data>),
-        sizeof(id_symbol_with_data<Data>));
 public:
-    any_symbol_with_data(const symbol_with_data<Data>& that)
+    any_symbol(const symbol& that)
     {
         that.visit([&](auto obj)
         {
             construct(obj);
         });
     }
-    any_symbol_with_data(symbol_with_data<Data>&& that) noexcept
+    any_symbol(symbol&& that) noexcept
     {
         that.visit([&](auto& obj)
         {
             construct(std::move(obj));
         });
     }
-    any_symbol_with_data(const any_symbol_with_data<Data>& that)
-      : any_symbol_with_data(static_cast<const symbol_with_data<Data>&>(that))
+    any_symbol(const any_symbol& that)
+      : any_symbol(static_cast<const symbol&>(that))
     {}
-    any_symbol_with_data(any_symbol_with_data&& that)
-      : any_symbol_with_data(static_cast<symbol_with_data<Data>&&>(that))
+    any_symbol(any_symbol&& that)
+      : any_symbol(static_cast<symbol&&>(that))
     {}
     
-    ~any_symbol_with_data() noexcept
+    ~any_symbol() noexcept
     {
         destruct();
     }
     
-    any_symbol_with_data& operator=(symbol_with_data<Data>&& that) noexcept
+    any_symbol& operator=(symbol&& that) noexcept
     {
         destruct();
         that.visit([&](auto& obj)
@@ -617,7 +558,7 @@ public:
         });
         return *this;
     }
-    any_symbol_with_data& operator=(const symbol_with_data<Data>& that)
+    any_symbol& operator=(const symbol& that)
     {
         that.visit([&](auto obj)
         {
@@ -627,9 +568,9 @@ public:
         });
         return *this;
     }
-    any_symbol_with_data& operator=(any_symbol_with_data<Data> that)
+    any_symbol& operator=(any_symbol that)
     {
-        return (*this = static_cast<symbol_with_data<Data>&&>(that));
+        return (*this = static_cast<symbol&&>(that));
     }
 private:
     char buffer[max_symbol_size];
@@ -642,7 +583,7 @@ private:
     }
     void destruct() noexcept
     {
-        this->visit([](auto& obj)
+        visit([](auto& obj)
         {
             typedef typename std::decay<decltype(obj)>::type T;
             obj.~T();
@@ -651,35 +592,30 @@ private:
 };
 
 
-template<class Data>
-list_symbol_with_data<Data>::list_symbol_with_data(std::initializer_list<any_symbol_with_data<Data>> l)
-  : list_symbol_with_data(std::vector<any_symbol_with_data<Data>>{l.begin(), l.end()})
+
+inline list_symbol::list_symbol(std::initializer_list<any_symbol> l)
+  : list_symbol(std::vector<any_symbol>{l.begin(), l.end()})
 {}
-template<class Data>
-any_symbol_with_data<Data>& list_symbol_with_data<Data>::operator[](size_t i)
+inline any_symbol& list_symbol::operator[](size_t i)
 {
     return v[i];
 }
-template<class Data>
-const any_symbol_with_data<Data>& list_symbol_with_data<Data>::operator[](size_t i) const
+inline const any_symbol& list_symbol::operator[](size_t i) const
 {
     return v[i];
 }
-template<class Data>
-void list_symbol_with_data<Data>::push_back(symbol_with_data<Data>&& s)
+inline void list_symbol::push_back(symbol&& s)
 {
     v.push_back(std::move(s));
 }
-template<class Data>
-void list_symbol_with_data<Data>::push_back(const symbol_with_data<Data>& s)
+inline void list_symbol::push_back(const symbol& s)
 {
     v.push_back(s);
 }
 
-template<class Data>
-any_symbol macro_symbol_with_data<Data>::operator()(list_symbol::const_iterator begin, list_symbol::const_iterator end) const
+inline any_symbol macro_symbol::operator()(list_symbol::const_iterator begin, list_symbol::const_iterator end) const
 {
-    return func(begin, end);
+    return f(begin, end);
 }
 
 #endif

@@ -11,7 +11,9 @@ using std::equal;
 using std::begin;
 using std::exception;
 
-using namespace symbol_shortcuts;
+typedef lit_symbol lit;
+typedef ref_symbol ref;
+typedef list_symbol list;
 
 BOOST_AUTO_TEST_CASE(lit_test)
 {
@@ -64,19 +66,19 @@ BOOST_AUTO_TEST_CASE(cast_test)
 
     lit lit_obj = "abcde";
     s = &lit_obj;
-    BOOST_CHECK(s->type() == symbol_type_id::LITERAL);
+    BOOST_CHECK_EQUAL(s->type(), symbol::LITERAL);
     BOOST_CHECK_EQUAL(&s->cast<lit>(), &lit_obj);
     BOOST_CHECK_EQUAL(&s->cast_else<lit>(thrower), &lit_obj);
     BOOST_CHECK_THROW(s->cast_else<ref>(thrower), my_exception);
 
     ref ref_obj{1};
     s = &ref_obj;
-    BOOST_CHECK(s->type() == symbol_type_id::REFERENCE);
+    BOOST_CHECK_EQUAL(s->type(), symbol::REFERENCE);
     BOOST_CHECK_EQUAL(&s->cast<ref>(), &ref_obj);
 
     list list_obj;
     s = &list_obj;
-    BOOST_CHECK(s->type() == symbol_type_id::LIST);
+    BOOST_CHECK_EQUAL(s->type(), symbol::LIST);
     BOOST_CHECK_EQUAL(&s->cast<list>(), &list_obj);
 }
 
@@ -125,7 +127,7 @@ BOOST_AUTO_TEST_CASE(any_symbol_lit_ref_test) // only test any_symbol with lit_s
     symbol& lit_base = lit_any;
     lit_base.visit([&](auto& obj)
     {
-        BOOST_CHECK(obj.type() == symbol_type_id::LITERAL);
+        BOOST_CHECK(obj.type() == symbol::LITERAL);
         BOOST_CHECK(obj == lit_obj);
     });
 
@@ -136,7 +138,7 @@ BOOST_AUTO_TEST_CASE(any_symbol_lit_ref_test) // only test any_symbol with lit_s
     symbol& ref_base = ref_any;
     ref_base.visit([&](auto& obj)
     {
-        BOOST_CHECK(obj.type() == symbol_type_id::REFERENCE);
+        BOOST_CHECK(obj.type() == symbol::REFERENCE);
         BOOST_CHECK(obj == ref_obj);
     });
 }
