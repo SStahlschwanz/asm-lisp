@@ -1,6 +1,8 @@
 #ifndef COMPILATION_CONTEXT_HPP_
 #define COMPILATION_CONTEXT_HPP_
 
+#include "macro_module.hpp"
+
 #include <cstddef>
 #include <string>
 #include <unordered_map>
@@ -40,14 +42,16 @@ public:
 
     llvm::LLVMContext& llvm();
     llvm::Module& llvm_macro_module();
+    const macro_module_data_t& macro_module_data() const;
     llvm::ExecutionEngine& llvm_execution_engine();
 
     identifier_id_t identifier_id(const std::string& str);
     const std::string& to_string(identifier_id_t);
 private:
     std::unordered_map<std::string, identifier_id_t> identifier_table;
-    //std::unique_ptr<llvm::Module> macro_module;
     llvm::Module* macro_module;
+    macro_module_data_t macro_module_data_;
+
     llvm::ExecutionEngine* execution_engine;
 
     void llvm_init();

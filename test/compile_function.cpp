@@ -77,6 +77,8 @@ const list_symbol cond_branch = {id_symbol{unique_ids::COND_BRANCH}};
 const list_symbol branch = {id_symbol{unique_ids::BRANCH}};
 const list_symbol phi_int64 = {id_symbol{unique_ids::PHI}, int64_type};
 
+const list_symbol list_create = {id_symbol{unique_ids::LIST_CREATE}};
+
 BOOST_AUTO_TEST_CASE(compile_signature_test)
 {
     const any_symbol params1 = list
@@ -379,4 +381,29 @@ BOOST_AUTO_TEST_CASE(test_missing_let)
         body
     };
     BOOST_CHECK_THROW(get_compiled_function<void*>(function_source), compile_exception);
+}
+
+BOOST_AUTO_TEST_CASE(macro_list_XY_instructions_test)
+{
+    const list params =
+    {};
+    const symbol& return_type = int64_type;
+    const list_symbol body =
+    {
+        list{block1, list
+        {
+            list{let, x, list_create},
+            list{return_int64, x}
+        }}
+    };
+
+    const list_symbol function_source = 
+    {
+        params,
+        return_type,
+        body
+    };
+    
+    auto function_ptr = get_compiled_function<uint64_t (*)()>(function_source);
+    BOOST_CHECK(function_ptr() == 43);
 }

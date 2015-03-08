@@ -209,6 +209,10 @@ instruction_info parse_instruction(const symbol& node, LLVMContext& llvm_context
             return parse_cmp_instruction(statement, llvm_context);
         case unique_ids::CALL:
             throw not_implemented{"instruction"};
+        case unique_ids::LIST_CREATE:
+            if(statement.size() != 1)
+                fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), "list_create", 0, statement.size() - 1);
+            return instruction_info{statement, instruction_info::list_create{}};
         default:
             fatal<id("unknown_instruction_constructor")>(instruction_constructor.source());
         }
@@ -432,8 +436,8 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
 
     [&](const instruction_info::list_create& inst)
     {
-        throw not_implemented{""};
-        return nullptr;
+        Value* value = builder.CreateCall(st_context.macro_module_data.list_create);
+        return value;
     },
     [&](const instruction_info::list_size& inst)
     {
@@ -530,7 +534,7 @@ block_info compile_block(const symbol& block_node, BasicBlock& llvm_block, const
         return find_it->second;
     };
 
-    statement_context st_context = {builder, lookup_variable, special_calls};
+    statement_context st_context{builder, lookup_variable, special_calls, context.macro_module_data()};
 
     for(const symbol& s : block_body)
     {

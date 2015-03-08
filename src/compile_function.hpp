@@ -167,6 +167,7 @@ struct statement_context
     llvm::IRBuilder<>& builder;
     std::function<named_value_info& (const ref_symbol&)> lookup_variable;
     special_calls_info& special_calls;
+    const macro_module_data_t& macro_module_data;
 };
 struct block_info
 {

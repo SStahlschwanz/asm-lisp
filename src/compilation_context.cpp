@@ -1,5 +1,7 @@
 #include "compilation_context.hpp"
 
+#include "macro_module.hpp"
+
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
@@ -39,14 +41,16 @@ LLVMContext& compilation_context::llvm()
 }
 Module& compilation_context::llvm_macro_module()
 {
-    if(!macro_module)
-        llvm_init();
+    llvm_init();
     return *macro_module;
+}
+const macro_module_data_t& compilation_context::macro_module_data() const
+{
+    return macro_module_data_;
 }
 ExecutionEngine& compilation_context::llvm_execution_engine()
 {
-    if(!execution_engine)
-        llvm_init();
+    llvm_init();
     return *execution_engine;
 }
 identifier_id_t compilation_context::identifier_id(const string& str)
@@ -69,12 +73,16 @@ const string& compilation_context::to_string(identifier_id_t identifier_id)
 
 void compilation_context::llvm_init()
 {
-    llvm::InitializeNativeTarget();
+    if(!macro_module)
+    {
+        llvm::InitializeNativeTarget();
+    
+        unique_ptr<Module> macro_module_owner;
+        tie(macro_module_owner, macro_module_data_) = create_macro_module(llvm());
 
-    auto macro_module_owner = make_unique<Module>("macro module", llvm());
-    macro_module = macro_module_owner.get();
-    // execution_engine does not need cleanup apparently
-    execution_engine = EngineBuilder(macro_module).create();
-    assert(execution_engine);
-    macro_module_owner.release();
+        // execution_engine does not need cleanup apparently
+        execution_engine = EngineBuilder(macro_module_owner.get()).create();
+        assert(execution_engine);
+        macro_module = macro_module_owner.release();
+    }
 }
