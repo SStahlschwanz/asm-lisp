@@ -88,7 +88,7 @@ test-build/dep/%.dep: test/%.cpp
 test-build/obj/%.o: test-build/dep/%.dep
 	$(CPP) $(DEBUG_CPPFLAGS) -Isrc -c $(patsubst test-build/obj/%.o,test/%.cpp,$@) -o $@
 
-# binaries fo tests
+# binaries for tests
 .SECONDARY: $(patsubst test/%.cpp,test-build/%,$(ALL_TESTS))
 test-build/%: $(filter-out %main.o,$(DEBUG_OBJS)) test-build/obj/%.o
 	$(CPP) $(DEBUG_LDFLAGS) -o $@ $^ $(DEBUG_LIBS)
