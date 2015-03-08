@@ -98,7 +98,7 @@ test-build/bin/%: $(filter-out %main.o,$(DEBUG_OBJS)) test-build/obj/%.o
 # output of tests
 .SECONDARY: $(patsubst test/%.cpp,test-build/output/%,$(ALL_TESTS))
 test-build/output/%: test-build/bin/%
-	valgrind -q $^ &> $@  || true
+	valgrind -q $^ > $@ 2>&1 || true
 
 test-%: test-build/output/%
 	cat $^
