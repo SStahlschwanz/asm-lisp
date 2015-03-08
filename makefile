@@ -103,10 +103,13 @@ test-build/output/%: test-build/bin/%
 test-%: test-build/output/%
 	cat $^
 
+.SILENT: full-test
 full-test: $(patsubst test/%.cpp,test-build/output/%, $(ALL_TESTS))
 	for output in $^; \
 	do \
-		echo $$output; \
+	echo "cat $${output}"; \
 		cat $$output; \
+		echo ""; \
+		echo ""; \
 	done
 	
