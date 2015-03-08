@@ -424,9 +424,40 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
         return value;
         
     },
-    [&](const auto& obj)
+    [&](const instruction_info::call& inst)
     {
-        assert(false);
+        throw not_implemented{""};
+        return nullptr;
+    },
+
+    [&](const instruction_info::list_create& inst)
+    {
+        throw not_implemented{""};
+        return nullptr;
+    },
+    [&](const instruction_info::list_size& inst)
+    {
+        throw not_implemented{""};
+        return nullptr;
+    },
+    [&](const instruction_info::list_push& inst)
+    {
+        throw not_implemented{""};
+        return nullptr;
+    },
+    [&](const instruction_info::list_pop& inst)
+    {
+        throw not_implemented{""};
+        return nullptr;
+    },
+    [&](const instruction_info::list_get& inst)
+    {
+        throw not_implemented{""};
+        return nullptr;
+    },
+    [&](const instruction_info::list_set& inst)
+    {
+        throw not_implemented{""};
         return nullptr;
     });
 }
