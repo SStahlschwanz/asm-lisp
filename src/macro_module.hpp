@@ -1,18 +1,34 @@
 #ifndef MACRO_MODULE_HPP_
 #define MACRO_MODULE_HPP_
 
-#include <llvm/IR/Module.h>
-#include <llvm/IR/Function.h>
-
 #include <memory>
 #include <utility>
 
-struct macro_module_data_t
+#include "symbol.hpp"
+
+namespace llvm
 {
-    llvm::Function* list_create;
+class Module;
+class Function;
+class LLVMContext;
+class ExecutionEngine;
+}
+
+struct macro_execution_environment
+{
+    llvm::Module& llvm_module;
+    llvm::ExecutionEngine& llvm_engine;
+
+    llvm::Function& list_create;
+    llvm::Function& list_size;
+    llvm::Function& list_set;
+    llvm::Function& list_get;
+    llvm::Function& list_push;
+    llvm::Function& list_pop;
 };
 
-std::pair<std::unique_ptr<llvm::Module>, macro_module_data_t> create_macro_module(llvm::LLVMContext& llvm_context);
+macro_execution_environment create_macro_environment(llvm::LLVMContext& llvm_context);
+//std::pair<any_symbol, std::vector<std::unique_ptr<any_symbol>> execute_macro(macro_execution_environment& environment, llvm::Function& function, list_symbol::const_iterator args_begin, list_symbol::const_iterator args_end);
 
 #endif
 

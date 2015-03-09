@@ -4,6 +4,8 @@
 #include "symbol.hpp"
 #include "compilation_context.hpp"
 
+#include <llvm/IR/Type.h>
+
 struct integer_type
 {
     unsigned long bit_width;

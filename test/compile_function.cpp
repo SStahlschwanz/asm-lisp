@@ -21,6 +21,7 @@
 #include <utility>
 #include <iterator>
 #include <string>
+#include <csetjmp>
 
 using std::pair;
 using std::tie;
@@ -78,6 +79,29 @@ const list_symbol branch = {id_symbol{unique_ids::BRANCH}};
 const list_symbol phi_int64 = {id_symbol{unique_ids::PHI}, int64_type};
 
 const list_symbol list_create = {id_symbol{unique_ids::LIST_CREATE}};
+const list_symbol list_size = {id_symbol{unique_ids::LIST_SIZE}};
+const list_symbol list_set = {id_symbol{unique_ids::LIST_SET}};
+const list_symbol list_get = {id_symbol{unique_ids::LIST_GET}};
+const list_symbol list_push = {id_symbol{unique_ids::LIST_PUSH}};
+const list_symbol list_pop = {id_symbol{unique_ids::LIST_POP}};
+
+
+template<class T>
+T* get_compiled_function(const list_symbol& function_source)
+{
+    unique_ptr<Function> function_owner;
+    tie(function_owner, ignore) = compile_function(function_source.begin(), function_source.end(), context);
+    Function* function = function_owner.get();
+    context.macro_environment().llvm_module.getFunctionList().push_back(function_owner.get());
+    function_owner.release();
+    
+    string str;
+    raw_string_ostream os(str);
+    //BOOST_CHECK_MESSAGE(verifyFunction(*function, &os), os.str());
+    // TODO: this fails - I don't know why, function->dump() looks good to me and verifyFunction doesn't produce a message
+    auto fptr = (T*) context.macro_environment().llvm_engine.getPointerToFunction(function);
+    return fptr;
+}
 
 BOOST_AUTO_TEST_CASE(compile_signature_test)
 {
@@ -134,24 +158,6 @@ BOOST_AUTO_TEST_CASE(compile_instruction_test)
     BOOST_CHECK(get<instruction_info::cmp>(got3.kind).type.llvm_type == llvm_int64);
 }
 
-
-template<class T>
-T get_compiled_function(const list_symbol& function_source)
-{
-    unique_ptr<Function> function_owner;
-    tie(function_owner, ignore) = compile_function(function_source.begin(), function_source.end(), context);
-    Function* function = function_owner.get();
-    context.llvm_macro_module().getFunctionList().push_back(function_owner.get());
-    function_owner.release();
-    
-    string str;
-    raw_string_ostream os(str);
-    //BOOST_CHECK_MESSAGE(verifyFunction(*function, &os), os.str());
-    // TODO: this fails - I don't know why, function->dump() looks good to me and verifyFunction doesn't produce a message
-
-    return (T) context.llvm_execution_engine().getPointerToFunction(function);
-}
-
 BOOST_AUTO_TEST_CASE(store_load_test)
 {
     const list_symbol params =
@@ -177,7 +183,7 @@ BOOST_AUTO_TEST_CASE(store_load_test)
         body
     };
 
-    auto function_ptr = get_compiled_function<uint64_t (*)(uint64_t)>(function_source);
+    auto function_ptr = get_compiled_function<uint64_t (uint64_t)>(function_source);
     BOOST_CHECK(function_ptr(2) == 2);
     BOOST_CHECK(function_ptr(1231) == 1231);
 }
@@ -217,7 +223,7 @@ BOOST_AUTO_TEST_CASE(branch_test)
         body
     };
     
-    auto compiled_function = get_compiled_function<uint64_t (*)(uint64_t, uint64_t)>(func_source);
+    auto compiled_function = get_compiled_function<uint64_t (uint64_t, uint64_t)>(func_source);
     BOOST_CHECK(compiled_function);
     BOOST_CHECK_EQUAL(compiled_function(2, 2), 2 + 2);
     BOOST_CHECK_EQUAL(compiled_function(5, 3), 5 - 3);
@@ -267,7 +273,7 @@ BOOST_AUTO_TEST_CASE(phi_test)
         }
     };
     
-    auto compiled_function1 = get_compiled_function<uint64_t (*)(uint64_t, uint64_t)>(func1_source);
+    auto compiled_function1 = get_compiled_function<uint64_t (uint64_t, uint64_t)>(func1_source);
     BOOST_CHECK(compiled_function1);
     BOOST_CHECK_EQUAL(compiled_function1(2, 2), 2 + 2);
     BOOST_CHECK_EQUAL(compiled_function1(5, 3), 5 - 3);
@@ -351,7 +357,7 @@ BOOST_AUTO_TEST_CASE(a_times_b_test)
         body
     };
 
-    auto function_ptr = get_compiled_function<uint64_t (*)(uint64_t, uint64_t)>(function_source);
+    auto function_ptr = get_compiled_function<uint64_t (uint64_t, uint64_t)>(function_source);
     BOOST_CHECK(function_ptr(2, 3) == 6);
     BOOST_CHECK(function_ptr(0, 20) == 0);
     BOOST_CHECK(function_ptr(33, 0) == 0);
@@ -380,7 +386,7 @@ BOOST_AUTO_TEST_CASE(test_missing_let)
         return_type,
         body
     };
-    BOOST_CHECK_THROW(get_compiled_function<void*>(function_source), compile_exception);
+    BOOST_CHECK_THROW(get_compiled_function<void (uint64_t, uint64_t)>(function_source), compile_exception);
 }
 
 BOOST_AUTO_TEST_CASE(macro_list_XY_instructions_test)
@@ -393,7 +399,14 @@ BOOST_AUTO_TEST_CASE(macro_list_XY_instructions_test)
         list{block1, list
         {
             list{let, x, list_create},
-            list{return_int64, x}
+            list{let, y, list_create},
+            list{let, z, list_create},
+            list{list_push, x, y},
+            list{list_push, x, y},
+            list{list_push, x, y},
+            list{list_pop, x},
+            list{let, v, list_size, x},
+            list{return_int64, v}
         }}
     };
 
@@ -404,6 +417,6 @@ BOOST_AUTO_TEST_CASE(macro_list_XY_instructions_test)
         body
     };
     
-    auto function_ptr = get_compiled_function<uint64_t (*)()>(function_source);
-    BOOST_CHECK(function_ptr() == 43);
+    auto function_ptr = get_compiled_function<uint64_t ()>(function_source);
+    BOOST_CHECK_EQUAL(function_ptr(), 2);
 }

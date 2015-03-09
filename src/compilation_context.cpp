@@ -39,19 +39,14 @@ LLVMContext& compilation_context::llvm()
 {
     return getGlobalContext();
 }
-Module& compilation_context::llvm_macro_module()
+macro_execution_environment& compilation_context::macro_environment()
 {
-    llvm_init();
-    return *macro_module;
-}
-const macro_module_data_t& compilation_context::macro_module_data() const
-{
-    return macro_module_data_;
-}
-ExecutionEngine& compilation_context::llvm_execution_engine()
-{
-    llvm_init();
-    return *execution_engine;
+    if(!macro_env)
+    {
+        llvm::InitializeNativeTarget();
+        macro_env = make_unique<macro_execution_environment>(create_macro_environment(llvm()));
+    }
+    return *macro_env;
 }
 identifier_id_t compilation_context::identifier_id(const string& str)
 {
@@ -71,18 +66,3 @@ const string& compilation_context::to_string(identifier_id_t identifier_id)
     return *static_cast<string*>(nullptr); // suppress warnings
 }
 
-void compilation_context::llvm_init()
-{
-    if(!macro_module)
-    {
-        llvm::InitializeNativeTarget();
-    
-        unique_ptr<Module> macro_module_owner;
-        tie(macro_module_owner, macro_module_data_) = create_macro_module(llvm());
-
-        // execution_engine does not need cleanup apparently
-        execution_engine = EngineBuilder(macro_module_owner.get()).create();
-        assert(execution_engine);
-        macro_module = macro_module_owner.release();
-    }
-}

@@ -38,6 +38,7 @@ using std::string;
 using std::stol;
 using std::out_of_range;
 using std::invalid_argument;
+using std::size_t;
 
 using llvm::Value;
 using llvm::Function;
@@ -177,6 +178,12 @@ instruction_info parse_instruction(const symbol& node, LLVMContext& llvm_context
         {
             fatal<id("invalid_instruction_constructor")>(statement[0].source());
         });
+        auto check_arity = [&](const char* constructor_name, size_t expected_arity)
+        {
+            if(statement.size() - 1 != expected_arity)
+                fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), constructor_name, expected_arity, statement.size() - 1);
+        };
+
         switch(instruction_constructor.id())
         {
         case unique_ids::ADD:
@@ -196,12 +203,10 @@ instruction_info parse_instruction(const symbol& node, LLVMContext& llvm_context
         case unique_ids::RETURN:
             return parse_unary_typed_instruction<instruction_info::return_inst>("return", statement, llvm_context);
         case unique_ids::COND_BRANCH:
-            if(statement.size() != 1)
-                fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), "cond_branch", 0, statement.size() - 1);
+            check_arity("cond_branch", 0);
             return instruction_info{statement, instruction_info::cond_branch{}};
         case unique_ids::BRANCH:
-            if(statement.size() != 1)
-                fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), "branch", 0, statement.size() - 1);
+            check_arity("branch", 0);
             return instruction_info{statement, instruction_info::branch{}};
         case unique_ids::PHI:
             return parse_unary_typed_instruction<instruction_info::phi>("phi", statement, llvm_context);
@@ -210,9 +215,23 @@ instruction_info parse_instruction(const symbol& node, LLVMContext& llvm_context
         case unique_ids::CALL:
             throw not_implemented{"instruction"};
         case unique_ids::LIST_CREATE:
-            if(statement.size() != 1)
-                fatal<id("instruction_constructor_invalid_argument_number")>(statement.source(), "list_create", 0, statement.size() - 1);
+            check_arity("list_create", 0);
             return instruction_info{statement, instruction_info::list_create{}};
+        case unique_ids::LIST_SIZE:
+            check_arity("list_size", 0);
+            return instruction_info{statement, instruction_info::list_size{}};
+        case unique_ids::LIST_SET:
+            check_arity("list_set", 0);
+            return instruction_info{statement, instruction_info::list_set{}};
+        case unique_ids::LIST_GET:
+            check_arity("list_get", 0);
+            return instruction_info{statement, instruction_info::list_get{}};
+        case unique_ids::LIST_PUSH:
+            check_arity("list_push", 0);
+            return instruction_info{statement, instruction_info::list_push{}};
+        case unique_ids::LIST_POP:
+            check_arity("list_pop", 0);
+            return instruction_info{statement, instruction_info::list_pop{}};
         default:
             fatal<id("unknown_instruction_constructor")>(instruction_constructor.source());
         }
@@ -280,7 +299,8 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
     };
     
     
-    Type* pointer_type = PointerType::get(IntegerType::get(builder.getContext(), 8), 0);
+    Type* pointer_type = PointerType::getUnqual(IntegerType::get(builder.getContext(), 8));
+    Type* symbol_index_type = IntegerType::get(builder.getContext(), 64);
 
     return visit<Value*>(instruction.kind,
     [&](const instruction_info::add& inst)
@@ -436,33 +456,42 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
 
     [&](const instruction_info::list_create& inst)
     {
-        Value* value = builder.CreateCall(st_context.macro_module_data.list_create);
-        return value;
+        check_arity("list_create", 0);
+        return builder.CreateCall(&st_context.macro_environment.list_create);
     },
     [&](const instruction_info::list_size& inst)
     {
-        throw not_implemented{""};
-        return nullptr;
+        check_arity("list_size", 1);
+        Value* arg = get_value(*begin, symbol_index_type);
+        return builder.CreateCall(&st_context.macro_environment.list_size, arg);
     },
     [&](const instruction_info::list_push& inst)
     {
-        throw not_implemented{""};
-        return nullptr;
+        check_arity("list_push", 2);
+        Value* arg1 = get_value(*begin, symbol_index_type);
+        Value* arg2 = get_value(*(begin + 1), symbol_index_type);
+        return builder.CreateCall2(&st_context.macro_environment.list_push, arg1, arg2);
     },
     [&](const instruction_info::list_pop& inst)
     {
-        throw not_implemented{""};
-        return nullptr;
+        check_arity("list_pop", 1);
+        Value* arg = get_value(*begin, symbol_index_type);
+        return builder.CreateCall(&st_context.macro_environment.list_pop, arg);
     },
     [&](const instruction_info::list_get& inst)
     {
-        throw not_implemented{""};
-        return nullptr;
+        check_arity("list_get", 2);
+        Value* arg1 = get_value(*begin, symbol_index_type);
+        Value* arg2 = get_value(*(begin + 1), IntegerType::get(builder.getContext(), 64));
+        return builder.CreateCall2(&st_context.macro_environment.list_pop, arg1, arg2);
     },
     [&](const instruction_info::list_set& inst)
     {
-        throw not_implemented{""};
-        return nullptr;
+        check_arity("list_set", 3);
+        Value* arg1 = get_value(*begin, symbol_index_type);
+        Value* arg2 = get_value(*(begin + 1), IntegerType::get(builder.getContext(), 64));
+        Value* arg3 = get_value(*begin, symbol_index_type);
+        return builder.CreateCall3(&st_context.macro_environment.list_pop, arg1, arg2, arg3);
     });
 }
 
@@ -534,7 +563,7 @@ block_info compile_block(const symbol& block_node, BasicBlock& llvm_block, const
         return find_it->second;
     };
 
-    statement_context st_context{builder, lookup_variable, special_calls, context.macro_module_data()};
+    statement_context st_context{builder, lookup_variable, special_calls, context.macro_environment()};
 
     for(const symbol& s : block_body)
     {
@@ -690,7 +719,7 @@ pair<unique_ptr<Function>, function_info> compile_function(list_symbol::const_it
     
     const symbol& body_node = *(begin + 2);
     compile_body(body_node, *function, parameter_table, context);
-    //verifyFunction(*function); not possible because function has to be embedded into module first
+    //assert(verifyFunction(*function)); not possible because function has to be embedded into module first
     function_info info;
     info.uses_proc_instructions = true; // TODO
     info.uses_macro_instructions = true; // TODO

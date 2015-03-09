@@ -41,20 +41,13 @@ public:
     compilation_context& operator=(const compilation_context&) = delete;
 
     llvm::LLVMContext& llvm();
-    llvm::Module& llvm_macro_module();
-    const macro_module_data_t& macro_module_data() const;
-    llvm::ExecutionEngine& llvm_execution_engine();
+    macro_execution_environment& macro_environment();
 
     identifier_id_t identifier_id(const std::string& str);
     const std::string& to_string(identifier_id_t);
 private:
     std::unordered_map<std::string, identifier_id_t> identifier_table;
-    llvm::Module* macro_module;
-    macro_module_data_t macro_module_data_;
-
-    llvm::ExecutionEngine* execution_engine;
-
-    void llvm_init();
+    std::unique_ptr<macro_execution_environment> macro_env;
 };
 
 #endif

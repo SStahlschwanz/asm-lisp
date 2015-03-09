@@ -8,7 +8,6 @@
 #include <memory>
 
 #include "symbol_source.hpp"
-#include "compilation_context.hpp"
 
 class id_symbol;
 class lit_symbol;
@@ -17,6 +16,8 @@ class list_symbol;
 class macro_symbol;
 
 class any_symbol;
+
+typedef std::size_t identifier_id_t;
 
 namespace symbol_detail
 {
