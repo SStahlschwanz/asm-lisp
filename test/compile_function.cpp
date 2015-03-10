@@ -419,7 +419,12 @@ BOOST_AUTO_TEST_CASE(macro_list_XY_instructions_test)
         body
     };
     
-    auto function_ptr = get_compiled_function<uint64_t ()>(function_source);
-    BOOST_CHECK_EQUAL(function_ptr(), 3);
+    unique_ptr<Function> function_owner;
+    tie(function_owner, ignore) = compile_function(function_source.begin(), function_source.end(), context);
+    context.macro_environment().llvm_module.getFunctionList().push_back(function_owner.get());
+    Function* function = function_owner.release();
+
+    const list_symbol arg{lit{"asdf"}, ref{"asdf"_id}};
+    auto p = execute_macro(context.macro_environment(), *function, arg.begin(), arg.end()); 
 }
 
