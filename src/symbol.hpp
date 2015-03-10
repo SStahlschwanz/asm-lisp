@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "symbol_source.hpp"
+#include "boost_variant_utils.hpp"
 
 class id_symbol;
 class lit_symbol;
@@ -80,16 +81,28 @@ public:
                 std::forward<FunctorType>(functor));
     }
 
-    template<class FunctorType>
-    void visit(FunctorType&& functor);
-    template<class FunctorType>
-    void visit(FunctorType&& functor) const
+    template<class ResultType = void, class FunctorType>
+    ResultType visit(FunctorType&& functor);
+    template<class ResultType = void, class FunctorType>
+    ResultType visit(FunctorType&& functor) const
     {
-        const_cast<symbol*>(this)->visit([&](auto& obj)
+        return const_cast<symbol*>(this)->visit<ResultType>([&](auto& obj)
         {
             typedef typename std::decay<decltype(obj)>::type actual_type;
             functor(const_cast<const actual_type&>(obj));
         });
+    }
+    template<class ResultType = void, class Functor1Type, class Functor2Type, class... FunctorTypes>
+    ResultType visit(Functor1Type&& functor1, Functor2Type&& functor2, FunctorTypes&&... functors)
+    {
+        boost_variant_utils_detail::lambda_visitor<ResultType, Functor1Type, Functor2Type, FunctorTypes...> visitor{functor1, functor2, functors...};
+        return visit<ResultType>(visitor);
+    }
+    template<class ResultType = void, class Functor1Type, class Functor2Type, class... FunctorTypes>
+    ResultType visit(Functor1Type&& functor1, Functor2Type&& functor2, FunctorTypes&&... functors) const
+    {
+        boost_variant_utils_detail::lambda_visitor<ResultType, Functor1Type, Functor2Type, FunctorTypes...> visitor{functor1, functor2, functors...};
+        return visit<ResultType>(visitor);
     }
 private:
     friend class any_symbol;
@@ -449,25 +462,25 @@ SymbolType& symbol::cast()
     assert(is<SymbolType>());
     return *static_cast<SymbolType*>(this);
 }
-template<class FunctorType>
-void symbol::visit(FunctorType&& f)
+template<class ResultType, class FunctorType>
+ResultType symbol::visit(FunctorType&& f)
 {
     switch(type())
     {
     case ID:
-        f(cast<id_symbol>());
+        return f(cast<id_symbol>());
         break;
     case LITERAL:
-        f(cast<lit_symbol>());
+        return f(cast<lit_symbol>());
         break;
     case REFERENCE:
-        f(cast<ref_symbol>());
+        return f(cast<ref_symbol>());
         break;
     case LIST:
-        f(cast<list_symbol>());
+        return f(cast<list_symbol>());
         break;
     case MACRO:
-        f(cast<macro_symbol>());
+        return f(cast<macro_symbol>());
         break;
     }
 }
