@@ -178,7 +178,6 @@ any_symbol to_symbol_impl(symbol_index index, const vector<indexed_symbol>& inde
         list_symbol result;
         for(size_t child_index : list.vec)
             result.push_back(to_symbol_impl(child_index, indexed_symbols, symbol_store));
-        
         return result; 
     },
     [&](const indexed_macro&)
