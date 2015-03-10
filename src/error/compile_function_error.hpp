@@ -43,7 +43,7 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"missing_instruction", ""},
     {"invalid_instruction_call_argument_number", "invalid number of arguments for instruction '{0}': expected '{1}', got '{2}'"},
     {"variable_undefined", ""},
-    {"variable_type_mismatch", ""},
+    {"variable_type_mismatch", "expected value of type {0}, got type {1}"},
     {"invalid_literal_for_type", ""},
     {"invalid_integer_constant", ""},
     {"out_of_range_integer_constant", ""},

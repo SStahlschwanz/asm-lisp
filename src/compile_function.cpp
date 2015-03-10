@@ -262,8 +262,9 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
         {
             const ref_symbol& name = arg_node.cast<ref_symbol>();
             named_value_info& value = st_context.lookup_variable(name);
-            if(expected_type != value.llvm_value->getType())
-                fatal<id("variable_type_mismatch")>(name.source());
+            Type* got_type = value.llvm_value->getType();
+            if(expected_type != got_type)
+                fatal<id("variable_type_mismatch")>(name.source(), *expected_type, *got_type);
             return value.llvm_value;
         }
         else if(arg_node.is<lit_symbol>())
@@ -483,15 +484,15 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
         check_arity("list_get", 2);
         Value* arg1 = get_value(*begin, symbol_index_type);
         Value* arg2 = get_value(*(begin + 1), IntegerType::get(builder.getContext(), 64));
-        return builder.CreateCall2(&st_context.macro_environment.list_pop, arg1, arg2);
+        return builder.CreateCall2(&st_context.macro_environment.list_get, arg1, arg2);
     },
     [&](const instruction_info::list_set& inst)
     {
         check_arity("list_set", 3);
         Value* arg1 = get_value(*begin, symbol_index_type);
         Value* arg2 = get_value(*(begin + 1), IntegerType::get(builder.getContext(), 64));
-        Value* arg3 = get_value(*begin, symbol_index_type);
-        return builder.CreateCall3(&st_context.macro_environment.list_pop, arg1, arg2, arg3);
+        Value* arg3 = get_value(*(begin + 2), symbol_index_type);
+        return builder.CreateCall3(&st_context.macro_environment.list_set, arg1, arg2, arg3);
     });
 }
 

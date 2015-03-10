@@ -389,6 +389,7 @@ BOOST_AUTO_TEST_CASE(test_missing_let)
     BOOST_CHECK_THROW(get_compiled_function<void (uint64_t, uint64_t)>(function_source), compile_exception);
 }
 
+#include "../src/printing.hpp"
 BOOST_AUTO_TEST_CASE(macro_list_XY_instructions_test)
 {
     const list params =
@@ -405,7 +406,8 @@ BOOST_AUTO_TEST_CASE(macro_list_XY_instructions_test)
             list{list_push, x, y},
             list{list_push, x, y},
             list{list_pop, x},
-            list{let, v, list_size, x},
+            list{list_set, x, lit{"1"}, z},
+            list{let, v, list_get, x, lit{"1"}},
             list{return_int64, v}
         }}
     };
@@ -418,5 +420,6 @@ BOOST_AUTO_TEST_CASE(macro_list_XY_instructions_test)
     };
     
     auto function_ptr = get_compiled_function<uint64_t ()>(function_source);
-    BOOST_CHECK_EQUAL(function_ptr(), 2);
+    BOOST_CHECK_EQUAL(function_ptr(), 3);
 }
+

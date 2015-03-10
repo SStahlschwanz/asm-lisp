@@ -10,6 +10,12 @@
 
 #include "../symbol_source.hpp"
 #include "error_kind.hpp"
+#include "../boost_variant_utils.hpp"
+
+namespace llvm
+{
+class Type;
+}
 
 struct code_location
 {
@@ -19,22 +25,17 @@ struct code_location
 typedef boost::variant<boost::blank, code_location> error_location;
 
 
-struct to_error_location_symbol_source_visitor
-  : boost::static_visitor<error_location>
-{
-    error_location operator()(boost::blank)
-    {
-        return boost::blank();
-    }
-    error_location operator()(const file_source& src)
-    {
-        return code_location{src.begin, src.file_id};
-    }
-};
 inline error_location to_error_location(const symbol_source& src)
 {
-    to_error_location_symbol_source_visitor visitor;
-    return boost::apply_visitor(visitor, src);
+    return visit<error_location>(src,
+    [&](boost::blank)
+    {
+        return boost::blank();
+    },
+    [&](const file_source& src)
+    {
+        return code_location{src.begin, src.file_id};
+    });
 }
 template<class T>
 inline error_location to_error_location(T&& obj)
@@ -42,9 +43,7 @@ inline error_location to_error_location(T&& obj)
     return std::forward<T>(obj);
 }
 
-
-
-typedef boost::variant<boost::blank, std::size_t, std::string> error_parameter;
+typedef boost::variant<boost::blank, std::size_t, std::string, llvm::Type&> error_parameter;
 
 struct compile_exception
   : std::exception

@@ -1,10 +1,5 @@
 #include "printing.hpp"
 
-#include <string>
-#include <unordered_map>
-#include <vector>
-#include <sstream>
-
 #include "symbol.hpp"
 
 #include "error/parse_error.hpp"
@@ -14,6 +9,13 @@
 #include "error/core_misc_error.hpp"
 #include "error/compile_function_error.hpp"
 
+#include <llvm/Support/raw_os_ostream.h>
+#include <llvm/IR/Type.h>
+
+#include <string>
+#include <unordered_map>
+#include <vector>
+#include <sstream>
 
 using std::size_t;
 using std::string;
@@ -27,6 +29,9 @@ using std::unordered_map;
 using boost::static_visitor;
 using boost::apply_visitor;
 using boost::blank;
+
+using llvm::raw_os_ostream;
+using llvm::Type;
 
 struct print_location_visitor
   : static_visitor<>
@@ -71,6 +76,11 @@ struct print_error_visitor
         os << "<argument missing>";
     }
 
+    void operator()(const Type& t)
+    {
+        raw_os_ostream llvm_os{os};
+        t.print(llvm_os);
+    }
     template<class T>
     void operator()(const T& obj)
     {
