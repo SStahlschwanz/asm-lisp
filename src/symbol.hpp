@@ -405,18 +405,18 @@ class macro_symbol
 public:
     static constexpr type_value type_id = MACRO;
 
-    typedef std::function<any_symbol (list_symbol::const_iterator begin, list_symbol::const_iterator end)> macro_function;
+    typedef std::function<std::pair<any_symbol, std::vector<std::unique_ptr<any_symbol>>> (list_symbol::const_iterator begin, list_symbol::const_iterator end)> macro_function;
 
-    macro_symbol(macro_function func)
-      : symbol_detail::symbol_impl(MACRO),
-        f(std::move(func))
+    macro_symbol(std::shared_ptr<macro_function> function)
+      : symbol_detail::symbol_impl(type_id),
+        f(std::move(function))
     {}
     macro_symbol(const macro_symbol&) = default;
     macro_symbol(macro_symbol&& that) noexcept
       : macro_symbol(std::move(that.f))
     {}
     
-    any_symbol operator()(list_symbol::const_iterator begin, list_symbol::const_iterator end) const;
+    std::pair<any_symbol, std::vector<std::unique_ptr<any_symbol>>> operator()(list_symbol::const_iterator begin, list_symbol::const_iterator end) const;
     bool operator==(const macro_symbol& that) const
     {
         // TODO
@@ -427,7 +427,7 @@ public:
         return !(*this == that);
     }
 private:
-    macro_function f;
+    std::shared_ptr<macro_function> f;
 };
 static_assert(std::is_nothrow_move_constructible<macro_symbol>::value, "");
 
@@ -627,9 +627,9 @@ inline void list_symbol::push_back(const symbol& s)
     v.push_back(s);
 }
 
-inline any_symbol macro_symbol::operator()(list_symbol::const_iterator begin, list_symbol::const_iterator end) const
+inline std::pair<any_symbol, std::vector<std::unique_ptr<any_symbol>>> macro_symbol::operator()(list_symbol::const_iterator begin, list_symbol::const_iterator end) const
 {
-    return f(begin, end);
+    return (*f)(begin, end);
 }
 
 inline bool structurally_equal(const symbol& lhs, const symbol& rhs)
