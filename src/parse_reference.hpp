@@ -10,7 +10,7 @@ namespace parse_reference_detail
 
 inline bool is_letter(char c)
 {
-    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z');
+    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
 }
 inline bool is_alpha_numeric(char c)
 {
