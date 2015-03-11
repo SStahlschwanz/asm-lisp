@@ -210,9 +210,8 @@ struct block_info
 };
 struct function_info
 {
-    bool uses_proc_instructions;
-    bool uses_macro_instructions;
     llvm::Function* llvm_function;
+    special_calls_info special_calls;
 };
 
 

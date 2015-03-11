@@ -498,30 +498,35 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
 
     [&](const instruction_info::is_id&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("is_id", 1);
         Value* arg = get_value(*begin, symbol_index_type);
         return builder.CreateCall(&st_context.macro_environment.is_id, arg);
     },
     [&](const instruction_info::is_lit&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("is_lit", 1);
         Value* arg = get_value(*begin, symbol_index_type);
         return builder.CreateCall(&st_context.macro_environment.is_lit, arg);
     },
     [&](const instruction_info::is_ref&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("is_ref", 1);
         Value* arg = get_value(*begin, symbol_index_type);
         return builder.CreateCall(&st_context.macro_environment.is_ref, arg);
     },
     [&](const instruction_info::is_list&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("is_list", 1);
         Value* arg = get_value(*begin, symbol_index_type);
         return builder.CreateCall(&st_context.macro_environment.is_list, arg);
     },
     [&](const instruction_info::is_macro&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("is_macro", 1);
         Value* arg = get_value(*begin, symbol_index_type);
         return builder.CreateCall(&st_context.macro_environment.is_macro, arg);
@@ -529,17 +534,20 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
 
     [&](const instruction_info::lit_create&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("lit_create", 0);
         return builder.CreateCall(&st_context.macro_environment.lit_create);
     },
     [&](const instruction_info::lit_size&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("lit_size", 1);
         Value* arg = get_value(*begin, symbol_index_type);
         return builder.CreateCall(&st_context.macro_environment.lit_size, arg);
     },
     [&](const instruction_info::lit_push&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("lit_push", 2);
         Value* arg1 = get_value(*begin, symbol_index_type);
         Value* arg2 = get_value(*(begin + 1), int8_type);
@@ -547,12 +555,14 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
     },
     [&](const instruction_info::lit_pop&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("lit_pop", 1);
         Value* arg = get_value(*begin, symbol_index_type);
         return builder.CreateCall(&st_context.macro_environment.lit_pop, arg);
     },
     [&](const instruction_info::lit_get&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("lit_get", 2);
         Value* arg1 = get_value(*begin, symbol_index_type);
         Value* arg2 = get_value(*(begin + 1), int64_type);
@@ -560,6 +570,7 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
     },
     [&](const instruction_info::lit_set&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("lit_set", 3);
         Value* arg1 = get_value(*begin, symbol_index_type);
         Value* arg2 = get_value(*(begin + 1), int64_type);
@@ -569,17 +580,20 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
 
     [&](const instruction_info::list_create&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("list_create", 0);
         return builder.CreateCall(&st_context.macro_environment.list_create);
     },
     [&](const instruction_info::list_size&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("list_size", 1);
         Value* arg = get_value(*begin, symbol_index_type);
         return builder.CreateCall(&st_context.macro_environment.list_size, arg);
     },
     [&](const instruction_info::list_push&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("list_push", 2);
         Value* arg1 = get_value(*begin, symbol_index_type);
         Value* arg2 = get_value(*(begin + 1), symbol_index_type);
@@ -587,12 +601,14 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
     },
     [&](const instruction_info::list_pop&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("list_pop", 1);
         Value* arg = get_value(*begin, symbol_index_type);
         return builder.CreateCall(&st_context.macro_environment.list_pop, arg);
     },
     [&](const instruction_info::list_get&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("list_get", 2);
         Value* arg1 = get_value(*begin, symbol_index_type);
         Value* arg2 = get_value(*(begin + 1), int64_type);
@@ -600,6 +616,7 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
     },
     [&](const instruction_info::list_set&)
     {
+        st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
         check_arity("list_set", 3);
         Value* arg1 = get_value(*begin, symbol_index_type);
         Value* arg2 = get_value(*(begin + 1), int64_type);
@@ -697,7 +714,7 @@ block_info compile_block(const symbol& block_node, BasicBlock& llvm_block, const
     return block_info{block_name, move(local_variable_table), &llvm_block};
 }
 
-void compile_body(const symbol& body_node, Function& function, unordered_map<identifier_id_t, named_value_info>& parameter_table, compilation_context& context)
+special_calls_info compile_body(const symbol& body_node, Function& function, unordered_map<identifier_id_t, named_value_info>& parameter_table, compilation_context& context)
 {
     const list_symbol& block_list = body_node.cast_else<list_symbol>([&]
     {
@@ -819,6 +836,8 @@ void compile_body(const symbol& body_node, Function& function, unordered_map<ide
         if(find(has_incoming_for_predecessor.begin(), has_incoming_for_predecessor.end(), false) != has_incoming_for_predecessor.end())
             fatal<id("phi_missing_incoming_for_predecessor")>(phi.statement.source());
     }
+
+    return special_calls;
 }
 
 pair<unique_ptr<Function>, function_info> compile_function(list_symbol::const_iterator begin, list_symbol::const_iterator end, compilation_context& context)
@@ -831,11 +850,9 @@ pair<unique_ptr<Function>, function_info> compile_function(list_symbol::const_it
     tie(function, parameter_table) = compile_signature(*begin, *(begin + 1), context);
     
     const symbol& body_node = *(begin + 2);
-    compile_body(body_node, *function, parameter_table, context);
+    special_calls_info special_calls = compile_body(body_node, *function, parameter_table, context);
     //assert(verifyFunction(*function)); not possible because function has to be embedded into module first
-    function_info info;
-    info.uses_proc_instructions = true; // TODO
-    info.uses_macro_instructions = true; // TODO
+    function_info info{function.get(), move(special_calls)};
     return {move(function), move(info)};
 }
 
@@ -848,13 +865,16 @@ macro_symbol compile_macro(list_symbol::const_iterator begin, list_symbol::const
     Type* symbol_index_type = IntegerType::get(context.llvm(), 64);
     Type* macro_type = FunctionType::get(symbol_index_type, vector<Type*>{symbol_index_type}, false);
     
-    if(macro_type != func_owner->getFunctionType())
+    if(macro_type != func_info.llvm_function->getFunctionType())
         fatal<id("invalid_macro_signature")>(boost::blank());
+    if(!func_info.special_calls.rt_only_instructions.empty())
+        fatal<id("macro_uses_rt_only_instruction")>(func_info.special_calls.rt_only_instructions.front().instruction_node.source());
+
     context.macro_environment().llvm_module.getFunctionList().push_back(func_owner.get());
-    Function* func = func_owner.release();
+    func_owner.release();
 
     typedef uint64_t macro_function_signature(uint64_t);
-    auto func_ptr = (macro_function_signature*) context.macro_environment().llvm_engine.getPointerToFunction(func);
+    auto func_ptr = (macro_function_signature*) context.macro_environment().llvm_engine.getPointerToFunction(func_info.llvm_function);
     assert(func_ptr);
 
     auto macro_func = [func_ptr](list_symbol::const_iterator begin, list_symbol::const_iterator end) -> pair<any_symbol, vector<unique_ptr<any_symbol>>>
@@ -864,4 +884,5 @@ macro_symbol compile_macro(list_symbol::const_iterator begin, list_symbol::const
 
     return make_shared<macro_symbol::macro_function>(macro_func);
 }
+
 

@@ -62,7 +62,8 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"phi_incoming_variable_type_mismatch", ""},
     {"phi_missing_incoming_for_predecessor", ""},
     {"block_invalid_termination", ""},
-    {"invalid_macro_signature", ""}
+    {"invalid_macro_signature", ""},
+    {"macro_uses_rt_only_instruction", ""}
 };
 
 constexpr std::size_t id(conststr str)
