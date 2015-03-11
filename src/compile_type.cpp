@@ -67,7 +67,8 @@ type_info compile_type(const symbol& node, LLVMContext& llvm_context)
         const list_symbol& type_node = resolved_node.cast<list_symbol>();
         if(type_node.empty())
             fatal<id("empty_list_type")>(type_node.source());
-        const id_symbol& type_constructor = type_node[0].cast_else<id_symbol>([&]
+        const symbol& resolved_constructor = resolve_refs(type_node[0]);
+        const id_symbol& type_constructor = resolved_constructor.cast_else<id_symbol>([&]
         {
             fatal<id("invalid_type_constructor")>(type_node[0].source());
         });
