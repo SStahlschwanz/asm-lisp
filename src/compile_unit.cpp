@@ -108,7 +108,6 @@ vector<module> compile_unit(const vector<path>& paths, compilation_context& cont
         auto it = find(paths.begin(), paths.end(), module_path);
         if(it == paths.end())
             fatal<id("module_not_found")>(import.imported_module.source());
-            //throw module_not_found{import.imported_module.source(), module_name};
         return it - paths.begin();
     };
     
@@ -118,7 +117,10 @@ vector<module> compile_unit(const vector<path>& paths, compilation_context& cont
     for(const pair<list_symbol, module_header>& read_file : parsed_files)
     {
         for(const import_statement& import : read_file.second.imports)
-            dependency_graph[file_id].push_back(lookup_file_id(import)); 
+        {
+            if(import.imported_module.identifier() != (size_t)identifier_ids::CORE)
+                dependency_graph[file_id].push_back(lookup_file_id(import)); 
+        }
         ++file_id;
     }
 
@@ -128,6 +130,8 @@ vector<module> compile_unit(const vector<path>& paths, compilation_context& cont
     modules.reserve(parsed_files.size());
     auto lookup_module = [&](const import_statement& import) -> module&
     {
+        if(import.imported_module.identifier() == (size_t)identifier_ids::CORE)
+            return context.core_module();
         size_t file_id = lookup_file_id(import);
         assert(file_id < modules.size());
         return modules[file_id];
