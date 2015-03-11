@@ -298,7 +298,7 @@ BOOST_AUTO_TEST_CASE(a_times_b_test)
     BOOST_CHECK(function_ptr(0, 0) == 0);
 }
 
-BOOST_AUTO_TEST_CASE(test_missing_let)
+BOOST_AUTO_TEST_CASE(missing_let_test)
 {
     const list params =
     {
@@ -320,6 +320,6 @@ BOOST_AUTO_TEST_CASE(test_missing_let)
         return_type,
         body
     };
-    BOOST_CHECK_THROW(get_compiled_function<void (uint64_t, uint64_t)>(function_source), compile_exception);
+    BOOST_CHECK_THROW(compile_function(function_source.begin(), function_source.end(), context), compile_exception);
 }
 
