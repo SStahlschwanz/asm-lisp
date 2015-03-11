@@ -418,13 +418,12 @@ public:
     macro_symbol(macro_symbol&& that) noexcept
       : macro_symbol(std::move(that.f))
     {}
+
+    const std::shared_ptr<macro_function>& function() const;
+    void function(std::shared_ptr<macro_function> func);
     
     std::pair<any_symbol, std::vector<std::unique_ptr<any_symbol>>> operator()(list_symbol::const_iterator begin, list_symbol::const_iterator end) const;
-    bool operator==(const macro_symbol& that) const
-    {
-        // TODO
-        assert(false);
-    }
+    bool operator==(const macro_symbol& that) const;
     bool operator!=(const macro_symbol& that) const
     {
         return !(*this == that);
@@ -682,9 +681,21 @@ inline void list_symbol::push_back(const symbol& s)
     v.push_back(s);
 }
 
+inline bool macro_symbol::operator==(const macro_symbol& that) const
+{
+    return f == that.f;
+}
 inline std::pair<any_symbol, std::vector<std::unique_ptr<any_symbol>>> macro_symbol::operator()(list_symbol::const_iterator begin, list_symbol::const_iterator end) const
 {
     return (*f)(begin, end);
+}
+inline const std::shared_ptr<macro_symbol::macro_function>& macro_symbol::function() const
+{
+    return f;
+}
+inline void macro_symbol::function(std::shared_ptr<macro_function> func)
+{
+    f = func;
 }
 
 inline bool structurally_equal(const symbol& lhs, const symbol& rhs)
@@ -726,7 +737,7 @@ inline bool structurally_equal(const symbol& lhs, const symbol& rhs)
     case symbol::MACRO:
         return lhs.cast<macro_symbol>() == rhs.cast<macro_symbol>();
     case symbol::PROC:
-        return lhs.cast<proc_symbol>() == rhs.cast<macro_symbol>();
+        return lhs.cast<proc_symbol>() == rhs.cast<proc_symbol>();
     }
 }
 

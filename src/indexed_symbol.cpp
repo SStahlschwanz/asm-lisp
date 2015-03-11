@@ -45,13 +45,13 @@ size_t to_indexed_symbol_impl(const symbol& s, vector<indexed_symbol>& result)
             data.vec.push_back(child_index);
         }
     },
-    [&](const macro_symbol&)
+    [&](const macro_symbol& m)
     {
-        result.push_back(indexed_macro{});
+        result.push_back(indexed_macro{m.function()});
     },
-    [&](const proc_symbol&)
+    [&](const proc_symbol& p)
     {
-        result.push_back(indexed_proc{});
+        result.push_back(indexed_proc{p.ct_function(), p.rt_function()});
     });
     
     return symbol_index;
@@ -94,13 +94,13 @@ any_symbol to_symbol_impl(symbol_index index, const vector<indexed_symbol>& inde
             result.push_back(to_symbol_impl(child_index, indexed_symbols, symbol_store));
         return result; 
     },
-    [&](const indexed_macro&)
+    [&](const indexed_macro& m)
     {
-        return macro_symbol{{}};
+        return macro_symbol{m.f};
     },
-    [&](const indexed_proc&)
+    [&](const indexed_proc& p)
     {
-        return proc_symbol{nullptr, nullptr};
+        return proc_symbol{p.ct_function, p.rt_function};
     });
 }
 

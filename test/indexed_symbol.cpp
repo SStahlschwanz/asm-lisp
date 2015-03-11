@@ -9,8 +9,13 @@
 
 using std::vector;
 using std::unique_ptr;
+using std::pair;
+using std::make_shared;
+using std::move;
 
 using boost::get;
+
+using llvm::Function;
 
 using namespace symbol_shortcuts;
 
@@ -56,10 +61,26 @@ BOOST_AUTO_TEST_CASE(lit_test)
     BOOST_CHECK_EQUAL(get<indexed_lit>(indexed_symbols[1]).str, "a");
 }
 
+
 BOOST_AUTO_TEST_CASE(forth_back_test)
 {
+    auto rt_f = reinterpret_cast<Function*>(345234);
+    auto ct_f = reinterpret_cast<Function*>(98989);
+    auto macro_func = [](list_symbol::const_iterator, list_symbol::const_iterator)
+    {
+        assert(false);
+        // this function is not called, so this is ok
+        return move(*static_cast<pair<any_symbol, vector<unique_ptr<any_symbol>>>*>(nullptr));
+    };
     ref r{"123"_id};
-    list l1{lit{"abc"}, list{ref{"345"_id, &r}, list{}}};
+    list l1 = 
+    {
+        lit{"abc"},
+        list{ref{"345"_id, &r}, list{}},
+        id_symbol{1234},
+        proc_symbol{ct_f, rt_f},
+        macro_symbol{make_shared<macro_symbol::macro_function>(macro_func)}
+    };
 
     auto p1 = to_symbol(1, to_indexed_symbol(l1.begin(), l1.end()));
 

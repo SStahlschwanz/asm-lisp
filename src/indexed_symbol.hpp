@@ -11,6 +11,14 @@
 #include <string>
 #include <memory>
 
+
+namespace llvm
+{
+
+class Function;
+
+}
+
 typedef std::uint64_t symbol_index;
 
 struct indexed_id;
@@ -40,11 +48,12 @@ struct indexed_list
 };
 struct indexed_macro
 {
-    // TODO
+    std::shared_ptr<macro_symbol::macro_function> f;
 };
 struct indexed_proc
 {
-    // TODO
+    llvm::Function* ct_function;
+    llvm::Function* rt_function;
 };
 
 std::size_t to_indexed_symbol_impl(const symbol& s, std::vector<indexed_symbol>& result);
