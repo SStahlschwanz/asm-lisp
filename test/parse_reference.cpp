@@ -20,6 +20,17 @@ BOOST_AUTO_TEST_CASE(letters)
     BOOST_CHECK(*got == expected);
     BOOST_CHECK(remaining(s) == "");
 }
+BOOST_AUTO_TEST_CASE(underscore)
+{
+    state s = make_state("_a_bc");
+
+    optional<ref_symbol> got = parse_reference(s);
+    BOOST_CHECK(got);
+    ref_symbol expected{"_a_bc"_id};
+
+    BOOST_CHECK(*got == expected);
+    BOOST_CHECK(remaining(s) == "");
+}
 
 BOOST_AUTO_TEST_CASE(digit_at_end)
 {
@@ -76,3 +87,4 @@ BOOST_AUTO_TEST_CASE(operators)
     BOOST_CHECK(*got == expected);
     BOOST_CHECK(remaining(s) == "fw");
 }
+

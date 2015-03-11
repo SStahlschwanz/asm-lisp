@@ -8,13 +8,13 @@
 namespace parse_reference_detail
 {
 
-inline bool is_letter(char c)
+inline bool is_head_word_char(char c)
 {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
 }
-inline bool is_alpha_numeric(char c)
+inline bool is_tail_word_char(char c)
 {
-    return is_letter(c) || ('0' <= c && c <= '9');
+    return is_head_word_char(c) || ('0' <= c && c <= '9');
 }
 inline bool is_operator(char c)
 {
@@ -31,12 +31,12 @@ boost::optional<ref_symbol> parse_reference(State& state)
     using namespace parse_reference_detail;
     if(state.empty())
         return boost::none;
-    else if(is_letter(state.front()))
+    else if(is_head_word_char(state.front()))
     {
         std::string identifier;
         file_position begin = state.position();
 
-        while(!state.empty() && is_alpha_numeric(state.front()))
+        while(!state.empty() && is_tail_word_char(state.front()))
         {
             identifier.push_back(state.front());
             state.pop_front();
