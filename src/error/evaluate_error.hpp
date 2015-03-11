@@ -13,7 +13,8 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"invalid_command", "invalid command"},
     {"def_invalid_argument_number", "too few arguments to def: expected at least 2"},
     {"invalid_defined_symbol", "invalid symbol to defined: expected identifier"},
-    {"duplicate_definition", "duplicate definition"}
+    {"duplicate_definition", "duplicate definition"},
+    {"not_a_macro", ""}
 };
 
 constexpr std::size_t id(conststr str)

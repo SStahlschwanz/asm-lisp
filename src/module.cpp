@@ -2,11 +2,13 @@
 
 #include "error/import_export_error.hpp"
 #include "error/evaluate_error.hpp"
+#include "core_utils.hpp"
 
 using std::unordered_map;
 using std::vector;
 using std::size_t;
 using std::tie;
+using std::pair;
 using std::ignore;
 using std::move;
 using std::unique_ptr;
@@ -170,6 +172,19 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header, fun
     assert(header_size <= syntax_tree.size());
 
     vector<unique_ptr<any_symbol>> evaluated_symbols;
+
+    auto evaluate_macro = [&](list_symbol::const_iterator begin, list_symbol::const_iterator end) -> pair<any_symbol, vector<unique_ptr<any_symbol>>>
+    {
+        assert(begin != end);
+        const symbol& resolved_first = resolve_refs(*begin);
+        const macro_symbol& macro = resolved_first.cast_else<macro_symbol>([&]
+        {
+            fatal<id("not_a_macro")>(resolved_first.source());
+        });
+        ++begin;
+        return macro(begin, end);
+    };
+
     for(auto it = syntax_tree.begin() + header_size; it != syntax_tree.end(); ++it)
     {
         list_symbol& statement = it->cast<list>();
@@ -190,18 +205,15 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header, fun
             {
                 fatal<id("invalid_defined_symbol")>(statement[1].source());
             });
-            for(auto argument_it = statement.begin() + 2;
-                    argument_it != statement.end();
-                    ++argument_it)
-            {
+            for(auto argument_it = statement.begin() + 2; argument_it != statement.end(); ++argument_it)
                 dispatch_references(*argument_it, table, evaluated_symbols, context);
-            }
             
-            const symbol* definition = 0;
-            if(statement.size() == 3)
-                definition = &static_cast<const symbol&>(statement[2]);
-            else
-                assert(false);
+            auto p = evaluate_macro(statement.begin() + 2, statement.end());
+            any_symbol& result = p.first;
+            vector<unique_ptr<any_symbol>>& symbol_store = p.second;
+            move(symbol_store.begin(), symbol_store.end(), back_inserter(evaluated_symbols));
+            evaluated_symbols.push_back(make_unique<any_symbol>(move(result)));
+            const symbol* definition = evaluated_symbols.back().get();
             
             bool was_inserted;
             tie(ignore, was_inserted) = table.insert({defined.identifier(), definition});
