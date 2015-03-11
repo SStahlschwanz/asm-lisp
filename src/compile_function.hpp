@@ -226,5 +226,8 @@ std::pair<std::unique_ptr<llvm::Function>, std::unordered_map<identifier_id_t, n
 
 std::pair<std::unique_ptr<llvm::Function>, function_info> compile_function(list_symbol::const_iterator begin, list_symbol::const_iterator end, compilation_context& context);
 
+macro_symbol compile_macro(list_symbol::const_iterator begin, list_symbol::const_iterator end, compilation_context& context);
+//proc_symbol compile_proc(list_symbol::const_iterator begin, list_symbol::const_iterator, compilation_context& context);
+
 #endif
 

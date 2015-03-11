@@ -4,6 +4,7 @@
 #include "core_unique_ids.hpp"
 #include "boost_variant_utils.hpp"
 #include "core_utils.hpp"
+#include "macro_execution.hpp"
 
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/DerivedTypes.h>
@@ -11,6 +12,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/CFG.h>
 #include <llvm/IR/Verifier.h>
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
 
 #include <boost/optional.hpp>
 
@@ -39,6 +41,7 @@ using std::stol;
 using std::out_of_range;
 using std::invalid_argument;
 using std::size_t;
+using std::make_shared;
 
 using llvm::Value;
 using llvm::Function;
@@ -834,5 +837,31 @@ pair<unique_ptr<Function>, function_info> compile_function(list_symbol::const_it
     info.uses_proc_instructions = true; // TODO
     info.uses_macro_instructions = true; // TODO
     return {move(function), move(info)};
+}
+
+macro_symbol compile_macro(list_symbol::const_iterator begin, list_symbol::const_iterator end, compilation_context& context)
+{
+    unique_ptr<Function> func_owner;
+    function_info func_info;
+    tie(func_owner, func_info) = compile_function(begin, end, context);
+    
+    Type* symbol_index_type = IntegerType::get(context.llvm(), 64);
+    Type* macro_type = FunctionType::get(symbol_index_type, vector<Type*>{symbol_index_type}, false);
+    
+    if(macro_type != func_owner->getFunctionType())
+        fatal<id("invalid_macro_signature")>(boost::blank());
+    context.macro_environment().llvm_module.getFunctionList().push_back(func_owner.get());
+    Function* func = func_owner.release();
+
+    typedef uint64_t macro_function_signature(uint64_t);
+    auto func_ptr = (macro_function_signature*) context.macro_environment().llvm_engine.getPointerToFunction(func);
+    assert(func_ptr);
+
+    auto macro_func = [func_ptr](list_symbol::const_iterator begin, list_symbol::const_iterator end) -> pair<any_symbol, vector<unique_ptr<any_symbol>>>
+    {
+        return execute_macro(func_ptr, begin, end);
+    };
+
+    return make_shared<macro_symbol::macro_function>(macro_func);
 }
 
