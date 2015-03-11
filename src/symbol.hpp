@@ -632,5 +632,47 @@ inline any_symbol macro_symbol::operator()(list_symbol::const_iterator begin, li
     return f(begin, end);
 }
 
+inline bool structurally_equal(const symbol& lhs, const symbol& rhs)
+{
+    if(lhs.type() != rhs.type())
+        return false;
+    switch(lhs.type())
+    {
+    case symbol::ID:
+        return lhs.cast<id_symbol>() == rhs.cast<id_symbol>();
+    case symbol::LITERAL:
+        return lhs.cast<lit_symbol>() == rhs.cast<lit_symbol>();
+    case symbol::REFERENCE:
+    {
+        const ref_symbol& lhs_ref = lhs.cast<ref_symbol>();
+        const ref_symbol& rhs_ref = rhs.cast<ref_symbol>();
+        return lhs_ref.identifier() == rhs_ref.identifier() && 
+            ((lhs_ref.refered() == nullptr && rhs_ref.refered() == nullptr) || structurally_equal(*lhs_ref.refered(), *rhs_ref.refered()));
+        return lhs.cast<ref_symbol>() == rhs.cast<ref_symbol>();
+    }
+    case symbol::LIST:
+    {
+        const list_symbol& lhs_list = lhs.cast<list_symbol>();
+        const list_symbol& rhs_list = rhs.cast<list_symbol>();
+        if(lhs_list.size() != rhs_list.size())
+            return false;
+        auto lhs_it = lhs_list.begin();
+        auto rhs_it = rhs_list.begin();
+        for( ; lhs_it != lhs_list.end(); ++lhs_it, ++rhs_it)
+        {
+            assert(rhs_it != rhs_list.end());
+            if(!structurally_equal(*lhs_it, *rhs_it))
+                return false;
+        }
+        assert(rhs_it == rhs_list.end());
+        return true;
+    }        
+        return lhs.cast<list_symbol>() == rhs.cast<list_symbol>();
+    case symbol::MACRO:
+        return lhs.cast<macro_symbol>() == rhs.cast<macro_symbol>();
+    }
+}
+
+
 #endif
 
