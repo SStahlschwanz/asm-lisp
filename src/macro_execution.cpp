@@ -82,7 +82,7 @@ uint64_t macro_lit_size(symbol_index l)
 int8_t macro_lit_get(symbol_index l, uint64_t index) noexcept
 {
     indexed_lit& lit = get_indexed<indexed_lit>(l);
-    if(lit.str.size() >= index)
+    if(index >= lit.str.size())
         longjmp(execution_data.jmp_env, 1);
     
     return lit.str[index];
@@ -90,7 +90,7 @@ int8_t macro_lit_get(symbol_index l, uint64_t index) noexcept
 void macro_lit_set(symbol_index l, uint64_t index, int8_t c)
 {
     indexed_lit& lit = get_indexed<indexed_lit>(l);
-    if(lit.str.size() >= index)
+    if(index >= lit.str.size())
         longjmp(execution_data.jmp_env, 1);
     
     lit.str[index] = c;
@@ -120,7 +120,7 @@ uint64_t macro_list_size(symbol_index l)
 symbol_index macro_list_get(symbol_index l, uint64_t index) noexcept
 {
     indexed_list& list = get_indexed<indexed_list>(l);
-    if(list.vec.size() >= index)
+    if(index >= list.vec.size())
         longjmp(execution_data.jmp_env, 1);
     
     return list.vec[index];
@@ -129,7 +129,7 @@ void macro_list_set(symbol_index l, uint64_t index, symbol_index s)
 {
     check_valid_index(s);
     indexed_list& list = get_indexed<indexed_list>(l);
-    if(list.vec.size() >= index)
+    if(index >= list.vec.size())
         longjmp(execution_data.jmp_env, 1);
     
     list.vec[index] = s;

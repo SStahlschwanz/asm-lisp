@@ -24,6 +24,19 @@ enum
     RETURN,
     CALL,
 
+    IS_ID,
+    IS_LIT,
+    IS_REF,
+    IS_LIST,
+    IS_MACRO,
+
+    LIT_CREATE,
+    LIT_SIZE,
+    LIT_PUSH,
+    LIT_POP,
+    LIT_GET,
+    LIT_SET,
+    
     LIST_CREATE,
     LIST_SIZE,
     LIST_PUSH,

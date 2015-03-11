@@ -554,7 +554,7 @@ public:
     any_symbol(const any_symbol& that)
       : any_symbol(static_cast<const symbol&>(that))
     {}
-    any_symbol(any_symbol&& that)
+    any_symbol(any_symbol&& that) noexcept
       : any_symbol(static_cast<symbol&&>(that))
     {}
     

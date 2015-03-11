@@ -7,16 +7,12 @@
 #include "../src/error/compile_exception.hpp"
 
 #include "state_utils.hpp"
+#include "function_building.hpp"
 
 #include <llvm/IR/Function.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Value.h>
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/IR/Module.h>
-#include <llvm/IR/Verifier.h>
-#include <llvm/Support/raw_ostream.h>
 
-#include <memory>
 #include <unordered_map>
 #include <utility>
 #include <iterator>
@@ -24,8 +20,6 @@
 #include <csetjmp>
 
 using std::pair;
-using std::tie;
-using std::ignore;
 using std::unique_ptr;
 using std::unordered_map;
 using std::advance;
@@ -42,66 +36,6 @@ using boost::get;
 
 using namespace symbol_shortcuts;
 
-const list_symbol int64_type{id_symbol{unique_ids::INT}, lit{"64"}};
-
-const ref a{"a"_id};
-const ref b{"b"_id};
-const ref c{"c"_id};
-
-const ref q{"q"_id};
-const ref r{"r"_id};
-const ref s{"s"_id};
-const ref t{"t"_id};
-const ref u{"u"_id};
-const ref v{"v"_id};
-const ref w{"w"_id};
-const ref x{"x"_id};
-const ref y{"y"_id};
-const ref z{"z"_id};
-
-const ref block1{"block1"_id};
-const ref block2{"block2"_id};
-const ref block3{"block3"_id};
-const ref block4{"block4"_id};
-    
-const id_symbol let{unique_ids::LET};
-
-const list_symbol alloc_int64 = {id_symbol{unique_ids::ALLOC}, int64_type};
-const list_symbol store_int64 = {id_symbol{unique_ids::STORE}, int64_type};
-const list_symbol load_int64 = {id_symbol{unique_ids::LOAD}, int64_type};
-const list_symbol add_int64 = {id_symbol{unique_ids::ADD}, int64_type};
-const list_symbol sub_int64 = {id_symbol{unique_ids::SUB}, int64_type};
-const list_symbol return_int64 = {id_symbol{unique_ids::RETURN}, int64_type};
-const list_symbol cmp_eq_int64 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::EQ}, int64_type};
-const list_symbol cmp_ne_int64 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::NE}, int64_type};
-const list_symbol cond_branch = {id_symbol{unique_ids::COND_BRANCH}};
-const list_symbol branch = {id_symbol{unique_ids::BRANCH}};
-const list_symbol phi_int64 = {id_symbol{unique_ids::PHI}, int64_type};
-
-const list_symbol list_create = {id_symbol{unique_ids::LIST_CREATE}};
-const list_symbol list_size = {id_symbol{unique_ids::LIST_SIZE}};
-const list_symbol list_set = {id_symbol{unique_ids::LIST_SET}};
-const list_symbol list_get = {id_symbol{unique_ids::LIST_GET}};
-const list_symbol list_push = {id_symbol{unique_ids::LIST_PUSH}};
-const list_symbol list_pop = {id_symbol{unique_ids::LIST_POP}};
-
-
-template<class T>
-T* get_compiled_function(const list_symbol& function_source)
-{
-    unique_ptr<Function> function_owner;
-    tie(function_owner, ignore) = compile_function(function_source.begin(), function_source.end(), context);
-    Function* function = function_owner.get();
-    context.macro_environment().llvm_module.getFunctionList().push_back(function_owner.get());
-    function_owner.release();
-    
-    string str;
-    raw_string_ostream os(str);
-    //BOOST_CHECK_MESSAGE(verifyFunction(*function, &os), os.str());
-    // TODO: this fails - I don't know why, function->dump() looks good to me and verifyFunction doesn't produce a message
-    auto fptr = (T*) context.macro_environment().llvm_engine.getPointerToFunction(function);
-    return fptr;
-}
 
 BOOST_AUTO_TEST_CASE(compile_signature_test)
 {

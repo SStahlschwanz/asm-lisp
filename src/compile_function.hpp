@@ -10,6 +10,7 @@
 #include <unordered_map>
 
 #include <boost/optional.hpp>
+#include <boost/variant.hpp>
 
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Function.h>
@@ -77,27 +78,46 @@ struct instruction_info
         type_info type;
     };
 
+    struct is_id
+    {};
+    struct is_lit
+    {};
+    struct is_ref
+    {};
+    struct is_list
+    {};
+    struct is_macro
+    {};
+    
+    struct lit_create
+    {};
+    struct lit_size
+    {};
+    struct lit_push
+    {};
+    struct lit_pop
+    {};
+    struct lit_get
+    {};
+    struct lit_set
+    {};
+    
     struct list_create
-    {
-    };
+    {};
     struct list_size
-    {
-    };
+    {};
     struct list_push
-    {
-    };
+    {};
     struct list_pop
-    {
-    };
+    {};
     struct list_get
-    {
-    };
+    {};
     struct list_set
-    {
-    };
+    {};
     
     const symbol& statement;
-    boost::variant
+
+    variadic_make_variant
     <
         add,
         sub,
@@ -113,13 +133,26 @@ struct instruction_info
         return_inst,
         call,
 
+        is_id,
+        is_lit,
+        is_ref,
+        is_list,
+        is_macro,
+
+        lit_create,
+        lit_size,
+        lit_push,
+        lit_pop,
+        lit_get,
+        lit_set,
+
         list_create,
         list_size,
         list_push,
         list_pop,
         list_get,
         list_set
-    > kind;
+    >::type kind;
 };
 
 struct cond_branch_call

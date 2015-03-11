@@ -214,6 +214,42 @@ instruction_info parse_instruction(const symbol& node, LLVMContext& llvm_context
             return parse_cmp_instruction(statement, llvm_context);
         case unique_ids::CALL:
             throw not_implemented{"instruction"};
+
+        case unique_ids::IS_ID:
+            check_arity("is_id", 0);
+            return instruction_info{statement, instruction_info::is_id{}};
+        case unique_ids::IS_LIT:
+            check_arity("is_lit", 0);
+            return instruction_info{statement, instruction_info::is_lit{}};
+        case unique_ids::IS_REF:
+            check_arity("is_ref", 0);
+            return instruction_info{statement, instruction_info::is_ref{}};
+        case unique_ids::IS_LIST:
+            check_arity("is_list", 0);
+            return instruction_info{statement, instruction_info::is_list{}};
+        case unique_ids::IS_MACRO:
+            check_arity("is_macro", 0);
+            return instruction_info{statement, instruction_info::is_macro{}};
+
+        case unique_ids::LIT_CREATE:
+            check_arity("lit_create", 0);
+            return instruction_info{statement, instruction_info::lit_create{}};
+        case unique_ids::LIT_SIZE:
+            check_arity("lit_size", 0);
+            return instruction_info{statement, instruction_info::lit_size{}};
+        case unique_ids::LIT_SET:
+            check_arity("lit_set", 0);
+            return instruction_info{statement, instruction_info::lit_set{}};
+        case unique_ids::LIT_GET:
+            check_arity("lit_get", 0);
+            return instruction_info{statement, instruction_info::lit_get{}};
+        case unique_ids::LIT_PUSH:
+            check_arity("lit_push", 0);
+            return instruction_info{statement, instruction_info::lit_push{}};
+        case unique_ids::LIT_POP:
+            check_arity("lit_pop", 0);
+            return instruction_info{statement, instruction_info::lit_pop{}};
+
         case unique_ids::LIST_CREATE:
             check_arity("list_create", 0);
             return instruction_info{statement, instruction_info::list_create{}};
@@ -302,6 +338,9 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
     
     Type* pointer_type = PointerType::getUnqual(IntegerType::get(builder.getContext(), 8));
     Type* symbol_index_type = IntegerType::get(builder.getContext(), 64);
+    Type* int64_type = IntegerType::get(builder.getContext(), 64);
+    Type* int1_type = IntegerType::get(builder.getContext(), 1);
+    Type* int8_type = IntegerType::get(builder.getContext(), 8);
 
     return visit<Value*>(instruction.kind,
     [&](const instruction_info::add& inst)
@@ -390,7 +429,6 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
     [&](const instruction_info::cond_branch& inst)
     {
         check_arity("cond_branch", 3);
-        Type* int1_type = IntegerType::get(builder.getContext(), 1);
         Value* boolean = get_value(*begin, int1_type);
         const ref_symbol& true_block_name = (begin + 1)->cast_else<ref_symbol>([&]
         {
@@ -405,7 +443,7 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
         st_context.special_calls.cond_branches.push_back(cond_branch_call{value, true_block_name, false_block_name});
         return value;
     },
-    [&](const instruction_info::branch& inst)
+    [&](const instruction_info::branch&)
     {
         check_arity("branch", 1);
         const ref_symbol& block_name = begin->cast_else<ref_symbol>([&]
@@ -449,48 +487,119 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
         return value;
         
     },
-    [&](const instruction_info::call& inst)
+    [&](const instruction_info::call&)
     {
         throw not_implemented{""};
         return nullptr;
     },
 
-    [&](const instruction_info::list_create& inst)
+    [&](const instruction_info::is_id&)
+    {
+        check_arity("is_id", 1);
+        Value* arg = get_value(*begin, symbol_index_type);
+        return builder.CreateCall(&st_context.macro_environment.is_id, arg);
+    },
+    [&](const instruction_info::is_lit&)
+    {
+        check_arity("is_lit", 1);
+        Value* arg = get_value(*begin, symbol_index_type);
+        return builder.CreateCall(&st_context.macro_environment.is_lit, arg);
+    },
+    [&](const instruction_info::is_ref&)
+    {
+        check_arity("is_ref", 1);
+        Value* arg = get_value(*begin, symbol_index_type);
+        return builder.CreateCall(&st_context.macro_environment.is_ref, arg);
+    },
+    [&](const instruction_info::is_list&)
+    {
+        check_arity("is_list", 1);
+        Value* arg = get_value(*begin, symbol_index_type);
+        return builder.CreateCall(&st_context.macro_environment.is_list, arg);
+    },
+    [&](const instruction_info::is_macro&)
+    {
+        check_arity("is_macro", 1);
+        Value* arg = get_value(*begin, symbol_index_type);
+        return builder.CreateCall(&st_context.macro_environment.is_macro, arg);
+    },
+
+    [&](const instruction_info::lit_create&)
+    {
+        check_arity("lit_create", 0);
+        return builder.CreateCall(&st_context.macro_environment.lit_create);
+    },
+    [&](const instruction_info::lit_size&)
+    {
+        check_arity("lit_size", 1);
+        Value* arg = get_value(*begin, symbol_index_type);
+        return builder.CreateCall(&st_context.macro_environment.lit_size, arg);
+    },
+    [&](const instruction_info::lit_push&)
+    {
+        check_arity("lit_push", 2);
+        Value* arg1 = get_value(*begin, symbol_index_type);
+        Value* arg2 = get_value(*(begin + 1), int8_type);
+        return builder.CreateCall2(&st_context.macro_environment.lit_push, arg1, arg2);
+    },
+    [&](const instruction_info::lit_pop&)
+    {
+        check_arity("lit_pop", 1);
+        Value* arg = get_value(*begin, symbol_index_type);
+        return builder.CreateCall(&st_context.macro_environment.lit_pop, arg);
+    },
+    [&](const instruction_info::lit_get&)
+    {
+        check_arity("lit_get", 2);
+        Value* arg1 = get_value(*begin, symbol_index_type);
+        Value* arg2 = get_value(*(begin + 1), int64_type);
+        return builder.CreateCall2(&st_context.macro_environment.lit_get, arg1, arg2);
+    },
+    [&](const instruction_info::lit_set&)
+    {
+        check_arity("lit_set", 3);
+        Value* arg1 = get_value(*begin, symbol_index_type);
+        Value* arg2 = get_value(*(begin + 1), int64_type);
+        Value* arg3 = get_value(*(begin + 2), symbol_index_type);
+        return builder.CreateCall3(&st_context.macro_environment.lit_set, arg1, arg2, arg3);
+    },
+
+    [&](const instruction_info::list_create&)
     {
         check_arity("list_create", 0);
         return builder.CreateCall(&st_context.macro_environment.list_create);
     },
-    [&](const instruction_info::list_size& inst)
+    [&](const instruction_info::list_size&)
     {
         check_arity("list_size", 1);
         Value* arg = get_value(*begin, symbol_index_type);
         return builder.CreateCall(&st_context.macro_environment.list_size, arg);
     },
-    [&](const instruction_info::list_push& inst)
+    [&](const instruction_info::list_push&)
     {
         check_arity("list_push", 2);
         Value* arg1 = get_value(*begin, symbol_index_type);
         Value* arg2 = get_value(*(begin + 1), symbol_index_type);
         return builder.CreateCall2(&st_context.macro_environment.list_push, arg1, arg2);
     },
-    [&](const instruction_info::list_pop& inst)
+    [&](const instruction_info::list_pop&)
     {
         check_arity("list_pop", 1);
         Value* arg = get_value(*begin, symbol_index_type);
         return builder.CreateCall(&st_context.macro_environment.list_pop, arg);
     },
-    [&](const instruction_info::list_get& inst)
+    [&](const instruction_info::list_get&)
     {
         check_arity("list_get", 2);
         Value* arg1 = get_value(*begin, symbol_index_type);
-        Value* arg2 = get_value(*(begin + 1), IntegerType::get(builder.getContext(), 64));
+        Value* arg2 = get_value(*(begin + 1), int64_type);
         return builder.CreateCall2(&st_context.macro_environment.list_get, arg1, arg2);
     },
-    [&](const instruction_info::list_set& inst)
+    [&](const instruction_info::list_set&)
     {
         check_arity("list_set", 3);
         Value* arg1 = get_value(*begin, symbol_index_type);
-        Value* arg2 = get_value(*(begin + 1), IntegerType::get(builder.getContext(), 64));
+        Value* arg2 = get_value(*(begin + 1), int64_type);
         Value* arg3 = get_value(*(begin + 2), symbol_index_type);
         return builder.CreateCall3(&st_context.macro_environment.list_set, arg1, arg2, arg3);
     });

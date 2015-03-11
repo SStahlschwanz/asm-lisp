@@ -3,6 +3,8 @@
 
 #include <boost/variant.hpp>
 
+#include <boost/mpl/vector.hpp>
+
 namespace boost_variant_utils_detail
 {
 
@@ -43,8 +45,28 @@ lambda_visitor<ReturnT, Lambdas...> make_lambda_visitor(Lambdas... lambdas)
     return { lambdas... };
 }
 
+template<class MPLVector, class... Types>
+struct variadic_make_variant;
+template<class MPLVector>
+struct variadic_make_variant<MPLVector>
+{
+    typedef typename boost::make_variant_over<MPLVector>::type type;
+};
+template<class MPLVector, class Head, class... Tail>
+struct variadic_make_variant<MPLVector, Head, Tail...>
+{
+    typedef typename boost::mpl::push_front<MPLVector, Head>::type next_vector;
+    typedef typename variadic_make_variant<next_vector, Tail...>::type type;
+};
+
 }
 
+template<class... Types>
+struct variadic_make_variant
+{
+    typedef typename boost_variant_utils_detail::variadic_make_variant<boost::mpl::vector<>, Types...>::type type;
+
+};
 
 template<class ReturnType = void, class VariantType, class... Visitors>
 ReturnType visit(VariantType& variant, Visitors... visitors)
