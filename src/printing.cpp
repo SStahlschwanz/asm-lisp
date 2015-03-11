@@ -8,6 +8,7 @@
 #include "error/compile_type_error.hpp"
 #include "error/core_misc_error.hpp"
 #include "error/compile_function_error.hpp"
+#include "error/macro_execution_error.hpp"
 
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/IR/Type.h>
@@ -178,6 +179,14 @@ ostream& print_error(ostream& os, const compile_exception& exc, function<string 
     {
         assert(exc.error_id < size(compile_function_error::dictionary));
         const auto& entry = compile_function_error::dictionary[exc.error_id];
+        error_name = entry.first.data();
+        error_message_template = entry.second.data();
+        break;
+    }
+    case error_kind::MACRO_EXECUTION:
+    {
+        assert(exc.error_id < size(macro_execution_error::dictionary));
+        const auto& entry = macro_execution_error::dictionary[exc.error_id];
         error_name = entry.first.data();
         error_message_template = entry.second.data();
         break;
