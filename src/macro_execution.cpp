@@ -43,27 +43,27 @@ T& get_indexed(symbol_index si)
 extern "C"
 {
 
-int8_t macro_is_id(symbol_index s)
+bool macro_is_id(symbol_index s)
 {
     check_valid_index(s);
     return get<indexed_id>(&execution_data.symbols[s - 1].second) != nullptr;
 }
-int8_t macro_is_lit(symbol_index s)
+bool macro_is_lit(symbol_index s)
 {
     check_valid_index(s);
     return get<indexed_lit>(&execution_data.symbols[s - 1].second) != nullptr;
 }
-int8_t macro_is_ref(symbol_index s)
+bool macro_is_ref(symbol_index s)
 {
     check_valid_index(s);
     return get<indexed_ref>(&execution_data.symbols[s - 1].second) != nullptr;
 }
-int8_t macro_is_list(symbol_index s)
+bool macro_is_list(symbol_index s)
 {
     check_valid_index(s);
     return get<indexed_list>(&execution_data.symbols[s - 1].second) != nullptr;
 }
-int8_t macro_is_macro(symbol_index s)
+bool macro_is_macro(symbol_index s)
 {
     check_valid_index(s);
     return get<indexed_macro>(&execution_data.symbols[s - 1].second) != nullptr;

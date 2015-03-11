@@ -46,7 +46,8 @@ macro_execution_environment create_macro_environment(llvm::LLVMContext& llvm_con
     Module* module = module_owner.release();
     
     Type* int64 = IntegerType::get(llvm_context, 64);
-    Type* int8 = IntegerType::get(llvm_context, 1);
+    Type* int8 = IntegerType::get(llvm_context, 8);
+    Type* int1 = IntegerType::get(llvm_context, 1);
 
     Type* llvm_void = Type::getVoidTy(llvm_context);
 
@@ -57,6 +58,7 @@ macro_execution_environment create_macro_environment(llvm::LLVMContext& llvm_con
     FunctionType* sig_int64_int64 = FunctionType::get(int64, params, false);
     FunctionType* sig_void_int64 = FunctionType::get(llvm_void, params, false);
     FunctionType* sig_int8_int64 = FunctionType::get(int8, params, false);
+    FunctionType* sig_int1_int64 = FunctionType::get(int1, params, false);
 
     params = {int64, int64};
     FunctionType* sig_int64_2int64 = FunctionType::get(int64, params, false);
@@ -73,11 +75,11 @@ macro_execution_environment create_macro_environment(llvm::LLVMContext& llvm_con
     FunctionType* sig_void_int64_int8 = FunctionType::get(llvm_void, params, false);
 
 
-    Function* is_id = Function::Create(sig_int8_int64, Function::InternalLinkage, "macro_is_id", module);
-    Function* is_lit = Function::Create(sig_int8_int64, Function::InternalLinkage, "macro_is_lit", module);
-    Function* is_ref = Function::Create(sig_int8_int64, Function::InternalLinkage, "macro_is_ref", module);
-    Function* is_list = Function::Create(sig_int8_int64, Function::InternalLinkage, "macro_is_list", module);
-    Function* is_macro = Function::Create(sig_int8_int64, Function::InternalLinkage, "macro_is_macro", module);
+    Function* is_id = Function::Create(sig_int1_int64, Function::InternalLinkage, "macro_is_id", module);
+    Function* is_lit = Function::Create(sig_int1_int64, Function::InternalLinkage, "macro_is_lit", module);
+    Function* is_ref = Function::Create(sig_int1_int64, Function::InternalLinkage, "macro_is_ref", module);
+    Function* is_list = Function::Create(sig_int1_int64, Function::InternalLinkage, "macro_is_list", module);
+    Function* is_macro = Function::Create(sig_int1_int64, Function::InternalLinkage, "macro_is_macro", module);
 
     Function* lit_create = Function::Create(sig_int64, Function::InternalLinkage, "macro_lit_create", module);
     Function* lit_size = Function::Create(sig_int64_int64, Function::InternalLinkage, "macro_lit_size", module);

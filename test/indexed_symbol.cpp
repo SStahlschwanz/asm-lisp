@@ -66,13 +66,23 @@ BOOST_AUTO_TEST_CASE(lit_test)
 BOOST_AUTO_TEST_CASE(forth_back_test)
 {
     ref r{"123"_id};
-    list l{lit{"abc"}, list{ref{"345"_id, &r}, list{}}};
+    list l1{lit{"abc"}, list{ref{"345"_id, &r}, list{}}};
 
-    auto p = to_symbol(1, to_indexed_symbol(l.begin(), l.end()));
+    auto p1 = to_symbol(1, to_indexed_symbol(l1.begin(), l1.end()));
 
-    any_symbol& s = p.first;
-    vector<unique_ptr<any_symbol>>& symbol_store = p.second;
+    const symbol& s1 = p1.first;
+    vector<unique_ptr<any_symbol>>& symbol_store1 = p1.second;
 
-    BOOST_CHECK(structurally_equal(s, l));
-    BOOST_CHECK_EQUAL(symbol_store.size(), 1);
+    BOOST_CHECK(structurally_equal(s1, l1));
+    BOOST_CHECK_EQUAL(symbol_store1.size(), 1);
+
+    list l2{lit{}};
+
+    auto p2 = to_symbol(1, to_indexed_symbol(l2.begin(), l2.end()));
+
+    const symbol& s2 = p2.first;
+    vector<unique_ptr<any_symbol>>& symbol_store2 = p2.second;
+
+    BOOST_CHECK(structurally_equal(s2, l2));
+    BOOST_CHECK_EQUAL(symbol_store2.size(), 0);
 }

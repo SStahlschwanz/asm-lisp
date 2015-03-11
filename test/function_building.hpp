@@ -32,6 +32,7 @@ using llvm::raw_string_ostream;
 using llvm::verifyFunction;
 
 const list int64_type{id_symbol{unique_ids::INT}, lit{"64"}};
+const list int1_type{id_symbol{unique_ids::INT}, lit{"1"}};
 const ref symbol_type{"symbol"_id, &int64_type};
 
 const ref a{"a"_id};
@@ -66,9 +67,12 @@ const list return_int64 = {id_symbol{unique_ids::RETURN}, int64_type};
 const list return_symbol = {id_symbol{unique_ids::RETURN}, symbol_type};
 const list cmp_eq_int64 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::EQ}, int64_type};
 const list cmp_ne_int64 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::NE}, int64_type};
+const list cmp_eq_int1 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::EQ}, int1_type};
 const list cond_branch = {id_symbol{unique_ids::COND_BRANCH}};
 const list branch = {id_symbol{unique_ids::BRANCH}};
 const list phi_int64 = {id_symbol{unique_ids::PHI}, int64_type};
+
+const list is_lit = {id_symbol{unique_ids::IS_LIT}};
 
 const list lit_create = {id_symbol{unique_ids::LIT_CREATE}};
 const list lit_size = {id_symbol{unique_ids::LIT_SIZE}};
