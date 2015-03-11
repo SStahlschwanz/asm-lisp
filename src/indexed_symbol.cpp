@@ -6,6 +6,7 @@ using std::string;
 using std::unique_ptr;
 using std::make_unique;
 using std::move;
+using std::size_t;
 
 using boost::get;
 
@@ -15,38 +16,42 @@ size_t to_indexed_symbol_impl(const symbol& s, vector<indexed_symbol>& result)
     s.visit(
     [&](const id_symbol& id)
     {
-        result.push_back({symbol_index, indexed_id{id.id()}});
+        result.push_back(indexed_id{id.id()});
     },
     [&](const lit_symbol& lit)
     {
         string str{lit.begin(), lit.end()};
-        result.push_back({symbol_index, indexed_lit{move(str)}});
+        result.push_back(indexed_lit{move(str)});
     },
     [&](const ref_symbol& ref)
     {
-        result.push_back({symbol_index, indexed_ref{ref.identifier(), 0}});
+        result.push_back(indexed_ref{ref.identifier(), 0});
         if(ref.refered())
         {
             size_t refered_index = to_indexed_symbol_impl(*ref.refered(), result);
-            indexed_ref& data = get<indexed_ref>(result[symbol_index - 1].second);
+            indexed_ref& data = get<indexed_ref>(result[symbol_index - 1]);
             data.refered_index = refered_index;
         }
     },
     [&](const list_symbol& list)
     {
-        result.push_back({symbol_index, indexed_list{}});
-        indexed_list& data = get<indexed_list>(result.back().second);
+        result.push_back(indexed_list{});
+        indexed_list& data = get<indexed_list>(result.back());
         data.vec.reserve(list.size());
         for(const symbol& child : list)
         {
             size_t child_index = to_indexed_symbol_impl(child, result);
-            indexed_list& data = get<indexed_list>(result[symbol_index - 1].second);
+            indexed_list& data = get<indexed_list>(result[symbol_index - 1]);
             data.vec.push_back(child_index);
         }
     },
     [&](const macro_symbol&)
     {
-        result.push_back({symbol_index, indexed_macro{}});
+        result.push_back(indexed_macro{});
+    },
+    [&](const proc_symbol&)
+    {
+        result.push_back(indexed_proc{});
     });
     
     return symbol_index;
@@ -63,7 +68,7 @@ vector<indexed_symbol> to_indexed_symbol(list_symbol::const_iterator begin, list
 
 any_symbol to_symbol_impl(symbol_index index, const vector<indexed_symbol>& indexed_symbols, vector<unique_ptr<any_symbol>>& symbol_store)
 {
-    return visit<any_symbol>(indexed_symbols[index - 1].second,
+    return visit<any_symbol>(indexed_symbols[index - 1],
     [&](const indexed_id& id)
     {
         return id_symbol{id.id};
@@ -92,6 +97,10 @@ any_symbol to_symbol_impl(symbol_index index, const vector<indexed_symbol>& inde
     [&](const indexed_macro&)
     {
         return macro_symbol{{}};
+    },
+    [&](const indexed_proc&)
+    {
+        return proc_symbol{nullptr, nullptr};
     });
 }
 

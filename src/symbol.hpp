@@ -15,6 +15,7 @@ class lit_symbol;
 class ref_symbol;
 class list_symbol;
 class macro_symbol;
+class proc_symbol;
 
 class any_symbol;
 
@@ -46,7 +47,8 @@ public:
         LITERAL,
         REFERENCE,
         LIST,
-        MACRO
+        MACRO,
+        PROC
     };
     
     type_value type() const;
@@ -126,6 +128,7 @@ private:
     friend class ::ref_symbol;
     friend class ::list_symbol;
     friend class ::macro_symbol;
+    friend class ::proc_symbol;
 
     symbol_impl(type_value type_val)
       : t(type_val)
@@ -431,6 +434,59 @@ private:
 };
 static_assert(std::is_nothrow_move_constructible<macro_symbol>::value, "");
 
+namespace llvm
+{
+
+class Function;
+
+}
+
+class proc_symbol
+  : public symbol_detail::symbol_impl
+{
+public:
+    static constexpr type_value type_id = PROC;
+
+    proc_symbol(llvm::Function* ct_func, llvm::Function* rt_func) noexcept
+      : symbol_impl(type_id),
+        ct_f(ct_func),
+        rt_f(rt_func)
+    {}
+    proc_symbol(const proc_symbol& that) noexcept
+      : proc_symbol(that.ct_f, that.rt_f)
+    {}
+
+    llvm::Function* ct_function() const
+    {
+        return ct_f;
+    }
+    void ct_function(llvm::Function* ct_func)
+    {
+        ct_f = ct_func;
+    }
+    llvm::Function* rt_function() const
+    {
+        return rt_f;
+    }
+    void rt_function(llvm::Function* rt_func)
+    {
+        rt_f = rt_func;
+    }
+
+    bool operator==(const proc_symbol& that) const
+    {
+        return ct_f == that.ct_f && rt_f == that.rt_f;
+    }
+    bool operator!=(const proc_symbol& that) const
+    {
+        return !(*this == that);
+    }
+private:
+    llvm::Function* ct_f;
+    llvm::Function* rt_f;
+};
+static_assert(std::is_nothrow_move_constructible<proc_symbol>::value, "");
+
 inline symbol_detail::symbol_impl& symbol::impl()
 {
     return *static_cast<symbol_detail::symbol_impl*>(this);
@@ -469,19 +525,16 @@ ResultType symbol::visit(FunctorType&& f)
     {
     case ID:
         return f(cast<id_symbol>());
-        break;
     case LITERAL:
         return f(cast<lit_symbol>());
-        break;
     case REFERENCE:
         return f(cast<ref_symbol>());
-        break;
     case LIST:
         return f(cast<list_symbol>());
-        break;
     case MACRO:
         return f(cast<macro_symbol>());
-        break;
+    case PROC:
+        return f(cast<proc_symbol>());
     }
 }
 
@@ -503,6 +556,8 @@ inline bool operator==(const symbol& lhs, const symbol& rhs)
         return lhs.cast<list_symbol>() == rhs.cast<list_symbol>();
     case symbol::MACRO:
         return lhs.cast<macro_symbol>() == rhs.cast<macro_symbol>();
+    case symbol::PROC:
+        return lhs.cast<proc_symbol>() == rhs.cast<proc_symbol>();
     }
 }
 inline bool operator!=(const symbol& lhs, const symbol& rhs)
@@ -531,7 +586,7 @@ constexpr size_t constexpr_max_for_symbol(size_t a, size_t b, TS... s)
 constexpr const size_t max_symbol_size = constexpr_max_for_symbol(
         sizeof(lit_symbol), sizeof(ref_symbol),
         sizeof(list_symbol), sizeof(macro_symbol),
-        sizeof(id_symbol));
+        sizeof(id_symbol), sizeof(proc_symbol));
 
 class any_symbol
   : public symbol
@@ -670,6 +725,8 @@ inline bool structurally_equal(const symbol& lhs, const symbol& rhs)
         return lhs.cast<list_symbol>() == rhs.cast<list_symbol>();
     case symbol::MACRO:
         return lhs.cast<macro_symbol>() == rhs.cast<macro_symbol>();
+    case symbol::PROC:
+        return lhs.cast<proc_symbol>() == rhs.cast<macro_symbol>();
     }
 }
 

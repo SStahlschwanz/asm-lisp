@@ -235,6 +235,10 @@ struct print_symbol_visitor
     {
         os << indentation << "macro\n";
     }
+    void operator()(const proc_symbol&) const
+    {
+        os << indentation << "proc\n";
+    }
 };
 
 ostream& print_symbol(ostream& os, const symbol& s, compilation_context& context)

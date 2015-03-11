@@ -20,12 +20,10 @@ BOOST_AUTO_TEST_CASE(list_test)
     vector<indexed_symbol> indexed_symbols = to_indexed_symbol(l.begin(), l.end());
     
     BOOST_CHECK_EQUAL(indexed_symbols.size(), 2);
-    BOOST_CHECK_EQUAL(indexed_symbols[0].first, 1);
-    BOOST_CHECK_EQUAL(indexed_symbols[1].first, 2);
-    BOOST_CHECK_EQUAL(get<indexed_list>(indexed_symbols[0].second).vec.size(), 1);
-    BOOST_CHECK_EQUAL(get<indexed_list>(indexed_symbols[0].second).vec[0], 2);
+    BOOST_CHECK_EQUAL(get<indexed_list>(indexed_symbols[0]).vec.size(), 1);
+    BOOST_CHECK_EQUAL(get<indexed_list>(indexed_symbols[0]).vec[0], 2);
 
-    BOOST_CHECK_EQUAL(get<indexed_list>(indexed_symbols[1].second).vec.size(), 0);
+    BOOST_CHECK_EQUAL(get<indexed_list>(indexed_symbols[1]).vec.size(), 0);
 }
 
 BOOST_AUTO_TEST_CASE(ref_test)
@@ -37,15 +35,12 @@ BOOST_AUTO_TEST_CASE(ref_test)
     vector<indexed_symbol> indexed_symbols = to_indexed_symbol(l.begin(), l.end());
 
     BOOST_CHECK_EQUAL(indexed_symbols.size(), 3);
-    BOOST_CHECK_EQUAL(indexed_symbols[0].first, 1);
-    BOOST_CHECK_EQUAL(indexed_symbols[1].first, 2);
-    BOOST_CHECK_EQUAL(indexed_symbols[2].first, 3);
 
-    BOOST_CHECK_EQUAL(get<indexed_list>(indexed_symbols[0].second).vec.size(), 1);
-    BOOST_CHECK_EQUAL(get<indexed_ref>(indexed_symbols[1].second).identifier, "b"_id);
-    BOOST_CHECK_EQUAL(get<indexed_ref>(indexed_symbols[1].second).refered_index, 3);
-    BOOST_CHECK_EQUAL(get<indexed_ref>(indexed_symbols[2].second).identifier, "a"_id);
-    BOOST_CHECK_EQUAL(get<indexed_ref>(indexed_symbols[2].second).refered_index, 0);
+    BOOST_CHECK_EQUAL(get<indexed_list>(indexed_symbols[0]).vec.size(), 1);
+    BOOST_CHECK_EQUAL(get<indexed_ref>(indexed_symbols[1]).identifier, "b"_id);
+    BOOST_CHECK_EQUAL(get<indexed_ref>(indexed_symbols[1]).refered_index, 3);
+    BOOST_CHECK_EQUAL(get<indexed_ref>(indexed_symbols[2]).identifier, "a"_id);
+    BOOST_CHECK_EQUAL(get<indexed_ref>(indexed_symbols[2]).refered_index, 0);
 }
 
 BOOST_AUTO_TEST_CASE(lit_test)
@@ -56,11 +51,9 @@ BOOST_AUTO_TEST_CASE(lit_test)
     vector<indexed_symbol> indexed_symbols = to_indexed_symbol(l.begin(), l.end());
 
     BOOST_CHECK_EQUAL(indexed_symbols.size(), 2);
-    BOOST_CHECK_EQUAL(indexed_symbols[0].first, 1);
-    BOOST_CHECK_EQUAL(indexed_symbols[1].first, 2);
 
-    BOOST_CHECK_EQUAL(get<indexed_list>(indexed_symbols[0].second).vec.size(), 1);
-    BOOST_CHECK_EQUAL(get<indexed_lit>(indexed_symbols[1].second).str, "a");
+    BOOST_CHECK_EQUAL(get<indexed_list>(indexed_symbols[0]).vec.size(), 1);
+    BOOST_CHECK_EQUAL(get<indexed_lit>(indexed_symbols[1]).str, "a");
 }
 
 BOOST_AUTO_TEST_CASE(forth_back_test)

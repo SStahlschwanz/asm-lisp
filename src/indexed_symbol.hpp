@@ -18,7 +18,8 @@ struct indexed_lit;
 struct indexed_ref;
 struct indexed_list;
 struct indexed_macro;
-typedef std::pair<symbol_index, boost::variant<indexed_id, indexed_lit, indexed_ref, indexed_list, indexed_macro>> indexed_symbol;
+struct indexed_proc;
+typedef boost::variant<indexed_id, indexed_lit, indexed_ref, indexed_list, indexed_macro, indexed_proc> indexed_symbol;
 
 struct indexed_id
 {
@@ -39,6 +40,11 @@ struct indexed_list
 };
 struct indexed_macro
 {
+    // TODO
+};
+struct indexed_proc
+{
+    // TODO
 };
 
 std::size_t to_indexed_symbol_impl(const symbol& s, std::vector<indexed_symbol>& result);

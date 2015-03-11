@@ -34,7 +34,7 @@ template<class T>
 T& get_indexed(symbol_index si)
 {
     check_valid_index(si);
-    if(T* obj = get<T>(&execution_data.symbols[si - 1].second))
+    if(T* obj = get<T>(&execution_data.symbols[si - 1]))
         return *obj;
     else
         longjmp(execution_data.jmp_env, 1);
@@ -46,33 +46,33 @@ extern "C"
 bool macro_is_id(symbol_index s)
 {
     check_valid_index(s);
-    return get<indexed_id>(&execution_data.symbols[s - 1].second) != nullptr;
+    return get<indexed_id>(&execution_data.symbols[s - 1]) != nullptr;
 }
 bool macro_is_lit(symbol_index s)
 {
     check_valid_index(s);
-    return get<indexed_lit>(&execution_data.symbols[s - 1].second) != nullptr;
+    return get<indexed_lit>(&execution_data.symbols[s - 1]) != nullptr;
 }
 bool macro_is_ref(symbol_index s)
 {
     check_valid_index(s);
-    return get<indexed_ref>(&execution_data.symbols[s - 1].second) != nullptr;
+    return get<indexed_ref>(&execution_data.symbols[s - 1]) != nullptr;
 }
 bool macro_is_list(symbol_index s)
 {
     check_valid_index(s);
-    return get<indexed_list>(&execution_data.symbols[s - 1].second) != nullptr;
+    return get<indexed_list>(&execution_data.symbols[s - 1]) != nullptr;
 }
 bool macro_is_macro(symbol_index s)
 {
     check_valid_index(s);
-    return get<indexed_macro>(&execution_data.symbols[s - 1].second) != nullptr;
+    return get<indexed_macro>(&execution_data.symbols[s - 1]) != nullptr;
 }
 
 symbol_index macro_lit_create()
 {
     symbol_index index = execution_data.symbols.size() + 1;
-    execution_data.symbols.push_back({index, indexed_lit{}});
+    execution_data.symbols.push_back(indexed_lit{});
     return index;
 }
 uint64_t macro_lit_size(symbol_index l)
@@ -110,7 +110,7 @@ void macro_lit_pop(symbol_index l)
 symbol_index macro_list_create()
 {
     symbol_index index = execution_data.symbols.size() + 1;
-    execution_data.symbols.push_back({index, indexed_list{}});
+    execution_data.symbols.push_back(indexed_list{});
     return index;
 }
 uint64_t macro_list_size(symbol_index l)
