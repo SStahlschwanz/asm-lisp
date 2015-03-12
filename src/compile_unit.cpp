@@ -74,10 +74,6 @@ vector<pair<list_symbol, module_header>> read_files(const vector<path>& paths, c
     size_t file_id = 0;
     for(const path& p : paths)
     {
-        /*
-        if(p.has_parent_path())
-            throw not_implemented{"compiling file in subdirectory"};
-        */
         if(p.extension() != ".al")
             throw wrong_file_extension{};
         if(!exists(p))
@@ -105,8 +101,7 @@ vector<module> compile_unit(const vector<path>& paths, compilation_context& cont
     assert(parsed_files.size() == paths.size());
     auto lookup_file_id = [&](const path& parent_path, const import_statement& import) -> size_t
     {
-        const string& relative_module_name = context.to_string(import.imported_module.identifier());
-        path module_path{parent_path / (relative_module_name + ".al")};
+        path module_path{parent_path / ((string)import.imported_module + ".al")};
         auto it = find(paths.begin(), paths.end(), module_path);
         if(it == paths.end())
             fatal<id("module_not_found")>(import.imported_module.source());
@@ -122,7 +117,7 @@ vector<module> compile_unit(const vector<path>& paths, compilation_context& cont
         path parent = p.parent_path();
         for(const import_statement& import : read_file.second.imports)
         {
-            if(import.imported_module.identifier() != (size_t)identifier_ids::CORE)
+            if((string)import.imported_module != "core")
                 dependency_graph[file_id].push_back(lookup_file_id(parent, import)); 
         }
     }
@@ -136,7 +131,7 @@ vector<module> compile_unit(const vector<path>& paths, compilation_context& cont
         path parent = paths[file_id].parent_path();
         auto lookup_module = [&](const import_statement& import) -> module&
         {
-            if(import.imported_module.identifier() == (size_t)identifier_ids::CORE)
+            if(import.imported_module == "core")
                 return context.core_module();
             size_t file_id = lookup_file_id(parent, import);
             assert(file_id < modules.size());

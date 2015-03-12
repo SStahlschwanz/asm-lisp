@@ -19,8 +19,8 @@ const ref import{"import"_id};
 const ref from{"from"_id};
 const ref def{"def"_id};
 
-const ref mod1{"mod1"_id};
-const ref mod2{"mod2"_id};
+const lit mod1{"mod1"};
+const lit mod2{"mod2"};
 
 const ref a{"a"_id};
 const ref b{"b"_id};
@@ -51,11 +51,11 @@ const list_symbol mod2_tree = list
 };
 const import_statement mod2_import1{
         mod2_tree[0].cast<list>(),
-        mod2_tree[0].cast<list>()[3].cast<ref>(),
+        mod2_tree[0].cast<list>()[3].cast<lit>(),
         mod2_tree[0].cast<list>()[1].cast<list>()};
 const import_statement mod2_import2{
         mod2_tree[2].cast<list>(),
-        mod2_tree[2].cast<list>()[3].cast<ref>(),
+        mod2_tree[2].cast<list>()[3].cast<lit>(),
         mod2_tree[2].cast<list>()[1].cast<list>()};
 const export_statement mod2_export1{mod2_tree[1].cast<list>()};
 const export_statement mod2_export2{mod2_tree[3].cast<list>()};
@@ -93,12 +93,12 @@ BOOST_AUTO_TEST_CASE(header_test)
     BOOST_CHECK(mod2_header.exports[1] == mod2_export2);
     
 
-    unordered_map<identifier_id_t, vector<symbol_source>> mod1_imported_modules = imported_modules(mod1_header);
+    unordered_map<string, vector<symbol_source>> mod1_imported_modules = imported_modules(mod1_header);
     BOOST_CHECK(mod1_imported_modules.empty());
 
-    unordered_map<identifier_id_t, vector<symbol_source>> mod2_imported_modules = imported_modules(mod2_header);
+    unordered_map<string, vector<symbol_source>> mod2_imported_modules = imported_modules(mod2_header);
     BOOST_CHECK(mod2_imported_modules.size() == 1);
-    BOOST_CHECK(mod2_imported_modules.count("mod1"_id));
+    BOOST_CHECK(mod2_imported_modules.count("mod1"));
 }
 /*
 BOOST_AUTO_TEST_CASE(simple_definition_test)

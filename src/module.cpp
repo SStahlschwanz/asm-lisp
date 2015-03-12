@@ -4,6 +4,8 @@
 #include "error/evaluate_error.hpp"
 #include "core_utils.hpp"
 
+#include <string>
+
 using std::unordered_map;
 using std::vector;
 using std::size_t;
@@ -14,6 +16,7 @@ using std::move;
 using std::unique_ptr;
 using std::make_unique;
 using std::function;
+using std::string;
 
 using boost::optional;
 using boost::none;
@@ -38,7 +41,7 @@ optional<import_statement> parse_import(const list_symbol& statement)
         return none;
     
     if(statement.size() != 4)
-        fatal<id("import_invalid_argument_number")>(statement.source(), statement.size() - 3);
+        fatal<id("import_invalid_argument_number")>(statement.source(), statement.size() - 1);
     
     const list_symbol& import_list = statement[1].cast_else<list>([&]()
     {
@@ -58,7 +61,7 @@ optional<import_statement> parse_import(const list_symbol& statement)
     if(from_token.identifier() != static_cast<size_t>(identifier_ids::FROM))
         fatal<id("invalid_from_token")>(statement[2].source());
 
-    const ref_symbol& imported_module = statement[3].cast_else<ref>([&]()
+    const lit_symbol& imported_module = statement[3].cast_else<lit_symbol>([&]()
     {
         fatal<id("invalid_imported_module")>(statement[3].source());
     });
@@ -90,13 +93,12 @@ module_header read_module_header(const list_symbol& syntax_tree)
     return header;
 }
 
-unordered_map<identifier_id_t, vector<symbol_source>> imported_modules(const module_header& header)
+unordered_map<string, vector<symbol_source>> imported_modules(const module_header& header)
 {
-    unordered_map<identifier_id_t, vector<symbol_source>> result;
+    unordered_map<string, vector<symbol_source>> result;
     for(const import_statement& import : header.imports)
     {
-        result[import.imported_module.identifier()].push_back(
-                import.statement.source());
+        result[(string)import.imported_module].push_back(import.statement.source());
     }
     return result;
 }

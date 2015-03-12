@@ -16,7 +16,7 @@
 struct import_statement
 {
     const list_symbol& statement;
-    const ref_symbol& imported_module;
+    const lit_symbol& imported_module;
     const list_symbol& import_list;
 };
 struct export_statement
@@ -29,7 +29,7 @@ struct module_header
     std::vector<export_statement> exports;
 };
 module_header read_module_header(const list_symbol& syntax_tree);
-std::unordered_map<identifier_id_t, std::vector<symbol_source>> imported_modules(const module_header& header);
+std::unordered_map<std::string, std::vector<symbol_source>> imported_modules(const module_header& header);
 
 typedef std::unordered_map<identifier_id_t, const symbol*> symbol_table;
 struct module
