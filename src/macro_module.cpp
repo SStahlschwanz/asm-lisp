@@ -57,7 +57,6 @@ macro_execution_environment create_macro_environment(llvm::LLVMContext& llvm_con
     params = {int64};
     FunctionType* sig_int64_int64 = FunctionType::get(int64, params, false);
     FunctionType* sig_void_int64 = FunctionType::get(llvm_void, params, false);
-    FunctionType* sig_int8_int64 = FunctionType::get(int8, params, false);
     FunctionType* sig_int1_int64 = FunctionType::get(int1, params, false);
 
     params = {int64, int64};
