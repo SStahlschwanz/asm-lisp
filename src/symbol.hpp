@@ -240,6 +240,10 @@ public:
     {
         return s.empty();
     }
+    explicit operator const std::string&() const
+    {
+        return s;
+    }
 
     bool operator==(const lit_symbol& that) const
     {
