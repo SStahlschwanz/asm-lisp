@@ -1,4 +1,4 @@
-import (a b c) from "../a";
+import (a b c) from "../a/a";
 export d;
 
 

@@ -17,7 +17,7 @@ using namespace symbol_shortcuts;
 
 BOOST_AUTO_TEST_CASE(read_files_test)
 {
-    vector<path> paths = {"test-res/a.al", "test-res/b/b.al"};
+    vector<path> paths = {"test-res/a/a.al", "test-res/b/b.al"};
     vector<pair<list, module_header>> files = read_files(paths, context);
     BOOST_CHECK_EQUAL(files.size(), 2);
     
@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(read_files_test)
         list{def, c, a}
     };
     const list b_syntax_tree = list{
-        list{import, list{a, b , c}, from, lit{"../a"}},
+        list{import, list{a, b , c}, from, lit{"../a/a"}},
         list{export_st, d},
         list{def, d, c}
     };
