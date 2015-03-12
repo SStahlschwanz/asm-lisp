@@ -10,14 +10,19 @@
 
 #include <llvm/IR/DerivedTypes.h>
 
+using std::vector;
+
+using llvm::Type;
 using llvm::IntegerType;
 using llvm::PointerType;
+using llvm::FunctionType;
 
 using namespace symbol_shortcuts;
 
 
 const id_symbol int_id{unique_ids::INT};
 const id_symbol ptr{unique_ids::PTR};
+const id_symbol function_signature{unique_ids::FUNCTION_SIGNATURE};
 
 BOOST_AUTO_TEST_CASE(int_test)
 {
@@ -49,3 +54,24 @@ BOOST_AUTO_TEST_CASE(pointer_test)
     BOOST_CHECK(result.llvm_type == PointerType::getUnqual(IntegerType::get(context.llvm(), 8)));
 }
 
+BOOST_AUTO_TEST_CASE(function_signature_test)
+{
+    const list int1{int_id, lit{"1"}};
+    const list int2{int_id, lit{"2"}};
+    const list signature1{function_signature, int1, list{int1}};
+    type_info info1 = compile_type(signature1, context.llvm());
+
+    Type* llvm_int1 = IntegerType::get(context.llvm(), 1);
+    vector<Type*> llvm_args1 = {llvm_int1};
+    FunctionType* expected_llvm_type1 = FunctionType::get(llvm_int1, llvm_args1, false);
+    BOOST_CHECK(info1.llvm_type == expected_llvm_type1);
+
+
+    const list signature2{function_signature, int2, list{int1, signature1}};
+    type_info info2 = compile_type(signature2, context.llvm());
+
+    Type* llvm_int2 = IntegerType::get(context.llvm(), 2);
+    vector<Type*> llvm_args2 = {llvm_int1, expected_llvm_type1};
+    FunctionType* expected_llvm_type2 = FunctionType::get(llvm_int2, llvm_args2, false);
+    BOOST_CHECK(info2.llvm_type == expected_llvm_type2);
+}

@@ -55,6 +55,7 @@ enum
     // type constructors
     INT,
     PTR,
+    FUNCTION_SIGNATURE,
     
     // key words
     LET,

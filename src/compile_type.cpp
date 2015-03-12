@@ -10,6 +10,7 @@
 
 #include <string>
 #include <algorithm>
+#include <memory>
 
 using std::size_t;
 using std::string;
@@ -17,6 +18,9 @@ using std::stoul;
 using std::out_of_range;
 using std::invalid_argument;
 using std::distance;
+using std::string;
+using std::vector;
+using std::make_shared;
 
 using boost::blank;
 
@@ -24,6 +28,7 @@ using llvm::IntegerType;
 using llvm::LLVMContext;
 using llvm::Type;
 using llvm::PointerType;
+using llvm::FunctionType;
 
 using namespace symbol_shortcuts;
 using namespace compile_type_error;
@@ -87,26 +92,40 @@ type_info compile_type(const symbol& node, LLVMContext& llvm_context)
             const symbol& bit_width_node = type_node[1];
             unsigned long bit_width = read_bit_width(bit_width_node);
             Type* llvm_type = IntegerType::get(llvm_context, bit_width);
-            return type_info{node, integer_type{bit_width}, llvm_type};
+            return {node, llvm_type, type_info::integer{bit_width}};
         }
         case unique_ids::PTR:
         {
             check_arity("ptr", 0);
             Type* llvm_type = PointerType::getUnqual(IntegerType::get(llvm_context, 8));
-            return type_info{node, pointer_type{}, llvm_type};
+            return {node, llvm_type, type_info::pointer{}};
+        }
+        case unique_ids::FUNCTION_SIGNATURE:
+        {
+            check_arity("function_signature", 2);
+            const symbol& return_type_node = type_node[1];
+            auto return_type = make_shared<type_info>(compile_type(return_type_node, llvm_context));
+            const list_symbol& arg_types_list = type_node[2].cast_else<list_symbol>([&]
+            {
+                fatal<id("invalid_argument_type_list")>(type_node[2].source());
+            });
+            vector<type_info> arg_types;
+            arg_types.reserve(arg_types_list.size());
+            for(const symbol& arg_type_node : arg_types_list)
+                arg_types.push_back(compile_type(arg_type_node, llvm_context));
+            vector<Type*> llvm_args;
+            llvm_args.reserve(arg_types.size());
+            for(const type_info& ti : arg_types)
+                llvm_args.push_back(ti.llvm_type);
+            FunctionType* llvm_type = FunctionType::get(return_type->llvm_type, llvm_args, false /* no vararg */);
+            assert(llvm_type);
+            return {node, llvm_type, type_info::function_signature{move(return_type), move(arg_types)}};
         }
         default:
             fatal<id("unknown_type_constructor")>(type_constructor.source());
         }
     }
-
-    const id_symbol& type_node = resolved_node.cast_else<id_symbol>([&]
-    {
-        fatal<id("invalid_type_node")>(node.source());
-    });
-    if(type_node.id() != unique_ids::PTR)
-        fatal<id("unknown_type_constructor")>(type_node.source());
-    Type* llvm_type = PointerType::getUnqual(IntegerType::get(llvm_context, 8));
-    return type_info{node, pointer_type{}, llvm_type}; 
+    else
+        throw not_implemented{"unnested type constructor"};
 }
 
