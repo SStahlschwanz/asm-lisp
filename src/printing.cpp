@@ -209,7 +209,7 @@ struct print_symbol_visitor
 
     void operator()(const id_symbol& id) const
     {
-        os << indentation << "id" << id.id() << "\n";
+        os << indentation << "$" << id.id() << "\n";
     }
     void operator()(const lit_symbol& lit) const
     {
