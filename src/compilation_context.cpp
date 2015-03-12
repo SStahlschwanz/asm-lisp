@@ -23,6 +23,7 @@ using llvm::ExecutionEngine;
 using llvm::EngineBuilder;
 
 compilation_context::compilation_context()
+  : rt_module{new Module{"runtime module", llvm()}}
 {
     identifier_table = 
     {
@@ -50,6 +51,10 @@ macro_execution_environment& compilation_context::macro_environment()
         macro_env = make_unique<macro_execution_environment>(create_macro_environment(llvm()));
     }
     return *macro_env;
+}
+Module& compilation_context::runtime_module()
+{
+    return *rt_module;
 }
 identifier_id_t compilation_context::identifier_id(const string& str)
 {

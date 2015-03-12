@@ -36,7 +36,6 @@ using boost::get;
 
 using namespace symbol_shortcuts;
 
-
 BOOST_AUTO_TEST_CASE(compile_signature_test)
 {
     const any_symbol params1 = list
@@ -90,6 +89,13 @@ BOOST_AUTO_TEST_CASE(compile_instruction_test)
     const instruction_info got3 = parse_instruction(instruction3, context.llvm());
     BOOST_CHECK(get<instruction_info::cmp>(got3.kind).cmp_kind == unique_ids::LT);
     BOOST_CHECK(get<instruction_info::cmp>(got3.kind).type.llvm_type == llvm_int64);
+
+    const id_symbol call_constructor{unique_ids::CALL};
+    const list_symbol signature_type = {function_signature, list{int64_type, int64_type}, int64_type};
+    type_info signature_type_info = compile_type(signature_type, context.llvm());
+    const list_symbol instruction4 = {call_constructor, signature_type};
+    const instruction_info got4 = parse_instruction(instruction4, context.llvm());
+    BOOST_CHECK(get<instruction_info::call>(got4.kind).type.llvm_type == signature_type_info.llvm_type);
 }
 
 BOOST_AUTO_TEST_CASE(store_load_test)
@@ -297,6 +303,82 @@ BOOST_AUTO_TEST_CASE(a_times_b_test)
     BOOST_CHECK(function_ptr(33, 0) == 0);
     BOOST_CHECK(function_ptr(0, 0) == 0);
 }
+
+const list_symbol add_proc
+{
+    list // params
+    {
+        list{a, int64_type},
+        list{b, int64_type}
+    },
+    int64_type, // return type 
+    list // body
+    {
+        list{block1, list
+        {
+            list{let, x, add_int64, a, b},
+            list{return_int64, x}
+        }}
+    }
+};
+const list_symbol create_empty_list_proc
+{
+    list{}, // params
+    int64_type, // return type
+    list // body
+    {
+        list{block1, list
+        {
+            list{let, x, list_create},
+            list{return_int64, x}
+        }}
+    }
+};
+
+BOOST_AUTO_TEST_CASE(compile_proc_test)
+{
+    proc_symbol rt_ct_proc = compile_proc(add_proc.begin(), add_proc.end(), context);
+    BOOST_CHECK(rt_ct_proc.ct_function() != nullptr);
+    BOOST_CHECK(rt_ct_proc.rt_function() != nullptr);
+
+    proc_symbol ct_proc = compile_proc(create_empty_list_proc.begin(), create_empty_list_proc.end(), context);
+    BOOST_CHECK(ct_proc.ct_function() != nullptr);
+    BOOST_CHECK(ct_proc.rt_function() == nullptr);
+}
+
+BOOST_AUTO_TEST_CASE(call_test)
+{
+    const proc_symbol called_proc = compile_proc(add_proc.begin(), add_proc.end(), context);
+
+    const ref proc_ref{"proc"_id, &called_proc};
+
+    const list params =
+    {
+        list{a, int64_type},
+        list{b, int64_type}
+    };
+    const symbol& return_type = int64_type;
+    const list_symbol body =
+    {
+        list{block1, list
+        {
+            list{let, x, list{call, sig_int64_2int64}, proc_ref, a, b},
+            list{return_int64, x}
+        }}
+    };
+
+    const list_symbol function_source = 
+    {
+        params,
+        return_type,
+        body
+    };
+
+    auto function_ptr = get_compiled_function<uint64_t (uint64_t, uint64_t)>(function_source);
+    BOOST_CHECK_EQUAL(function_ptr(2, 2), 2 + 2);
+    BOOST_CHECK_EQUAL(function_ptr(23, 43), 66);
+}
+
 
 BOOST_AUTO_TEST_CASE(missing_let_test)
 {

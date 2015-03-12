@@ -5,6 +5,7 @@
 #include "../src/compile_type.hpp"
 #include "../src/error/compile_exception.hpp"
 #include "../src/core_unique_ids.hpp"
+#include "function_building.hpp"
 
 #include "state_utils.hpp"
 
@@ -22,7 +23,6 @@ using namespace symbol_shortcuts;
 
 const id_symbol int_id{unique_ids::INT};
 const id_symbol ptr{unique_ids::PTR};
-const id_symbol function_signature{unique_ids::FUNCTION_SIGNATURE};
 
 BOOST_AUTO_TEST_CASE(int_test)
 {
@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(function_signature_test)
 {
     const list int1{int_id, lit{"1"}};
     const list int2{int_id, lit{"2"}};
-    const list signature1{function_signature, int1, list{int1}};
+    const list signature1{function_signature, list{int1}, int1};
     type_info info1 = compile_type(signature1, context.llvm());
 
     Type* llvm_int1 = IntegerType::get(context.llvm(), 1);
@@ -67,11 +67,20 @@ BOOST_AUTO_TEST_CASE(function_signature_test)
     BOOST_CHECK(info1.llvm_type == expected_llvm_type1);
 
 
-    const list signature2{function_signature, int2, list{int1, signature1}};
+    const list signature2{function_signature, list{int1, signature1}, int2};
     type_info info2 = compile_type(signature2, context.llvm());
 
     Type* llvm_int2 = IntegerType::get(context.llvm(), 2);
     vector<Type*> llvm_args2 = {llvm_int1, expected_llvm_type1};
     FunctionType* expected_llvm_type2 = FunctionType::get(llvm_int2, llvm_args2, false);
     BOOST_CHECK(info2.llvm_type == expected_llvm_type2);
+
+    type_info info3 = compile_type(sig_int64_2int64, context.llvm());
+    /*
+
+    Type* llvm_int64 = IntegerType::get(context.llvm(), 64);
+    vector<Type*> llvm_args3 = {llvm_int64, llvm_int64};
+    FunctionType* expected_llvm_type3 = FunctionType::get(llvm_int64, llvm_args3, false);
+    BOOST_CHECK(info3.llvm_type == expected_llvm_type3);
+    */
 }

@@ -103,11 +103,9 @@ type_info compile_type(const symbol& node, LLVMContext& llvm_context)
         case unique_ids::FUNCTION_SIGNATURE:
         {
             check_arity("function_signature", 2);
-            const symbol& return_type_node = type_node[1];
-            auto return_type = make_shared<type_info>(compile_type(return_type_node, llvm_context));
-            const list_symbol& arg_types_list = type_node[2].cast_else<list_symbol>([&]
+            const list_symbol& arg_types_list = type_node[1].cast_else<list_symbol>([&]
             {
-                fatal<id("invalid_argument_type_list")>(type_node[2].source());
+                fatal<id("invalid_argument_type_list")>(type_node[1].source());
             });
             vector<type_info> arg_types;
             arg_types.reserve(arg_types_list.size());
@@ -117,6 +115,10 @@ type_info compile_type(const symbol& node, LLVMContext& llvm_context)
             llvm_args.reserve(arg_types.size());
             for(const type_info& ti : arg_types)
                 llvm_args.push_back(ti.llvm_type);
+
+            const symbol& return_type_node = type_node[2];
+            auto return_type = make_shared<type_info>(compile_type(return_type_node, llvm_context));
+
             FunctionType* llvm_type = FunctionType::get(return_type->llvm_type, llvm_args, false /* no vararg */);
             assert(llvm_type);
             return {node, llvm_type, type_info::function_signature{move(return_type), move(arg_types)}};

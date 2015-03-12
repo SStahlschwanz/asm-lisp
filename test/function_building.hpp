@@ -31,9 +31,12 @@ using llvm::Function;
 using llvm::raw_string_ostream;
 using llvm::verifyFunction;
 
+const id_symbol function_signature{unique_ids::FUNCTION_SIGNATURE};
+
 const list int64_type{id_symbol{unique_ids::INT}, lit{"64"}};
 const list int1_type{id_symbol{unique_ids::INT}, lit{"1"}};
 const ref symbol_type{"symbol"_id, &int64_type};
+const list sig_int64_2int64{function_signature, list{int64_type, int64_type}, int64_type};
 
 const ref a{"a"_id};
 const ref b{"b"_id};
@@ -57,6 +60,8 @@ const ref block3{"block3"_id};
 const ref block4{"block4"_id};
     
 const id_symbol let{unique_ids::LET};
+
+const id_symbol call{unique_ids::CALL};
 
 const list alloc_int64 = {id_symbol{unique_ids::ALLOC}, int64_type};
 const list store_int64 = {id_symbol{unique_ids::STORE}, int64_type};

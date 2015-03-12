@@ -177,6 +177,12 @@ struct phi_call
     std::vector<incoming> incomings;
     const symbol& statement;
 };
+struct call_call // call of the 'call' instruction...
+{
+    llvm::CallInst* value;
+    llvm::Function* ct_function;
+    llvm::Function* rt_function;
+};
 struct ct_only_call
 {
     const symbol& instruction_node;
@@ -191,6 +197,7 @@ struct special_calls_info
     std::vector<branch_call> branches;
     std::vector<cond_branch_call> cond_branches;
     std::vector<phi_call> phis;
+    std::vector<call_call> calls;
     std::vector<ct_only_call> ct_only_instructions;
     std::vector<rt_only_call> rt_only_instructions;
 };

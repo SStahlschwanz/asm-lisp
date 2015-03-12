@@ -13,6 +13,7 @@
 #include <llvm/IR/CFG.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/Transforms/Utils/Cloning.h>
 
 #include <boost/optional.hpp>
 
@@ -56,8 +57,11 @@ using llvm::ConstantInt;
 using llvm::PointerType;
 using llvm::BranchInst;
 using llvm::PHINode;
+using llvm::CallInst;
 using llvm::verifyFunction;
 using llvm::cast;
+using llvm::CloneFunction;
+using llvm::ValueToValueMapTy;
 
 using boost::get;
 using boost::apply_visitor;
@@ -504,9 +508,37 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
     {
         FunctionType* signature = cast<FunctionType>(inst.type.llvm_type);
         check_arity("call", signature->getNumParams() + 1); // + 1 for function pointer
+        // for now, function pointers are not allowed -> first argument is a ref to a proc_symbol
+        const symbol& resolved_proc = resolve_refs(*begin);
+        ++begin;
+        const proc_symbol& proc = resolved_proc.cast_else<proc_symbol>([&]
+        {
+            fatal<id("invalid_proc")>(resolved_proc.source());
+        });
+        assert(proc.ct_function() || proc.rt_function());
+        Function* callee = proc.ct_function();
+        if(callee == nullptr)
+            callee = proc.rt_function();
+        assert(callee != nullptr);
+        
+        if(callee->getFunctionType() != signature)
+            fatal<id("function_type_mismatch")>(inst.type.node.source());
 
-        throw not_implemented{""};
-        return nullptr;
+        vector<Value*> proc_args;
+        proc_args.reserve(signature->getNumParams());
+        auto param_type_it = signature->param_begin();
+        for( ; param_type_it != signature->param_end(); ++param_type_it, ++begin)
+        {
+            Value* arg = get_value(*begin, *param_type_it);
+            proc_args.push_back(arg);
+        }
+        CallInst* value = builder.CreateCall(callee, proc_args);
+        st_context.special_calls.calls.push_back(call_call{value});
+        if(proc.ct_function() == nullptr)
+            st_context.special_calls.rt_only_instructions.push_back({instruction.statement});
+        if(proc.rt_function() == nullptr)
+            st_context.special_calls.ct_only_instructions.push_back({instruction.statement});
+        return value;
     },
 
     [&](const instruction_info::is_id&)
@@ -904,13 +936,37 @@ proc_symbol compile_proc(list_symbol::const_iterator begin, list_symbol::const_i
     function_info func_info;
     tie(func_owner, func_info) = compile_function(begin, end, context);
 
+    Function* ct_function = nullptr;
+    Function* rt_function = nullptr;
+
     if(func_info.special_calls.rt_only_instructions.empty())
     {
-        context.macro_environment().llvm_module.getFunctionList().push_back(func_info.llvm_function);
-        func_owner.release();
-        return proc_symbol{func_info.llvm_function, nullptr};
+        ValueToValueMapTy vtvm;
+        unique_ptr<Function> cloned_func{CloneFunction(func_owner.get(), vtvm, false)};
+        for(const call_call& call : func_info.special_calls.calls)
+        {
+            CallInst* value = cast<CallInst>(vtvm[call.value]);
+            value->setCalledFunction(call.ct_function);
+        }
+        context.macro_environment().llvm_module.getFunctionList().push_back(cloned_func.get());
+        ct_function = cloned_func.release();
+    }
+    if(func_info.special_calls.ct_only_instructions.empty())
+    {
+        ValueToValueMapTy vtvm;
+        unique_ptr<Function> cloned_func{CloneFunction(func_owner.get(), vtvm, false)};
+        for(const call_call& call : func_info.special_calls.calls)
+        {
+            CallInst* value = cast<CallInst>(vtvm[call.value]);
+            value->setCalledFunction(call.rt_function);
+        }
+        context.runtime_module().getFunctionList().push_back(cloned_func.get());
+        rt_function = cloned_func.release();
     }
 
-    throw not_implemented{"runtime proc"};
+    if(ct_function == nullptr && rt_function == nullptr)
+        fatal<id("proc_neither_ct_nor_rt")>(begin->source());
+
+    return proc_symbol{ct_function, rt_function};
 }
 

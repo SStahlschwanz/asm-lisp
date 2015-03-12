@@ -64,7 +64,10 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"block_invalid_termination", ""},
     {"invalid_macro_signature", ""},
     {"macro_uses_rt_only_instruction", ""},
-    {"invalid_function_type", ""}
+    {"invalid_function_type", ""},
+    {"invalid_proc", ""},
+    {"function_type_mismatch", ""},
+    {"proc_neither_ct_nor_rt", ""}
 };
 
 constexpr std::size_t id(conststr str)

@@ -45,6 +45,7 @@ public:
 
     llvm::LLVMContext& llvm();
     macro_execution_environment& macro_environment();
+    llvm::Module& runtime_module();
     module& core_module();
 
     identifier_id_t identifier_id(const std::string& str);
@@ -52,6 +53,7 @@ public:
 private:
     std::unordered_map<std::string, identifier_id_t> identifier_table;
     std::unique_ptr<macro_execution_environment> macro_env;
+    std::unique_ptr<llvm::Module> rt_module;
     std::unique_ptr<module> core;
 };
 

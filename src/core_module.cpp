@@ -58,6 +58,12 @@ module create_core_module(compilation_context& context)
     };
     add_symbol("macro", macro_symbol{make_shared<macro_symbol::macro_function>(macro_func)});
 
+    auto proc_func = [&context](list_symbol::const_iterator begin, list_symbol::const_iterator end) -> pair<any_symbol, vector<unique_ptr<any_symbol>>>
+    {
+        return {compile_proc(begin, end, context), vector<unique_ptr<any_symbol>>{}};
+    };
+    add_symbol("proc", macro_symbol{make_shared<macro_symbol::macro_function>(proc_func)});
+
     add_id_symbol("add", unique_ids::ADD);
     add_id_symbol("sub", unique_ids::SUB);
     add_id_symbol("mul", unique_ids::MUL);
@@ -99,6 +105,7 @@ module create_core_module(compilation_context& context)
 
     add_id_symbol("int", unique_ids::INT);
     add_id_symbol("ptr", unique_ids::PTR);
+    add_id_symbol("function_signature", unique_ids::FUNCTION_SIGNATURE);
 
     add_id_symbol("let", unique_ids::LET);
 
