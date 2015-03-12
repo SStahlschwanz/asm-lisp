@@ -10,7 +10,12 @@ namespace core_misc_error
 constexpr std::pair<conststr, conststr> dictionary[] =
 {
     {"unique_invalid_argument_number", "invalid number of arguments to 'unique': expected 0"},
-    {"identifier_not_defined", ""}
+    {"identifier_not_defined", ""},
+    {"external_invalid_argument_number", ""},
+    {"external_not_a_signature_type", ""},
+    {"external_invalid_name", ""},
+    {"main_ct_only_proc", ""},
+    {"main_invalid_signature", ""}
 };
 
 constexpr std::size_t id(conststr str)
