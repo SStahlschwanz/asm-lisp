@@ -5,7 +5,7 @@ DEBUG_CPPFLAGS=$(COMMON_CPPFLAGS) -Wall -g -fcolor-diagnostics
 RELEASE_CPPFLAGS=$(COMMON_CPPFLAGS) -O3 -DNDEBUG
 
 LLVM_LD_FLAGS=-rdynamic $(shell llvm-config --ldflags)
-LLVM_LIBS=-L$(shell llvm-config --libdir) $(shell llvm-config --libs core native jit) $(shell llvm-config --system-libs)
+LLVM_LIBS=-L$(shell llvm-config --libdir) $(shell llvm-config --libs core native jit bitwriter) $(shell llvm-config --system-libs)
 
 COMMON_LDFLAGS=$(LLVM_LD_FLAGS)
 COMMON_LIBS=-lboost_system -lboost_filesystem $(LLVM_LIBS)

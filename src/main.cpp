@@ -4,8 +4,12 @@
 
 #include <boost/filesystem.hpp>
 
+#include <llvm/Support/raw_os_ostream.h>
+#include <llvm/Bitcode/ReaderWriter.h>
+
 #include <iostream>
 #include <string>
+#include <fstream>
 
 using boost::filesystem::path;
 
@@ -15,6 +19,11 @@ using std::endl;
 using std::vector;
 using std::string;
 using std::pair;
+using std::ofstream;
+using std::ios;
+
+using llvm::raw_os_ostream;
+using llvm::WriteBitcodeToFile;
 
 int main(int argc, char** args)
 {
@@ -53,4 +62,9 @@ int main(int argc, char** args)
         };
         print_error(cerr, exc, file_id_to_name);
     }
+
+    ofstream output{"output.bc", ios::binary};
+    raw_os_ostream llvm_os{output};
+    WriteBitcodeToFile(&context.runtime_module(), llvm_os);
 }
+
