@@ -74,8 +74,10 @@ vector<pair<list_symbol, module_header>> read_files(const vector<path>& paths, c
     size_t file_id = 0;
     for(const path& p : paths)
     {
+        /*
         if(p.has_parent_path())
             throw not_implemented{"compiling file in subdirectory"};
+        */
         if(p.extension() != ".al")
             throw wrong_file_extension{};
         if(!exists(p))
@@ -100,11 +102,11 @@ vector<pair<list_symbol, module_header>> read_files(const vector<path>& paths, c
 vector<module> compile_unit(const vector<path>& paths, compilation_context& context)
 {
     vector<pair<list_symbol, module_header>> parsed_files = read_files(paths, context);
-    
-    auto lookup_file_id = [&](const import_statement& import) -> size_t
+    assert(parsed_files.size() == paths.size());
+    auto lookup_file_id = [&](const path& parent_path, const import_statement& import) -> size_t
     {
-        const string& module_name = context.to_string(import.imported_module.identifier());
-        path module_path{module_name + ".al"};
+        const string& relative_module_name = context.to_string(import.imported_module.identifier());
+        path module_path{parent_path / (relative_module_name + ".al")};
         auto it = find(paths.begin(), paths.end(), module_path);
         if(it == paths.end())
             fatal<id("module_not_found")>(import.imported_module.source());
@@ -113,31 +115,34 @@ vector<module> compile_unit(const vector<path>& paths, compilation_context& cont
     
     vector<vector<size_t>> dependency_graph{paths.size()};
     
-    size_t file_id = 0;
-    for(const pair<list_symbol, module_header>& read_file : parsed_files)
+    for(size_t file_id = 0; file_id != parsed_files.size(); ++file_id)
     {
+        const pair<list_symbol, module_header>& read_file = parsed_files[file_id];
+        const path& p = paths[file_id];
+        path parent = p.parent_path();
         for(const import_statement& import : read_file.second.imports)
         {
             if(import.imported_module.identifier() != (size_t)identifier_ids::CORE)
-                dependency_graph[file_id].push_back(lookup_file_id(import)); 
+                dependency_graph[file_id].push_back(lookup_file_id(parent, import)); 
         }
-        ++file_id;
     }
 
     vector<size_t> compilation_order = toposort(dependency_graph);
 
     vector<module> modules;
     modules.reserve(parsed_files.size());
-    auto lookup_module = [&](const import_statement& import) -> module&
-    {
-        if(import.imported_module.identifier() == (size_t)identifier_ids::CORE)
-            return context.core_module();
-        size_t file_id = lookup_file_id(import);
-        assert(file_id < modules.size());
-        return modules[file_id];
-    };
     for(size_t file_id : compilation_order)
     {
+        path parent = paths[file_id].parent_path();
+        auto lookup_module = [&](const import_statement& import) -> module&
+        {
+            if(import.imported_module.identifier() == (size_t)identifier_ids::CORE)
+                return context.core_module();
+            size_t file_id = lookup_file_id(parent, import);
+            assert(file_id < modules.size());
+            return modules[file_id];
+        };
+
         list_symbol& syntax_tree = parsed_files[file_id].first;
         const module_header& header = parsed_files[file_id].second;
         module m = evaluate_module(move(syntax_tree), header, lookup_module, context);

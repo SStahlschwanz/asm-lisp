@@ -17,8 +17,7 @@ using namespace symbol_shortcuts;
 
 BOOST_AUTO_TEST_CASE(read_files_test)
 {
-    current_path("test-res");
-    vector<path> paths = {"a.al", "b.al"};
+    vector<path> paths = {"test-res/a.al", "test-res/b.al"};
     vector<pair<list, module_header>> files = read_files(paths, context);
     BOOST_CHECK_EQUAL(files.size(), 2);
     
@@ -49,7 +48,6 @@ BOOST_AUTO_TEST_CASE(read_files_test)
 
 BOOST_AUTO_TEST_CASE(toposort_test)
 {
-    
     vector<vector<size_t>> graph1
     {
         {1},
