@@ -533,7 +533,7 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
             proc_args.push_back(arg);
         }
         CallInst* value = builder.CreateCall(callee, proc_args);
-        st_context.special_calls.calls.push_back(call_call{value});
+        st_context.special_calls.calls.push_back(call_call{value, proc.ct_function(), proc.rt_function()});
         if(proc.ct_function() == nullptr)
             st_context.special_calls.rt_only_instructions.push_back({instruction.statement});
         if(proc.rt_function() == nullptr)
