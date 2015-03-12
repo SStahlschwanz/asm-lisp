@@ -6,6 +6,7 @@
 
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Bitcode/ReaderWriter.h>
+#include <llvm/IR/Verifier.h>
 
 #include <iostream>
 #include <string>
@@ -24,6 +25,7 @@ using std::ios;
 
 using llvm::raw_os_ostream;
 using llvm::WriteBitcodeToFile;
+using llvm::verifyModule;
 
 int main(int argc, char** args)
 {
@@ -63,8 +65,12 @@ int main(int argc, char** args)
         print_error(cerr, exc, file_id_to_name);
     }
 
+    raw_os_ostream llvm_cerr{cerr};
+    assert(!verifyModule(context.runtime_module(), &llvm_cerr)); // yes, this returns false, if module is actually correct
+
     ofstream output{"output.bc", ios::binary};
-    raw_os_ostream llvm_os{output};
-    WriteBitcodeToFile(&context.runtime_module(), llvm_os);
+    raw_os_ostream llvm_output{output};
+
+    WriteBitcodeToFile(&context.runtime_module(), llvm_output);
 }
 
