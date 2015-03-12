@@ -57,6 +57,7 @@ using llvm::PointerType;
 using llvm::BranchInst;
 using llvm::PHINode;
 using llvm::verifyFunction;
+using llvm::cast;
 
 using boost::get;
 using boost::apply_visitor;
@@ -169,6 +170,15 @@ instruction_info parse_cmp_instruction(const list_symbol& statement, LLVMContext
     return instruction_info{statement, instruction_info::cmp{comparison_kind, move(type)}};
 }
 
+instruction_info parse_call_instruction(const list_symbol& statement, LLVMContext& llvm_context)
+{
+    instruction_info result = parse_unary_typed_instruction<instruction_info::call>("call", statement, llvm_context);
+    type_info type = get<instruction_info::call>(result.kind).type;
+    if(!isa<FunctionType>(type.llvm_type))
+        fatal<id("invalid_function_type")>(type.node.source());
+    return result;
+}
+
 instruction_info parse_instruction(const symbol& node, LLVMContext& llvm_context)
 {
     if(node.is<list_symbol>())
@@ -216,7 +226,7 @@ instruction_info parse_instruction(const symbol& node, LLVMContext& llvm_context
         case unique_ids::CMP:
             return parse_cmp_instruction(statement, llvm_context);
         case unique_ids::CALL:
-            throw not_implemented{"instruction"};
+            return parse_call_instruction(statement, llvm_context);
 
         case unique_ids::IS_ID:
             check_arity("is_id", 0);
@@ -490,8 +500,11 @@ Value* compile_instruction_call(list_symbol::const_iterator begin, list_symbol::
         return value;
         
     },
-    [&](const instruction_info::call&)
+    [&](const instruction_info::call& inst)
     {
+        FunctionType* signature = cast<FunctionType>(inst.type.llvm_type);
+        check_arity("call", signature->getNumParams() + 1); // + 1 for function pointer
+
         throw not_implemented{""};
         return nullptr;
     },
@@ -885,4 +898,19 @@ macro_symbol compile_macro(list_symbol::const_iterator begin, list_symbol::const
     return make_shared<macro_symbol::macro_function>(macro_func);
 }
 
+proc_symbol compile_proc(list_symbol::const_iterator begin, list_symbol::const_iterator end, compilation_context& context)
+{
+    unique_ptr<Function> func_owner;
+    function_info func_info;
+    tie(func_owner, func_info) = compile_function(begin, end, context);
+
+    if(func_info.special_calls.rt_only_instructions.empty())
+    {
+        context.macro_environment().llvm_module.getFunctionList().push_back(func_info.llvm_function);
+        func_owner.release();
+        return proc_symbol{func_info.llvm_function, nullptr};
+    }
+
+    throw not_implemented{"runtime proc"};
+}
 
