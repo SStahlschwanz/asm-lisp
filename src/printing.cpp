@@ -1,7 +1,5 @@
 #include "printing.hpp"
 
-#include "symbol.hpp"
-
 #include "error/parse_error.hpp"
 #include "error/import_export_error.hpp"
 #include "error/evaluate_error.hpp"
@@ -129,7 +127,7 @@ string format(const string& format_string, const vector<error_parameter>& parame
     return stream.str();
 }
 
-ostream& print_error(ostream& os, const compile_exception& exc, function<string (size_t)> file_id_to_name)
+ostream& print(ostream& os, const compile_exception& exc, function<string (size_t)> file_id_to_name)
 {
     const char* error_name;
     const char* error_message_template;
@@ -201,48 +199,44 @@ ostream& print_error(ostream& os, const compile_exception& exc, function<string 
     return os;
 }
 
-struct print_symbol_visitor
+struct print_node_visitor
 {
     ostream& os;
     const string& indentation;
-    compilation_context& context;
 
-    void operator()(const id_symbol& id) const
+    void operator()(const id_node& id) const
     {
         os << indentation << "$" << id.id() << "\n";
     }
-    void operator()(const lit_symbol& lit) const
+    void operator()(const lit_node& lit) const
     {
-        os << indentation << "lit\"" << string{lit.begin(), lit.end()} << "\"\n";
+        os << indentation << "lit\"" << save<string>(rangeify(lit)) << "\"\n";
     }
-    void operator()(const ref_symbol& ref) const
+    void operator()(const ref_node& ref) const
     {
-        os << indentation << "ref\"" << context.to_string(ref.identifier()) << "\"\n";
+        os << indentation << "ref\"" << save<string>(ref.identifier()) << "\"\n";
         if(ref.refered())
         {
             string new_indentation = indentation + "  ";
-            ref.refered()->visit(print_symbol_visitor{os, new_indentation, context});
+            ref.refered()->visit(print_node_visitor{os, new_indentation});
         }
     }
-    void operator()(const list_symbol& list) const
+    void operator()(const list_node& list) const
     {
         os << indentation << "list" << "\n";
         string new_indentation = indentation + "  ";
-        for(const symbol& s : list)
-            s.visit(print_symbol_visitor{os, new_indentation, context});
+        for(const node& s : list)
+            s.visit(print_node_visitor{os, new_indentation});
     }
-    void operator()(const macro_symbol&) const
+    void operator()(const macro_node&) const
     {
         os << indentation << "macro\n";
     }
-    void operator()(const proc_symbol&) const
-    {
-        os << indentation << "proc\n";
-    }
 };
 
-ostream& print_symbol(ostream& os, const symbol& s, compilation_context& context)
+ostream& operator<<(ostream& os, const node& s)
 {
-    s.visit(print_symbol_visitor{os, "", context});
+    string indent = "";
+    s.visit(print_node_visitor{os, indent});
     return os;
 }

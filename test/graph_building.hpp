@@ -95,6 +95,9 @@ struct list
         node* arr[] = {(&nodes)...};
         n = &graph().create_list({arr, arr + sizeof...(Types)});
     }
+    list(const list& l)
+      : list{static_cast<list_node&>(l)}
+    {}
 
     operator list_node&() const
     {

@@ -70,10 +70,12 @@ BOOST_AUTO_TEST_CASE(parse_file_test1)
     node* got = parse_file(s);
     BOOST_CHECK(got);
     
-    node& expected = list{
+    node& expected = list
+    {
         list{ref{"abcde"}, list{}, ref{"fer"}},
         list{ref{"fj"}},
-        list{ref{"+-*"}, lit{"123"}}};
+        list{ref{"+-*"}, lit{"123"}}
+    };
     
     BOOST_CHECK(structurally_equal(*got, expected));
 }
@@ -93,6 +95,5 @@ BOOST_AUTO_TEST_CASE(parse_file_test2)
     };
     
     BOOST_CHECK(structurally_equal(*got, expected));
-    
 }
 
