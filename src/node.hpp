@@ -10,6 +10,7 @@
 #include <vector>
 #include <initializer_list>
 #include <memory>
+#include <iterator>
 
 enum class node_type
 {
@@ -173,18 +174,18 @@ public:
     {
         return rangeify(begin_, end_);
     }
-    node* refered() const
+    const node* refered() const
     {
         return refered_;
     }
-    void refered(node* new_refered)
+    void refered(const node* new_refered)
     {
         refered_ = new_refered;
     }
 private:
     char* begin_;
     char* end_;
-    node* refered_;
+    const node* refered_;
 };
 
 class list_node
@@ -199,16 +200,64 @@ public:
         end_(end)
     {}
 
-    typedef node** iterator;
-    node** begin() const // TODO: const correctness
+    struct iterator
     {
-        return begin_;
-    }
-    node** end() const
-    {
-        return end_;
-    }
+        node** pos;
 
+        iterator& operator++()
+        {
+            ++pos;
+            return *this;
+        }
+        iterator operator+(std::size_t distance)
+        {
+            return iterator{pos + distance};
+        }
+        
+        node& operator*() const
+        {
+            return **pos;
+        }
+        node* operator->() const
+        {
+            return *pos;
+        }
+
+        bool operator==(const iterator& that) const
+        {
+            return pos == that.pos;
+        }
+        bool operator!=(const iterator& that) const
+        {
+            return !(*this == that);
+        }
+    };
+    iterator begin() const
+    {
+        return {begin_};
+    }
+    iterator end() const
+    {
+        return {end_};
+    }
+    
+    bool empty() const
+    {
+        return begin_ == end_;
+    }
+    std::size_t size() const
+    {
+        return std::distance(begin_, end_);
+    }
+    node& operator[](std::size_t index)
+    {
+        assert(index < size());
+        return **(begin_ + index);
+    }
+    const node& operator[](std::size_t index) const
+    {
+        return const_cast<list_node&>(*this)[index];
+    }
 private:
     node** begin_;
     node** end_;
@@ -243,7 +292,7 @@ ReturnType node::visit(FunctorType&& functor)
     }
 }
 
-inline bool structurally_equal(node& lhs, node& rhs)
+inline bool structurally_equal(const node& lhs, const node& rhs)
 {
     if(lhs.type() != rhs.type())
         return false;
@@ -269,9 +318,9 @@ inline bool structurally_equal(node& lhs, node& rhs)
             return false;
         
         bool is_equal = true;
-        for_each(zipped(lhs_range, rhs_range), unpacking([&](node* lhs_node, node* rhs_node)
+        for_each(zipped(lhs_range, rhs_range), unpacking([&](const node& lhs_node, const node& rhs_node)
         {
-            is_equal = (is_equal && structurally_equal(*lhs_node, *rhs_node));
+            is_equal = (is_equal && structurally_equal(lhs_node, rhs_node));
         }));
         return is_equal;
     }        

@@ -6,8 +6,19 @@
 
 #include <utility>
 
+namespace range_comparison_detail
+{
+
+template<class, class>
+struct sfinae_helper
+{
+    typedef bool type;
+};
+
+}
+
 template<class LhsRange, class RhsRange>
-bool operator==(LhsRange lhs, RhsRange rhs)
+typename range_comparison_detail::sfinae_helper<decltype(std::declval<LhsRange>().front()), decltype(std::declval<RhsRange>().front())>::type operator==(LhsRange lhs, RhsRange rhs)
 {
     bool result = true;
     for_each(zipped(lhs, rhs), unpacking([&](auto&& lhs_obj, auto&& rhs_obj)

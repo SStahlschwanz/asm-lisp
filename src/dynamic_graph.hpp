@@ -15,6 +15,8 @@ public:
     lit_node& create_lit(std::string str);
     ref_node& create_ref(std::string str);
     list_node& create_list(std::vector<node*> nodes);
+
+    void add(dynamic_graph);
 private:
     typedef std::pair<lit_node, std::string> lit_data;
     typedef std::pair<ref_node, std::string> ref_data;

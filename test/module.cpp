@@ -10,36 +10,32 @@ using std::unordered_map;
 using std::string;
 using std::vector;
 
-typedef lit_symbol lit;
-typedef ref_symbol ref;
-typedef list_symbol list;
+ref_node& export_st = ref("export");
+ref_node& import = ref{"import"};
+ref_node& from = ref{"from"};
+ref_node& def = ref{"def"};
 
-const ref export_st{"export"_id};
-const ref import{"import"_id};
-const ref from{"from"_id};
-const ref def{"def"_id};
+lit_node& mod1 = lit{"mod1"};
+lit_node& mod2 = lit{"mod2"};
 
-const lit mod1{"mod1"};
-const lit mod2{"mod2"};
+ref_node& a = ref{"a"};
+ref_node& b = ref{"b"};
+ref_node& c = ref{"c"};
 
-const ref a{"a"_id};
-const ref b{"b"_id};
-const ref c{"c"_id};
+ref_node& x = ref{"x"};
+ref_node& y = ref{"y"};
+ref_node& z = ref{"z"};
 
-const ref x{"x"_id};
-const ref y{"y"_id};
-const ref z{"z"_id};
-
-const list_symbol mod1_tree = list
+list_node& mod1_tree = list
 {
     list{export_st, a, b, c},
     list{def, a, list{}},
     list{def, b, list{lit{"bb"}}},
     list{def, c, list{}}
 };
-const export_statement mod1_export1{mod1_tree[0].cast<list>()};
+export_statement mod1_export1{mod1_tree[0].cast<list_node>()};
 
-const list_symbol mod2_tree = list
+list_node& mod2_tree = list
 {
     list{import, list{a, c}, from, mod1},
     list{export_st, x, y},
@@ -49,27 +45,27 @@ const list_symbol mod2_tree = list
     list{def, y, list{b}},
     list{def, z, list{}}
 };
-const import_statement mod2_import1{
-        mod2_tree[0].cast<list>(),
-        mod2_tree[0].cast<list>()[3].cast<lit>(),
-        mod2_tree[0].cast<list>()[1].cast<list>()};
-const import_statement mod2_import2{
-        mod2_tree[2].cast<list>(),
-        mod2_tree[2].cast<list>()[3].cast<lit>(),
-        mod2_tree[2].cast<list>()[1].cast<list>()};
-const export_statement mod2_export1{mod2_tree[1].cast<list>()};
-const export_statement mod2_export2{mod2_tree[3].cast<list>()};
+import_statement mod2_import1{
+        mod2_tree[0].cast<list_node>(),
+        mod2_tree[0].cast<list_node>()[3].cast<lit_node>(),
+        mod2_tree[0].cast<list_node>()[1].cast<list_node>()};
+import_statement mod2_import2{
+        mod2_tree[2].cast<list_node>(),
+        mod2_tree[2].cast<list_node>()[3].cast<lit_node>(),
+        mod2_tree[2].cast<list_node>()[1].cast<list_node>()};
+export_statement mod2_export1{mod2_tree[1].cast<list_node>()};
+export_statement mod2_export2{mod2_tree[3].cast<list_node>()};
 
 
 bool operator==(const export_statement& lhs, const export_statement& rhs)
 {
-    return lhs.statement == rhs.statement;
+    return structurally_equal(lhs.statement, rhs.statement);
 }
 bool operator==(const import_statement& lhs, const import_statement& rhs)
 {
-    return lhs.statement == rhs.statement && 
-            lhs.imported_module == rhs.imported_module &&
-            lhs.import_list == rhs.import_list;
+    return structurally_equal(lhs.statement, rhs.statement) &&
+        structurally_equal(lhs.statement, rhs.statement) &&
+        structurally_equal(lhs.import_list, rhs.import_list);
 }
 
 BOOST_AUTO_TEST_CASE(header_test)
@@ -93,10 +89,10 @@ BOOST_AUTO_TEST_CASE(header_test)
     BOOST_CHECK(mod2_header.exports[1] == mod2_export2);
     
 
-    unordered_map<string, vector<symbol_source>> mod1_imported_modules = imported_modules(mod1_header);
+    unordered_map<string, vector<node_source>> mod1_imported_modules = imported_modules(mod1_header);
     BOOST_CHECK(mod1_imported_modules.empty());
 
-    unordered_map<string, vector<symbol_source>> mod2_imported_modules = imported_modules(mod2_header);
+    unordered_map<string, vector<node_source>> mod2_imported_modules = imported_modules(mod2_header);
     BOOST_CHECK(mod2_imported_modules.size() == 1);
     BOOST_CHECK(mod2_imported_modules.count("mod1"));
 }

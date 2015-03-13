@@ -20,10 +20,10 @@ auto enumerate(Range r)
 template<class Iterator>
 class iterator_range
 {
-  private:
+private:
     Iterator pos;
     Iterator end;
-  public:
+public:
     iterator_range(Iterator begin, Iterator end)
     : pos(begin),
       end(end)
@@ -83,12 +83,12 @@ iterator_range<Iterator> rangeify(Iterator begin, Iterator end)
     return iterator_range<Iterator>{begin, end};
 }
 template<class Container>
-iterator_range<typename Container::iterator> rangeify(Container& container)
+auto rangeify(Container& container)
 {
     return rangeify(container.begin(), container.end());
 }
 template<class Container>
-iterator_range<typename Container::iterator> rangeify(const Container& container)
+auto rangeify(const Container& container)
 {
     return rangeify(container.begin(), container.end());
 }

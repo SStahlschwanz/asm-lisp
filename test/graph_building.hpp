@@ -3,6 +3,8 @@
 
 #include "../src/dynamic_graph.hpp"
 
+#include <iterator>
+
 inline dynamic_graph& create_graph()
 {
     static std::vector<std::unique_ptr<dynamic_graph>> graphs;
@@ -87,14 +89,11 @@ struct ref
 struct list
   : graph_build_base
 {
-    list(std::initializer_list<graph_build_base> l)
+    template<class... Types>
+    list(Types&&... nodes)
     {
-        auto node_range = mapped(rangeify(l), [&](graph_build_base b)
-        {
-            return b.n;
-        });
-        auto vec = save<std::vector<node*>>(node_range);
-        n = &graph().create_list(vec);
+        node* arr[] = {(&nodes)...};
+        n = &graph().create_list({arr, arr + sizeof...(Types)});
     }
 
     operator list_node&() const

@@ -4,8 +4,6 @@
 #include <memory>
 #include <utility>
 
-#include "symbol.hpp"
-
 namespace llvm
 {
 class Module;

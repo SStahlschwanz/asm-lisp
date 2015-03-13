@@ -2,7 +2,7 @@
 
 #include "error/import_export_error.hpp"
 #include "error/evaluate_error.hpp"
-#include "core_utils.hpp"
+//#include "core_utils.hpp"
 
 #include <string>
 
@@ -21,20 +21,20 @@ using std::string;
 using boost::optional;
 using boost::none;
 
-using namespace symbol_shortcuts;
-
-bool is_export_statement(const list_symbol& statement)
+bool is_export_statement(const list_node& statement)
 {
-    return !statement.empty() && statement[0].is<ref>() &&
-            statement[0].cast<ref>().identifier() == static_cast<size_t>(identifier_ids::EXPORT);
+    static const string export_str = "export";
+    return !statement.empty() && statement[0].is<ref_node>() &&
+            statement[0].cast<ref_node>().identifier() == rangeify(export_str);
 }
-bool is_import_statement(const list_symbol& statement)
+bool is_import_statement(const list_node& statement)
 {
-    return !statement.empty() && statement[0].is<ref>() &&
-            statement[0].cast<ref>().identifier() == static_cast<size_t>(identifier_ids::IMPORT);
+    static const string import_str = "import";
+    return !statement.empty() && statement[0].is<ref_node>() &&
+            statement[0].cast<ref_node>().identifier() == rangeify(import_str);
 }
 
-optional<import_statement> parse_import(const list_symbol& statement)
+optional<import_statement> parse_import(const list_node& statement)
 {
     using namespace import_export_error;
     if(!is_import_statement(statement))
@@ -43,25 +43,26 @@ optional<import_statement> parse_import(const list_symbol& statement)
     if(statement.size() != 4)
         fatal<id("import_invalid_argument_number")>(statement.source(), statement.size() - 1);
     
-    const list_symbol& import_list = statement[1].cast_else<list>([&]()
+    const list_node& import_list = statement[1].cast_else<list_node>([&]()
     {
         fatal<id("invalid_import_list")>(statement[1].source());
     });
     
-    for(const symbol& import : import_list)
+    for(const node& import : import_list)
     {
-        if(!import.is<ref>())
+        if(!import.is<ref_node>())
             fatal<id("invalid_imported_identifier")>(import.source());
     }
     
-    const ref_symbol& from_token = statement[2].cast_else<ref>([&]()
+    const ref_node& from_token = statement[2].cast_else<ref_node>([&]()
     {
         fatal<id("invalid_from_token")>(statement[2].source());
     });
-    if(from_token.identifier() != static_cast<size_t>(identifier_ids::FROM))
+    static const string from_str = "from";
+    if(from_token.identifier() != rangeify(from_str))
         fatal<id("invalid_from_token")>(statement[2].source());
 
-    const lit_symbol& imported_module = statement[3].cast_else<lit_symbol>([&]()
+    const lit_node& imported_module = statement[3].cast_else<lit_node>([&]()
     {
         fatal<id("invalid_imported_module")>(statement[3].source());
     });
@@ -69,7 +70,7 @@ optional<import_statement> parse_import(const list_symbol& statement)
     return import_statement{statement, imported_module, import_list};
 }
 
-optional<export_statement> parse_export(const list_symbol& statement)
+optional<export_statement> parse_export(const list_node& statement)
 {
     if(!is_export_statement(statement))
         return none;
@@ -77,12 +78,12 @@ optional<export_statement> parse_export(const list_symbol& statement)
     return export_statement{statement};
 }
 
-module_header read_module_header(const list_symbol& syntax_tree)
+module_header read_module_header(const list_node& syntax_tree)
 {
     module_header header;
-    for(const symbol& s : syntax_tree)
+    for(const node& s : syntax_tree)
     {
-        const list_symbol& statement = s.cast<list>();
+        const list_node& statement = s.cast<list_node>();
         if(optional<import_statement> import = parse_import(statement))
             header.imports.push_back(std::move(*import));
         else if(optional<export_statement> export_st = parse_export(statement))
@@ -93,13 +94,12 @@ module_header read_module_header(const list_symbol& syntax_tree)
     return header;
 }
 
-unordered_map<string, vector<symbol_source>> imported_modules(const module_header& header)
+unordered_map<string, vector<node_source>> imported_modules(const module_header& header)
 {
-    unordered_map<string, vector<symbol_source>> result;
+    unordered_map<string, vector<node_source>> result;
     for(const import_statement& import : header.imports)
-    {
-        result[(string)import.imported_module].push_back(import.statement.source());
-    }
+        result[save<string>(rangeify(import.imported_module))].push_back(import.statement.source());
+
     return result;
 }
 
@@ -110,14 +110,14 @@ symbol_table initial_symbol_table(const module_header& header, function<const mo
     for(const import_statement& import : header.imports)
     {
         const module& imported_module = get_module_func(import);
-        for(const symbol& s : import.import_list)
+        for(const node& s : import.import_list)
         {
-            // s.cast<ref>() checked by parse_import
-            const auto& imported_identifier = s.cast<ref>().identifier();
+            // s.cast<ref_node>() checked by parse_import
+            auto imported_identifier = save<string>(s.cast<ref_node>().identifier());
             auto symbol_find_it = imported_module.exports.find(imported_identifier);
             if(symbol_find_it == imported_module.exports.end())
                 fatal<id("symbol_not_found")>(s.source());
-            table[imported_identifier] = symbol_find_it->second;
+            table.insert({imported_identifier, symbol_find_it->second});
         }
     }
     return table;
@@ -134,8 +134,8 @@ void remove_not_exported(symbol_table& table, const module_header& header)
                     exports_it != export_st.statement.end();
                     ++exports_it)
             {
-                const auto& exported_identifier = exports_it->cast<ref>().identifier();
-                if(identifier == exported_identifier)
+                const auto& exported_identifier = exports_it->cast<ref_node>().identifier();
+                if(rangeify(identifier) == exported_identifier)
                 {
                     ++it;
                     goto is_exported;
@@ -147,25 +147,24 @@ void remove_not_exported(symbol_table& table, const module_header& header)
     }
 }
 
-void dispatch_references(symbol& s, const symbol_table& table,
-        vector<unique_ptr<any_symbol>>& evaluated_symbols, compilation_context& context)
+void dispatch_references(node& s, const symbol_table& table)
 {
-    if(s.is<ref>())
+    if(s.is<ref_node>())
     {
-        ref_symbol& r = s.cast<ref>();
-        auto find_it = table.find(r.identifier());
+        ref_node& r = s.cast<ref_node>();
+        auto find_it = table.find(save<string>(r.identifier()));
         if(find_it != table.end())
-            r.refered(find_it->second);
+            r.refered(&find_it->second);
     }
-    else if(s.is<list>())
+    else if(s.is<list_node>())
     {
-        list_symbol& l = s.cast<list>();
-        for(symbol& child : l)
-            dispatch_references(child, table, evaluated_symbols, context);
+        list_node& l = s.cast<list_node>();
+        for(node& child : l)
+            dispatch_references(child, table);
     }
 }
 
-module evaluate_module(list_symbol syntax_tree, const module_header& header, function<const module&(const import_statement&)> get_module_func, compilation_context& context)
+module evaluate_module(list_node& syntax_tree, dynamic_graph graph_owner, const module_header& header, function<const module& (const import_statement&)> get_module_func, compilation_context& context)
 {
     using namespace evaluate_error;
     symbol_table table = initial_symbol_table(header, get_module_func);
@@ -173,61 +172,62 @@ module evaluate_module(list_symbol syntax_tree, const module_header& header, fun
     size_t header_size = header.imports.size() + header.exports.size();
     assert(header_size <= syntax_tree.size());
 
-    vector<unique_ptr<any_symbol>> evaluated_symbols;
+    dynamic_graph node_owner;
 
-    auto evaluate_macro = [&](list_symbol::const_iterator begin, list_symbol::const_iterator end) -> pair<any_symbol, vector<unique_ptr<any_symbol>>>
+    auto evaluate_macro = [&](auto node_range) -> pair<node&, dynamic_graph>
     {
-        assert(begin != end);
-        const symbol& resolved_first = resolve_refs(*begin);
-        const macro_symbol& macro = resolved_first.cast_else<macro_symbol>([&]
+        dynamic_graph graph;
+        auto node_ptr_range = mapped(node_range, [](node& n)
         {
-            fatal<id("not_a_macro")>(resolved_first.source());
+            return &n;
         });
-        ++begin;
-        return macro(begin, end);
+        list_node& l = graph.create_list(save<vector<node*>>(node_ptr_range));
+        return {l, move(graph)};
     };
 
     for(auto it = syntax_tree.begin() + header_size; it != syntax_tree.end(); ++it)
     {
-        list_symbol& statement = it->cast<list>();
+        list_node& statement = it->cast<list_node>();
         if(statement.empty())
             fatal<id("empty_top_level_statement")>(statement.source());
         
-        ref_symbol& command = statement[0].cast_else<ref>([&]()
+        ref_node& command = statement[0].cast_else<ref_node>([&]()
         {
             fatal<id("invalid_command")>(statement[0].source());
         });
-
-        if(command.identifier() == static_cast<size_t>(identifier_ids::DEF))
+        
+        static const string def_str = "def";
+        if(command.identifier() == rangeify(def_str))
         {
             if(statement.size() < 3)
                 fatal<id("def_invalid_argument_number")>(statement.source());
 
-            const ref_symbol& defined = statement[1].cast_else<ref>([&]()
+            const ref_node& defined = statement[1].cast_else<ref_node>([&]()
             {
                 fatal<id("invalid_defined_symbol")>(statement[1].source());
             });
             for(auto argument_it = statement.begin() + 2; argument_it != statement.end(); ++argument_it)
-                dispatch_references(*argument_it, table, evaluated_symbols, context);
+                dispatch_references(*argument_it, table);
             
-            auto p = evaluate_macro(statement.begin() + 2, statement.end());
-            any_symbol& result = p.first;
-            vector<unique_ptr<any_symbol>>& symbol_store = p.second;
-            move(symbol_store.begin(), symbol_store.end(), back_inserter(evaluated_symbols));
-            evaluated_symbols.push_back(make_unique<any_symbol>(move(result)));
-            const symbol* definition = evaluated_symbols.back().get();
+            auto p = evaluate_macro(rangeify(statement.begin() + 2, statement.end()));
+            node& definition = p.first;
+            dynamic_graph& graph = p.second;
+            
+            graph_owner.add(move(graph));
             
             bool was_inserted;
-            tie(ignore, was_inserted) = table.insert({defined.identifier(), definition});
+            tie(ignore, was_inserted) = table.insert({save<string>(defined.identifier()), definition});
             if(!was_inserted)
                 fatal<id("duplicate_definition")>(defined.source());
         }
-        else if(command.identifier() == static_cast<size_t>(identifier_ids::IMPORT))
+        else if(is_import_statement(statement))
             import_export_error::fatal<import_export_error::id("import_after_header")>(statement.source());
-        else if(command.identifier() == static_cast<size_t>(identifier_ids::EXPORT))
+        else if(is_export_statement(statement))
             import_export_error::fatal<import_export_error::id("export_after_header")>(statement.source());
+        else
+            throw not_implemented{"macro execution without def"};
     }
 
     remove_not_exported(table, header);
-    return module{move(syntax_tree), move(table), move(evaluated_symbols)};
+    return module{move(graph_owner), move(table)};
 }
