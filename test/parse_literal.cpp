@@ -9,17 +9,17 @@
 
 #include "state_utils.hpp"
 
-using boost::optional;
+using std::string;
 
 BOOST_AUTO_TEST_CASE(standard)
 {
     state s = make_state("\"abc\"");
 
-    optional<lit_symbol> got = parse_literal(s);
+    lit_node* got = parse_literal(s);
     BOOST_CHECK(got);
-    lit_symbol expected = lit_symbol("abc");
+    string expected = "abc";
     
-    BOOST_CHECK(*got == expected);
+    BOOST_CHECK(rangeify(expected) == rangeify(*got));
     BOOST_CHECK(remaining(s) == "");
 }
 
@@ -27,11 +27,11 @@ BOOST_AUTO_TEST_CASE(digits)
 {
     state s = make_state("912fas31");
 
-    optional<lit_symbol> got = parse_literal(s);
+    lit_node* got = parse_literal(s);
     BOOST_CHECK(got);
-    lit_symbol expected = lit_symbol("912");
+    string expected = "912";
     
-    BOOST_CHECK(*got == expected);
+    BOOST_CHECK(rangeify(*got) == rangeify(expected));
     BOOST_CHECK(remaining(s) == "fas31");
 }
 
@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(no_literal)
 {
     state s = make_state("abc");
 
-    optional<lit_symbol> got = parse_literal(s);
+    lit_node* got = parse_literal(s);
     BOOST_CHECK(!got);
     BOOST_CHECK(remaining(s) == "abc");
 }

@@ -1,9 +1,9 @@
 #ifndef PARSE_REFERENCE_HPP_
 #define PARSE_REFERENCE_HPP_
 
-#include "symbol.hpp"
+#include "node.hpp"
 
-#include <boost/optional.hpp>
+#include <algorithm>
 
 namespace parse_reference_detail
 {
@@ -26,11 +26,11 @@ inline bool is_operator(char c)
 }
 
 template <class State>
-boost::optional<ref_symbol> parse_reference(State& state)
+ref_node* parse_reference(State& state)
 {
     using namespace parse_reference_detail;
     if(state.empty())
-        return boost::none;
+        return nullptr;
     else if(is_head_word_char(state.front()))
     {
         std::string identifier;
@@ -43,14 +43,9 @@ boost::optional<ref_symbol> parse_reference(State& state)
         }
         
         file_position end = state.position();
-        identifier_id_t identifier_id = state.identifier_id(identifier);
-        #ifdef NDEBUG
-        ref_symbol result{identifier_id};
-        #else
-        ref_symbol result{identifier_id, identifier, 0}; 
-        #endif
-        result.source(file_source{begin, end, state.file()});
-        return result;
+        ref_node& ref = state.graph().create_ref(std::move(identifier));
+        ref.source(file_source{begin, end, state.file()});
+        return &ref;
     }
     else if(is_operator(state.front()))
     {
@@ -64,14 +59,13 @@ boost::optional<ref_symbol> parse_reference(State& state)
         }
 
         file_position end = state.position();
-        identifier_id_t identifier_id = state.identifier_id(identifier);
 
-        ref_symbol result{identifier_id};
-        result.source(file_source{begin, end, state.file()});
-        return result;
+        ref_node& ref = state.graph().create_ref(std::move(identifier));
+        ref.source(file_source{begin, end, state.file()});
+        return &ref;
     }
     else
-        return boost::none;
+        return nullptr;
 }
 
 #endif

@@ -1,7 +1,6 @@
 #ifndef ERROR_UTILS_HPP_
 #define ERROR_UTILS_HPP_
 
-#include "../symbol_source.hpp"
 #include "error_kind.hpp"
 
 #include <boost/variant.hpp>

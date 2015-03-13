@@ -6,11 +6,14 @@ There are cyclic dependencies between different components. Consider
 		List* next;
 	};
 
-Modelling this as a tree would not the situation easier but more complicated
-With arbitrary graphs, the distinction between identity equality and structural equality becomes much more important:
+Modelling this as a tree would not make the situation easier but more complicated.
+With arbitrary graphs, the distinction between identity and structural equality becomes much more important:
 
 	- always cache macro execution results
-	- do not copy any graphs for passing them to macros, need copy-on-write
+	- do not copy any graphs for passing them to macros, need copy-on-write when a macro tries to change them
+	- this makes safing node handles deterministically in memory more complicated - only create valid indizes when symbol_handles are safed to memory
+	- need a new (virtual, in that it shows up as i64 in llvm-ir) type: symbol_handle
 
-Remove square bracket lists and round-comma-lists - they don't offer any advantages
+Remove square bracket lists and round-comma-lists - they don't offer any advantages.
+Allow '[', ',' and ']' in operators.
 

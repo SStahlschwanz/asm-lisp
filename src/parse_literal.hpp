@@ -1,10 +1,8 @@
 #ifndef PARSE_LITERAL_HPP_
 #define PARSE_LITERAL_HPP_
 
-#include "symbol.hpp"
+#include "node.hpp"
 #include "error/parse_error.hpp"
-
-#include <boost/optional.hpp>
 
 namespace parse_literal_detail
 {
@@ -17,17 +15,17 @@ inline bool is_digit(char c)
 }
 
 template <class State>
-boost::optional<lit_symbol> parse_literal(State& state)
+lit_node* parse_literal(State& state)
 {
     using namespace parse_literal_detail;
     using namespace parse_error;
     
     if(state.empty())
-        return boost::none;
+        return nullptr;
     else if(state.front() == '"')
     {
         file_position begin = state.position();
-        lit_symbol result;
+        std::string str;
         
         state.pop_front();
         while(true)
@@ -38,7 +36,7 @@ boost::optional<lit_symbol> parse_literal(State& state)
                 break;
             else
             {
-                result.push_back(state.front());
+                str.push_back(state.front());
                 state.pop_front();
             }
         }
@@ -46,27 +44,30 @@ boost::optional<lit_symbol> parse_literal(State& state)
         state.pop_front();
         
         file_position end = state.position();
-        result.source(file_source{begin, end, state.file()});
-        return result;
+        lit_node& lit = state.graph().create_lit(std::move(str));
+        lit.source(file_source{begin, end, state.file()});
+        return &lit;
     }
     else if(is_digit(state.front()))
     {
         file_position begin = state.position();
-        lit_symbol result;
-        result.push_back(state.front());
+        std::string str;
+        str.push_back(state.front());
         
         state.pop_front();
         while(!state.empty() && is_digit(state.front()))
         {
-            result.push_back(state.front());
+            str.push_back(state.front());
             state.pop_front();
         }
         file_position end = state.position();
-        result.source(file_source{begin, end, state.file()});
-        return result;
+
+        lit_node& lit = state.graph().create_lit(std::move(str));
+        lit.source(file_source{begin, end, state.file()});
+        return &lit;
     }
     else
-        return boost::none;
+        return nullptr;
 }
 
 #endif

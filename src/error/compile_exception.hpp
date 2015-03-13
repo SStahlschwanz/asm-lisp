@@ -8,7 +8,7 @@
 
 #include <boost/variant.hpp>
 
-#include "../symbol_source.hpp"
+#include "../node_source.hpp"
 #include "error_kind.hpp"
 #include "../boost_variant_utils.hpp"
 
@@ -25,7 +25,7 @@ struct code_location
 typedef boost::variant<boost::blank, code_location> error_location;
 
 
-inline error_location to_error_location(const symbol_source& src)
+inline error_location to_error_location(const node_source& src)
 {
     return visit<error_location>(src,
     [&](boost::blank)

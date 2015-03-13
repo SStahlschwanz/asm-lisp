@@ -1,8 +1,8 @@
 #ifndef PARSE_STATE_HPP_
 #define PARSE_STATE_HPP_
 
-#include "symbol_source.hpp"
-#include "compilation_context.hpp"
+#include "dynamic_graph.hpp"
+#include "node_source.hpp"
 
 #include <string>
 #include <cassert>
@@ -19,14 +19,14 @@ private:
     file_position file_pos;
     size_t file_id;
 
-    compilation_context& context;
+    dynamic_graph& graph_;
 public:
-    parse_state(Iterator begin, Iterator end, size_t file_id, compilation_context& context)
+    parse_state(Iterator begin, Iterator end, size_t file_id, dynamic_graph& graph)
       : pos{begin},
         end{end},
         file_pos{0, 0},
         file_id{file_id},
-        context(context)
+        graph_(graph)
     {}
     
     bool empty() const
@@ -64,9 +64,10 @@ public:
     {
         return file_id;
     }
-    identifier_id_t identifier_id(const std::string& str)
+
+    dynamic_graph& graph()
     {
-        return context.identifier_id(str);
+        return graph_;
     }
 };
 
