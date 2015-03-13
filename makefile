@@ -46,6 +46,10 @@ build-dirs:
 	mkdir -p test-build/bin
 	mkdir -p test-build/output
 
+install:
+	cp build/debug/bin /usr/local/bin/asm-lisp
+	chmod +x /usr/local/bin/asm-lisp
+
 # convenience targets
 debug: build/debug/bin
 release: build/release/bin
