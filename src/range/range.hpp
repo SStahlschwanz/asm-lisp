@@ -33,7 +33,7 @@ public:
 
     bool empty() const
     {
-        return obj_ != nullptr;
+        return obj_ == nullptr;
     }
     size_type length() const
     {
@@ -45,7 +45,7 @@ public:
         assert(obj_);
         return *obj_;
     }
-    value_type pop_front()
+    void pop_front()
     {
         assert(obj_);
         obj_ = nullptr;

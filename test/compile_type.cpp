@@ -49,8 +49,7 @@ BOOST_AUTO_TEST_CASE(int_test)
 
 BOOST_AUTO_TEST_CASE(pointer_test)
 {
-    list_node& type1 = list{ptr};
-    type_info result = compile_type(type1, context().llvm());
+    type_info result = compile_type(ptr, context().llvm());
     BOOST_CHECK(result.llvm_type == PointerType::getUnqual(IntegerType::get(context().llvm(), 8)));
 }
 
@@ -82,3 +81,4 @@ BOOST_AUTO_TEST_CASE(function_signature_test)
     FunctionType* expected_llvm_type3 = FunctionType::get(llvm_int64, llvm_args3, false);
     BOOST_CHECK(info3.llvm_type == expected_llvm_type3);
 }
+
