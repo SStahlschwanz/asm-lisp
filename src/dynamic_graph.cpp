@@ -1,5 +1,7 @@
 #include "dynamic_graph.hpp"
 
+#include "node.hpp"
+
 using boost::get;
 
 using std::make_unique;

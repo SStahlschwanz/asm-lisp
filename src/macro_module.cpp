@@ -1,6 +1,4 @@
 #include "macro_module.hpp"
-#include "symbol.hpp"
-#include "indexed_symbol.hpp"
 #include "compilation_context.hpp"
 
 

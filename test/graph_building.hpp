@@ -2,6 +2,7 @@
 #define GRAPH_BUILDING_HPP_
 
 #include "../src/dynamic_graph.hpp"
+#include "../src/node.hpp"
 
 #include <iterator>
 

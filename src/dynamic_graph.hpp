@@ -1,12 +1,18 @@
 #ifndef DYNAMIC_GRAPH_HPP_
 #define DYNAMIC_GRAPH_HPP_
 
-#include "node.hpp"
+//#include "node.hpp"
 
 #include <boost/variant.hpp>
 
 #include <vector>
 #include <memory>
+
+class node;
+class id_node;
+class lit_node;
+class ref_node;
+class list_node;
 
 class dynamic_graph
 {

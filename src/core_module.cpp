@@ -1,10 +1,9 @@
 #include "core_module.hpp"
 
-#include "compile_type.hpp"
-#include "symbol.hpp"
+//#include "compile_type.hpp"
 #include "error/core_misc_error.hpp"
 #include "core_unique_ids.hpp"
-#include "compile_function.hpp"
+//#include "compile_function.hpp"
 
 #include <boost/variant.hpp>
 
@@ -22,9 +21,9 @@ using std::make_unique;
 using std::make_shared;
 using std::size_t;
 using std::move;
-using namespace core_misc_error;
+using std::tie;
+using std::ignore;
 
-using boost::blank;
 
 using llvm::Function;
 using llvm::FunctionType;
@@ -32,26 +31,30 @@ using llvm::Type;
 using llvm::IntegerType;
 using llvm::dyn_cast;
 
+using namespace core_misc_error;
+
 module create_core_module(compilation_context& context)
 {
-    module core;
+    dynamic_graph node_owner;
+    symbol_table exports;
 
-    auto add_symbol = [&](const char* name, symbol&& s)
+    auto add_symbol = [&](string name, node& n)
     {
-        unique_ptr<any_symbol> any = make_unique<any_symbol>(move(s));
-        core.exports[context.identifier_id(name)] = any.get(); 
-        core.evaluated_exports.push_back(move(any));
+        bool was_inserted;
+        tie(ignore, was_inserted) = exports.insert({move(name), n});
+        assert(was_inserted);
     };
-    auto add_id_symbol = [&](const char* name, size_t id)
+    auto add_id_symbol = [&](string name, size_t id)
     {
-        add_symbol(name, id_symbol{id});
+        id_node& node = node_owner.create_id(id);
+        add_symbol(move(name), node);
     };
     auto add_macro_symbol = [&](const char* name, auto func)
     {
-        add_symbol(name, macro_symbol{make_shared<macro_symbol::macro_function>(move(func))});
+        //add_symbol(name, macro_symbol{make_shared<macro_symbol::macro_function>(move(func))});
     };
     
-
+    /*
     size_t next_unique_id = static_cast<size_t>(unique_ids::FIRST_UNUSED);
     auto unique_func = [next_unique_id](list_symbol::const_iterator begin, list_symbol::const_iterator end) mutable -> pair<any_symbol, vector<unique_ptr<any_symbol>>>
     {
@@ -111,6 +114,7 @@ module create_core_module(compilation_context& context)
         return {move(p), vector<unique_ptr<any_symbol>>{}};
     };
     add_macro_symbol("main", main_func);
+    */
 
     add_id_symbol("add", unique_ids::ADD);
     add_id_symbol("sub", unique_ids::SUB);
@@ -157,6 +161,6 @@ module create_core_module(compilation_context& context)
 
     add_id_symbol("let", unique_ids::LET);
 
-    return core;
+    return {move(node_owner), move(exports)};
 }
 

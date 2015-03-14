@@ -4,6 +4,7 @@
 #include "range.hpp"
 #include "node_source.hpp"
 #include "boost_variant_utils.hpp"
+#include "dynamic_graph.hpp"
 
 #include <cstddef>
 #include <cassert>
@@ -292,6 +293,7 @@ ReturnType node::visit(FunctorType&& functor)
     }
 }
 
+// TODO: only works for trees
 inline bool structurally_equal(const node& lhs, const node& rhs)
 {
     if(lhs.type() != rhs.type())
