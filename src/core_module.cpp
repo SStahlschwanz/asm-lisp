@@ -51,7 +51,9 @@ module create_core_module(compilation_context& context)
     };
     auto add_macro_symbol = [&](const char* name, auto func)
     {
-        //add_symbol(name, macro_symbol{make_shared<macro_symbol::macro_function>(move(func))});
+        auto f = make_shared<std::function<macro_node::macro>>(move(func));
+        macro_node& m = node_owner.create_macro(move(f));
+        add_symbol(move(name), m);
     };
     
     /*

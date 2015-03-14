@@ -63,6 +63,15 @@ list_node& dynamic_graph::create_list(vector<node*> nodes)
     return list;
 }
 
+macro_node& dynamic_graph::create_macro()
+{
+    auto storage = make_unique<node_data>(macro_node{{}});
+    macro_node& result = get<macro_node>(*storage);
+    data.push_back(std::move(storage));
+
+    return result;
+}
+
 void dynamic_graph::add(dynamic_graph graph)
 {
     std::move(graph.data.begin(), graph.data.end(), back_inserter(graph.data));

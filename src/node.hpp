@@ -12,6 +12,7 @@
 #include <initializer_list>
 #include <memory>
 #include <iterator>
+#include <functional>
 
 enum class node_type
 {
@@ -270,9 +271,18 @@ class macro_node
 public:
     static constexpr node_type type_id = node_type::MACRO;
 
-    macro_node()
-      : node(type_id)
+    typedef std::pair<node&, dynamic_graph> macro(decltype(rangeify(std::declval<const list_node>())));
+
+    std::pair<node&, dynamic_graph> operator()(decltype(rangeify(std::declval<const list_node>())) r) const
+    {
+        return (*func_)(std::move(r));
+    }
+    macro_node(std::shared_ptr<std::function<macro>> function)
+      : node(type_id),
+        func_(std::move(function))
     {}
+private:
+    std::shared_ptr<std::function<macro>> func_;
 };
 
 template<class ReturnType, class FunctorType>
