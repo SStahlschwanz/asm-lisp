@@ -1,9 +1,8 @@
 #ifndef FUNCTION_BUILDING_HPP_
 #define FUNCTION_BUILDING_HPP_
 
-#include "../src/symbol.hpp"
+#include "../src/node.hpp"
 #include "../src/core_unique_ids.hpp"
-#include "../src/compile_function.hpp"
 #include "../src/error/compile_exception.hpp"
 #include "../src/printing.hpp"
 
@@ -19,8 +18,6 @@
 #include <sstream>
 #include <memory>
 
-using namespace symbol_shortcuts;
-
 using std::unique_ptr;
 using std::tie;
 using std::ignore;
@@ -31,70 +28,71 @@ using llvm::Function;
 using llvm::raw_string_ostream;
 using llvm::verifyFunction;
 
-const id_symbol function_signature{unique_ids::FUNCTION_SIGNATURE};
+id_node& function_signature = id{unique_ids::FUNCTION_SIGNATURE};
 
-const list int64_type{id_symbol{unique_ids::INT}, lit{"64"}};
-const list int1_type{id_symbol{unique_ids::INT}, lit{"1"}};
-const ref symbol_type{"symbol"_id, &int64_type};
-const list sig_int64_2int64{function_signature, list{int64_type, int64_type}, int64_type};
+list_node& int64_type = list{id{unique_ids::INT}, lit{"64"}};
+list_node& int1_type = list{id{unique_ids::INT}, lit{"1"}};
+ref_node& node_type = ref{"symbol", &int64_type};
+list_node& sig_int64_2int64 = list{function_signature, list{int64_type, int64_type}, int64_type};
 
-const ref a{"a"_id};
-const ref b{"b"_id};
-const ref c{"c"_id};
-const ref d{"d"_id};
-const ref e{"e"_id};
-const ref f{"f"_id};
+ref_node& a = ref{"a"};
+ref_node& b = ref{"b"};
+ref_node& c = ref{"c"};
+ref_node& d = ref{"d"};
+ref_node& e = ref{"e"};
+ref_node& f = ref{"f"};
 
-const ref s{"s"_id};
-const ref t{"t"_id};
-const ref u{"u"_id};
-const ref v{"v"_id};
-const ref w{"w"_id};
-const ref x{"x"_id};
-const ref y{"y"_id};
-const ref z{"z"_id};
+ref_node& s = ref{"s"};
+ref_node& t = ref{"t"};
+ref_node& u = ref{"u"};
+ref_node& v = ref{"v"};
+ref_node& w = ref{"w"};
+ref_node& x = ref{"x"};
+ref_node& y = ref{"y"};
+ref_node& z = ref{"z"};
 
-const ref block1{"block1"_id};
-const ref block2{"block2"_id};
-const ref block3{"block3"_id};
-const ref block4{"block4"_id};
+ref_node& block1 = ref{"block1"};
+ref_node& block2 = ref{"block2"};
+ref_node& block3 = ref{"block3"};
+ref_node& block4 = ref{"block4"};
     
-const id_symbol let{unique_ids::LET};
+id_node& let = id{unique_ids::LET};
 
-const id_symbol call{unique_ids::CALL};
+id_node& call = id{unique_ids::CALL};
 
-const list alloc_int64 = {id_symbol{unique_ids::ALLOC}, int64_type};
-const list store_int64 = {id_symbol{unique_ids::STORE}, int64_type};
-const list load_int64 = {id_symbol{unique_ids::LOAD}, int64_type};
-const list add_int64 = {id_symbol{unique_ids::ADD}, int64_type};
-const list sub_int64 = {id_symbol{unique_ids::SUB}, int64_type};
-const list return_int64 = {id_symbol{unique_ids::RETURN}, int64_type};
-const list return_symbol = {id_symbol{unique_ids::RETURN}, symbol_type};
-const list cmp_eq_int64 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::EQ}, int64_type};
-const list cmp_ne_int64 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::NE}, int64_type};
-const list cmp_eq_int1 = {id_symbol{unique_ids::CMP}, id_symbol{unique_ids::EQ}, int1_type};
-const list cond_branch = {id_symbol{unique_ids::COND_BRANCH}};
-const list branch = {id_symbol{unique_ids::BRANCH}};
-const list phi_int64 = {id_symbol{unique_ids::PHI}, int64_type};
+list_node& alloc_int64 = list{id{unique_ids::ALLOC}, int64_type};
+list_node& store_int64 = list{id{unique_ids::STORE}, int64_type};
+list_node& load_int64 = list{id{unique_ids::LOAD}, int64_type};
+list_node& add_int64 = list{id{unique_ids::ADD}, int64_type};
+list_node& sub_int64 = list{id{unique_ids::SUB}, int64_type};
+list_node& return_int64 = list{id{unique_ids::RETURN}, int64_type};
+list_node& return_symbol = list{id{unique_ids::RETURN}, node_type};
+list_node& cmp_eq_int64 = list{id{unique_ids::CMP}, id{unique_ids::EQ}, int64_type};
+list_node& cmp_ne_int64 = list{id{unique_ids::CMP}, id{unique_ids::NE}, int64_type};
+list_node& cmp_eq_int1 = list{id{unique_ids::CMP}, id{unique_ids::EQ}, int1_type};
+list_node& cond_branch = list{id{unique_ids::COND_BRANCH}};
+list_node& branch = list{id{unique_ids::BRANCH}};
+list_node& phi_int64 = list{id{unique_ids::PHI}, int64_type};
 
-const list is_lit = {id_symbol{unique_ids::IS_LIT}};
+list_node& is_lit = list{id{unique_ids::IS_LIT}};
 
-const list lit_create = {id_symbol{unique_ids::LIT_CREATE}};
-const list lit_size = {id_symbol{unique_ids::LIT_SIZE}};
-const list lit_set = {id_symbol{unique_ids::LIT_SET}};
-const list lit_get = {id_symbol{unique_ids::LIT_GET}};
-const list lit_push = {id_symbol{unique_ids::LIT_PUSH}};
-const list lit_pop = {id_symbol{unique_ids::LIT_POP}};
+list_node& lit_create = list{id{unique_ids::LIT_CREATE}};
+list_node& lit_size = list{id{unique_ids::LIT_SIZE}};
+list_node& lit_set = list{id{unique_ids::LIT_SET}};
+list_node& lit_get = list{id{unique_ids::LIT_GET}};
+list_node& lit_push = list{id{unique_ids::LIT_PUSH}};
+list_node& lit_pop = list{id{unique_ids::LIT_POP}};
 
-const list list_create = {id_symbol{unique_ids::LIST_CREATE}};
-const list list_size = {id_symbol{unique_ids::LIST_SIZE}};
-const list list_set = {id_symbol{unique_ids::LIST_SET}};
-const list list_get = {id_symbol{unique_ids::LIST_GET}};
-const list list_push = {id_symbol{unique_ids::LIST_PUSH}};
-const list list_pop = {id_symbol{unique_ids::LIST_POP}};
+list_node& list_create = list{id{unique_ids::LIST_CREATE}};
+list_node& list_size = list{id{unique_ids::LIST_SIZE}};
+list_node& list_set = list{id{unique_ids::LIST_SET}};
+list_node& list_get = list{id{unique_ids::LIST_GET}};
+list_node& list_push = list{id{unique_ids::LIST_PUSH}};
+list_node& list_pop = list{id{unique_ids::LIST_POP}};
 
+/*
 template<class T>
-T* get_compiled_function(const list_symbol& function_source)
+T* get_compiled_function(const list_node& function_source)
 {
     unique_ptr<Function> function_owner;
     try
@@ -122,6 +120,7 @@ T* get_compiled_function(const list_symbol& function_source)
     auto fptr = (T*) context.macro_environment().llvm_engine.getPointerToFunction(function);
     return fptr;
 }
+*/
 
 #endif
 

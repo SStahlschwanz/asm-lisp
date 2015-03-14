@@ -10,11 +10,52 @@
 #include "comparison.hpp"
 
 #include <cstddef>
+#include <cassert>
 
 template<class Range>
 auto enumerate(Range r)
 {
     return zipped(count(0), r);
+}
+
+template<class T>
+class single_object_range
+{
+private:
+    T* obj_;
+public:
+    typedef T& value_type;
+    typedef std::size_t size_type;
+
+    single_object_range(T& obj)
+      : obj_(&obj)
+    {}
+
+    bool empty() const
+    {
+        return obj_ != nullptr;
+    }
+    size_type length() const
+    {
+        return static_cast<std::size_t>(obj_ != nullptr);
+    }
+
+    value_type front() const
+    {
+        assert(obj_);
+        return *obj_;
+    }
+    value_type pop_front()
+    {
+        assert(obj_);
+        obj_ = nullptr;
+    }
+};
+
+template<class T>
+single_object_range<T> static_range(T& obj)
+{
+    return {obj};
 }
 
 template<class Iterator>

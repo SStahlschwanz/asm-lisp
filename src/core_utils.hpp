@@ -1,23 +1,24 @@
 #ifndef CORE_UTILS_HPP_
 #define CORE_UTILS_HPP_
 
-#include "symbol.hpp"
+#include "node.hpp"
 #include "error/core_misc_error.hpp"
 
-inline const symbol& resolve_refs(const symbol& s)
+// TODO: only works for non-cyclic graphs
+inline const node& resolve_refs(const node& n)
 {
     using namespace core_misc_error;
 
-    if(s.is<ref_symbol>())
+    if(n.is<ref_node>())
     {
-        const ref_symbol& r = s.cast<ref_symbol>();
+        const ref_node& r = n.cast<ref_node>();
         if(r.refered() == 0)
-            core_misc_error::fatal<core_misc_error::id("identifier_not_defined")>(s.source());
+            core_misc_error::fatal<core_misc_error::id("identifier_not_defined")>(n.source());
         else
             return resolve_refs(*r.refered());
     }
     else
-        return s;
+        return n;
 }
 
 #endif

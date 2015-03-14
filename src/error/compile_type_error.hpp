@@ -15,7 +15,7 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"invalid_type_constructor_argument_number", ""},
     {"unknown_type_constructor", ""},
     {"int_invalid_argument_number", "invalid number of arguments to 'int': expected 1"},
-    {"int_invalid_argument_symbol", "invalid argument: expected a literal (bit width)"},
+    {"int_invalid_argument_node", "invalid argument: expected a literal (bit width)"},
     {"int_invalid_argument_literal", "invalid bit width: expected a positive integer"},
     {"int_out_of_range_bit_width", "invalid bit width: expected a positive integer"},
     {"invalid_argument_type_list", ""}
