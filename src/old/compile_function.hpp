@@ -1,7 +1,7 @@
 #ifndef COMPILE_FUNCTION_HPP_
 #define COMPILE_FUNCTION_HPP_
 
-#include "symbol.hpp"
+#include "node.hpp"
 #include "compilation_context.hpp"
 #include "compile_type.hpp"
 

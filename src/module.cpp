@@ -166,7 +166,7 @@ void dispatch_references(node& s, const symbol_table& table)
     }
 }
 
-module evaluate_module(list_node& syntax_tree, dynamic_graph graph_owner, const module_header& header, function<const module& (const import_statement&)> get_module_func, compilation_context& context)
+module evaluate_module(list_node& syntax_tree, dynamic_graph graph_owner, const module_header& header, function<const module& (const import_statement&)> get_module_func)
 {
     using namespace evaluate_error;
     symbol_table table = initial_symbol_table(header, get_module_func);

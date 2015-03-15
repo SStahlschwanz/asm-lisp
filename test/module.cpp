@@ -125,17 +125,8 @@ BOOST_AUTO_TEST_CASE(header_test)
     BOOST_CHECK(mod2_imported_modules.count("injected"));
 }
 
-#include <iostream>
-#include "../src/printing.hpp"
-
-using std::cout;
-using std::endl;
-
 BOOST_AUTO_TEST_CASE(simple_definition_test)
 {
-    try
-    {
-
     auto passthrough_function = [](node_range r) -> pair<node&, dynamic_graph>
     {
         dynamic_graph graph;
@@ -166,9 +157,7 @@ BOOST_AUTO_TEST_CASE(simple_definition_test)
     module_header mod1_header = {{mod1_import1}, {mod1_export1}};
     module_header mod2_header = {{mod2_import1, mod2_import2, mod2_import3}, {mod2_export1, mod2_export2}};
     
-    module mod1 = evaluate_module(mod1_tree, dynamic_graph{}, mod1_header, lookup_module, context());
-
-    cout << "mod1 compiled" << endl;
+    module mod1 = evaluate_module(mod1_tree, dynamic_graph{}, mod1_header, lookup_module);
 
     module_map.insert({"mod1", mod1});
 
@@ -176,26 +165,14 @@ BOOST_AUTO_TEST_CASE(simple_definition_test)
     BOOST_CHECK(exports1.size() == 3);
     BOOST_CHECK(exports1.count("a") && exports1.count("b") && exports1.count("c"));
     BOOST_CHECK(structurally_equal(exports1.at("a"), list{}));
-    BOOST_CHECK(structurally_equal(exports1.at("b"), list{lit{"bb"}}));
-    BOOST_CHECK(structurally_equal(exports1.at("c"), list{}));
+    BOOST_CHECK(structurally_equal(exports1.at("b"), list{list{lit{"bb"}}}));
+    BOOST_CHECK(structurally_equal(exports1.at("c"), list{list{}}));
 
-    module mod2 = evaluate_module(mod2_tree, dynamic_graph{}, mod2_header, lookup_module, context());
-    cout << "mod2 compiled" << endl;
+    module mod2 = evaluate_module(mod2_tree, dynamic_graph{}, mod2_header, lookup_module);
     module_map.insert({"mod2", mod2});
     
     auto& exports2 = mod2.exports;
     BOOST_CHECK(exports2.size() == 3);
     BOOST_CHECK(exports2.count("x") && exports2.count("y") && exports2.count("z"));
-
-    }
-    catch(compile_exception& exc)
-    {
-        
-        print(cout, exc, [](size_t){return "";});
-    }
-    
-    // need "((" because of BOOST_CHECK internals (bug?)
-    //BOOST_CHECK(structurally_equal(exports2.at("x"), ref{"a", exports1.at("a")}));
-    //BOOST_CHECK(structurally_equal(exports2.at("y"), list{ref{"b", exports1["b"]}}));
 }
 

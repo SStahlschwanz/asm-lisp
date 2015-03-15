@@ -147,7 +147,7 @@ vector<module> compile_unit(const vector<path>& paths, compilation_context& cont
             return modules[file_id];
         };
 
-        modules.emplace_back(evaluate_module(file.syntax_tree, move(file.graph_owner), move(file.header), lookup_module, context));
+        modules.emplace_back(evaluate_module(file.syntax_tree, move(file.graph_owner), move(file.header), lookup_module));
     }));
 
     return modules;

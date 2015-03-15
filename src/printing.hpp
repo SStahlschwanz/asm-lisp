@@ -9,7 +9,9 @@
 #include "compilation_context.hpp"
 #include "node.hpp"
 
-std::ostream& print(std::ostream& os, const compile_exception& exc, std::function<std::string (std::size_t)> file_id_to_name);
+void print(std::ostream& os, const compile_exception& exc, std::function<std::string (std::size_t)> file_id_to_name);
+std::ostream& operator<<(std::ostream& os, const compile_exception& exc);
+
 std::ostream& operator<<(std::ostream& os, const node& s);
 
 #endif

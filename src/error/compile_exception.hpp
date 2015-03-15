@@ -56,6 +56,12 @@ struct compile_exception
         params{std::forward<ParamTypes>(params)...}
     {}
     
+#ifndef NDEBUG
+    const char* what() const noexcept override;
+    // implemented in printing.cpp
+    // 'leaks' memory (freed when program terminates)
+#endif
+
     error_kind kind;
     std::size_t error_id;
     error_location location;

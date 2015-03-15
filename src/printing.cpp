@@ -127,7 +127,7 @@ string format(const string& format_string, const vector<error_parameter>& parame
     return stream.str();
 }
 
-ostream& print(ostream& os, const compile_exception& exc, function<string (size_t)> file_id_to_name)
+void print(ostream& os, const compile_exception& exc, function<string (size_t)> file_id_to_name)
 {
     const char* error_name;
     const char* error_message_template;
@@ -195,9 +195,28 @@ ostream& print(ostream& os, const compile_exception& exc, function<string (size_
         os << ": " << format(error_message_template, exc.params) << "\n";
     else
         os << ": " << "<" << error_name << ">" << " (missing error message)\n";
+}
+
+ostream& operator<<(ostream& os, const compile_exception& exc)
+{
+    auto file_id_to_name = [](size_t){return "";};
+    print(os, exc, file_id_to_name);
 
     return os;
 }
+
+#ifndef NDEBUG
+const char* compile_exception::what() const noexcept
+{
+    static vector<string> error_strings;
+
+    ostringstream oss;
+    oss << *this << "\n";
+    error_strings.push_back(oss.str());
+
+    return error_strings.back().c_str();
+}
+#endif
 
 struct print_node_visitor
 {

@@ -39,7 +39,7 @@ struct module
     dynamic_graph node_owner;
     symbol_table exports;
 };
-module evaluate_module(list_node& syntax_tree, dynamic_graph graph_owner, const module_header& header, std::function<const module& (const import_statement&)> get_module_func, compilation_context& context);
+module evaluate_module(list_node& syntax_tree, dynamic_graph graph_owner, const module_header& header, std::function<const module& (const import_statement&)> get_module_func);
 
 #endif
 
