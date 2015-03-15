@@ -1,10 +1,11 @@
 #ifndef NODE_HPP_
 #define NODE_HPP_
 
-#include "range.hpp"
 #include "node_source.hpp"
-#include "utils/functor_utils.hpp"
 #include "dynamic_graph.hpp"
+
+#include <mblib/range.hpp>
+#include <mblib/functor.hpp>
 
 #include <cstddef>
 #include <cassert>
