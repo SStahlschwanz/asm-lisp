@@ -264,13 +264,15 @@ private:
     node** end_;
 };
 
+typedef decltype(rangeify(std::declval<const list_node>())) node_range;
+
 class macro_node
   : public node
 {
 public:
     static constexpr node_type type_id = node_type::MACRO;
 
-    typedef std::pair<node&, dynamic_graph> macro(decltype(rangeify(std::declval<const list_node>())));
+    typedef std::pair<node&, dynamic_graph> macro(node_range);
 
     std::pair<node&, dynamic_graph> operator()(decltype(rangeify(std::declval<const list_node>())) r) const
     {
@@ -280,6 +282,15 @@ public:
       : node(type_id),
         func_(std::move(function))
     {}
+
+    const std::shared_ptr<std::function<macro>>& function()
+    {
+        return func_;
+    }
+    void function(std::shared_ptr<std::function<macro>> new_func)
+    {
+        func_ = std::move(new_func);
+    }
 private:
     std::shared_ptr<std::function<macro>> func_;
 };

@@ -22,6 +22,7 @@ using std::string;
 using std::pair;
 using std::ofstream;
 using std::ios;
+using std::size_t;
 
 using llvm::raw_os_ostream;
 using llvm::WriteBitcodeToFile;
@@ -40,20 +41,18 @@ int main(int argc, char** args)
     {
         vector<module> modules = compile_unit(paths, context);
         assert(modules.size() == paths.size());
-        for(size_t i = 0; i != modules.size(); ++i)
+        for_each(zipped(paths, modules), unpacking(
+        [&](const path& p, const module& m)
         {
-            cout << "file " << paths[i].native() << ":" << endl;
-            module& m = modules[i];
-            for(const pair<identifier_id_t, const symbol*>& exp : m.exports)
+            cout << "file " << p.native() << ":" << endl;
+            for_each(m.exports, unpacking(
+            [&](const string& identifier, const node& n)
             {
-                const string& identifier = context.to_string(exp.first);
-                const symbol& s = *exp.second;
-                cout << identifier << " defined as" << endl;
-                print_symbol(cout, s, context);
-                cout << endl;
-            }
+                cout << identifier << " defined as\n";
+                cout << n;
+            }));
             cout << endl;
-        }
+        }));
     }
     catch(const compile_exception& exc)
     {
@@ -62,11 +61,11 @@ int main(int argc, char** args)
             assert(file_id < paths.size());
             return paths[file_id].native();
         };
-        print_error(cerr, exc, file_id_to_name);
+        print(cerr, exc, file_id_to_name);
     }
 
     raw_os_ostream llvm_cerr{cerr};
-    assert(!verifyModule(context.runtime_module(), &llvm_cerr)); // yes, this returns false, if module is actually correct
+    assert(!verifyModule(context.runtime_module(), &llvm_cerr)); // yes, this returns false when module is actually correct
 
     ofstream output{"output.bc", ios::binary};
     raw_os_ostream llvm_output{output};

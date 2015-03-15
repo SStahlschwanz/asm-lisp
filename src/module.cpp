@@ -177,12 +177,13 @@ module evaluate_module(list_node& syntax_tree, dynamic_graph graph_owner, const 
 
     auto evaluate_macro = [&](auto node_range) -> pair<node&, dynamic_graph>
     {
+        // TODO: this is just temporary
         dynamic_graph graph;
-        auto node_ptr_range = mapped(node_range, [](node& n)
+        auto node_ptrs = save<vector<node*>>(mapped(node_range, [](node& n)
         {
             return &n;
-        });
-        list_node& l = graph.create_list(save<vector<node*>>(node_ptr_range));
+        }));
+        list_node& l = graph.create_list(move(node_ptrs));
         return {l, move(graph)};
     };
 
@@ -207,8 +208,11 @@ module evaluate_module(list_node& syntax_tree, dynamic_graph graph_owner, const 
             {
                 fatal<id("invalid_defined_symbol")>(statement[1].source());
             });
-            for(auto argument_it = statement.begin() + 2; argument_it != statement.end(); ++argument_it)
-                dispatch_references(*argument_it, table);
+            auto argument_range = rangeify(statement.begin() + 2, statement.end());
+            for_each(argument_range, [&](node& n)
+            {
+                dispatch_references(n, table);
+            });
             
             auto p = evaluate_macro(rangeify(statement.begin() + 2, statement.end()));
             node& definition = p.first;

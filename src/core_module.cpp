@@ -24,12 +24,13 @@ using std::move;
 using std::tie;
 using std::ignore;
 
-
 using llvm::Function;
 using llvm::FunctionType;
 using llvm::Type;
 using llvm::IntegerType;
 using llvm::dyn_cast;
+
+using boost::blank;
 
 using namespace core_misc_error;
 
@@ -52,20 +53,23 @@ module create_core_module(compilation_context& context)
     auto add_macro_symbol = [&](const char* name, auto func)
     {
         auto f = make_shared<std::function<macro_node::macro>>(move(func));
-        macro_node& m = node_owner.create_macro(move(f));
+        macro_node& m = node_owner.create_macro();
+        m.function(move(f));
         add_symbol(move(name), m);
     };
     
-    /*
     size_t next_unique_id = static_cast<size_t>(unique_ids::FIRST_UNUSED);
-    auto unique_func = [next_unique_id](list_symbol::const_iterator begin, list_symbol::const_iterator end) mutable -> pair<any_symbol, vector<unique_ptr<any_symbol>>>
+    auto unique_func = [next_unique_id](node_range nodes) mutable -> pair<node&, dynamic_graph>
     {
-        if(begin != end)
+        if(!nodes.empty())
             fatal<id("unique_invalid_argument_number")>(blank());
-        return {id_symbol{next_unique_id++}, vector<unique_ptr<any_symbol>>{}};
+        dynamic_graph graph;
+        id_node& id = graph.create_id(next_unique_id++);
+        return {id, move(graph)};
     };
     add_macro_symbol("unique", unique_func);
     
+    /*
     auto macro_func = [&context](list_symbol::const_iterator begin, list_symbol::const_iterator end) -> pair<any_symbol, vector<unique_ptr<any_symbol>>>
     {
         return {compile_macro(begin, end, context), vector<unique_ptr<any_symbol>>{}};
