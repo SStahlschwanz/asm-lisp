@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE(compile_signature_test)
     {
         list{a, int64_type},
         list{b, int64_type},
-        list{c, int64_type},
+        list{c, int64_type}
     };
     const any_symbol return_type1 = int64_type;
     

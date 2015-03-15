@@ -1,11 +1,14 @@
 #ifndef RANGE_UTILS_HPP_
 #define RANGE_UTILS_HPP_
 
+#include "range_traits.hpp"
+
 #include <cstddef>
 
-template<class Range, class Visitor>
-void for_each(Range range, Visitor visitor)
+template<class Rangeifiable, class Visitor>
+void for_each(Rangeifiable&& obj, Visitor&& visitor)
 {
+    as_range<Rangeifiable> range(obj);
     while(!range.empty())
     {
         visitor(range.front());
@@ -13,9 +16,9 @@ void for_each(Range range, Visitor visitor)
     }
 }
 template<class Range>
-std::size_t length(const Range r)
+size_type_t<Range> length(const Range r)
 {
-    typename Range::size_type result = 0;
+    size_type_t<Range> result = 0;
     for_each(r, [&](auto&)
     {
         ++result;
@@ -23,12 +26,11 @@ std::size_t length(const Range r)
     return result;
 }
 template<class Range>
-typename Range::value_type at(Range r, typename Range::size_type i)
+decltype(auto) at(Range r, size_type_t<Range> index)
 {
-    r.pop_front(i);
+    r.pop_front(index);
     return r.front();
 }
-
 
 #endif
 

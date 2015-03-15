@@ -5,6 +5,8 @@
 #include "state_utils.hpp"
 #include "../src/compile_unit.hpp"
 
+#include "context.hpp"
+
 #include <boost/filesystem.hpp>
 
 using std::vector;
@@ -13,37 +15,36 @@ using std::pair;
 using boost::filesystem::path;
 using boost::filesystem::current_path;
 
-using namespace symbol_shortcuts;
 
 BOOST_AUTO_TEST_CASE(read_files_test)
 {
     vector<path> paths = {"test-res/a/a.al", "test-res/b/b.al"};
-    vector<pair<list, module_header>> files = read_files(paths, context);
-    BOOST_CHECK_EQUAL(files.size(), 2);
+    auto parsed_files = save<vector<parsed_file>>(mapped(enumerate(paths), unpacking(read_file)));
+    BOOST_CHECK_EQUAL(parsed_files.size(), 2);
     
-    const ref export_st{"export"_id};
-    const ref import{"import"_id};
-    const ref from{"from"_id};
-    const ref def{"def"_id};
-    const ref a{"a"_id};
-    const ref b{"b"_id};
-    const ref c{"c"_id};
-    const ref d{"d"_id};
+    ref_node& export_st = ref{"export"};
+    ref_node& import = ref{"import"};
+    ref_node& from = ref{"from"};
+    ref_node& def = ref{"def"};
+    ref_node& a = ref{"a"};
+    ref_node& b = ref{"b"};
+    ref_node& c = ref{"c"};
+    ref_node& d = ref{"d"};
 
-    const list a_syntax_tree = list{
+    list_node& a_syntax_tree = list{
         list{export_st, a, b, c},
         list{def, a, list{}},
         list{def, b, list{}},
         list{def, c, a}
     };
-    const list b_syntax_tree = list{
+    list_node& b_syntax_tree = list{
         list{import, list{a, b , c}, from, lit{"../a/a"}},
         list{export_st, d},
         list{def, d, c}
     };
 
-    BOOST_CHECK(a_syntax_tree == files[0].first);
-    BOOST_CHECK(b_syntax_tree == files[1].first);
+    BOOST_CHECK(structurally_equal(a_syntax_tree, parsed_files[0].syntax_tree));
+    BOOST_CHECK(structurally_equal(b_syntax_tree, parsed_files[1].syntax_tree));
 }
 
 BOOST_AUTO_TEST_CASE(toposort_test)

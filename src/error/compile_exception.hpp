@@ -10,7 +10,7 @@
 
 #include "../node_source.hpp"
 #include "error_kind.hpp"
-#include "../boost_variant_utils.hpp"
+#include "../utils/boost_variant_utils.hpp"
 
 namespace llvm
 {

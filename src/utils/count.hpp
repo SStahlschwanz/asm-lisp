@@ -1,6 +1,8 @@
 #ifndef COUNT_HPP_
 #define COUNT_HPP_
 
+#include "range_traits.hpp"
+
 #include <cstddef>
 
 class counting_range
@@ -8,6 +10,7 @@ class counting_range
 public:
     typedef std::size_t value_type;
     typedef std::size_t size_type;
+    typedef range_tag range_tag;
 private:
     std::size_t i;
 public:

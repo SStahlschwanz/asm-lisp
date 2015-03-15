@@ -18,201 +18,218 @@
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/IRBuilder.h>
 
-struct named_value_info
+namespace instruction
 {
-    const list_symbol& definition;
-    const ref_symbol& name;
+
+struct add
+{
+    const node& statement;
+    type_info type;
+    llvm::Value* llvm_value;
+};
+struct sub
+{
+    const node& statement;
+    type_info type;
+    llvm::Value* llvm_value;
+};
+struct mul
+{
+    const node& statement;
+    type_info type;
+    llvm::Value* llvm_value;
+};
+struct sdiv
+{
+    const node& statement;
+    type_info type;
     llvm::Value* llvm_value;
 };
 
-struct instruction_info
+struct cmp
 {
-    struct add
-    {
-        type_info type;
-    };
-    struct sub
-    {
-        type_info type;
-    };
-    struct mul
-    {
-        type_info type;
-    };
-    struct div
-    {
-        type_info type;
-    };
-    
-    struct alloc
-    {
-        type_info type;
-    };
-    struct store
-    {
-        type_info type;
-    };
-    struct load
-    {
-        type_info type;
-    };
-    struct cond_branch
-    {};
-    struct branch
-    {};
-    struct phi
-    {
-        type_info type;
-    };
-    struct cmp
-    {
-        std::size_t cmp_kind;
-        type_info type;
-    };
-    struct return_inst
-    {
-        type_info type;
-    };
-    struct call
-    {
-        type_info type;
-    };
-
-    struct is_id
-    {};
-    struct is_lit
-    {};
-    struct is_ref
-    {};
-    struct is_list
-    {};
-    struct is_macro
-    {};
-    
-    struct lit_create
-    {};
-    struct lit_size
-    {};
-    struct lit_push
-    {};
-    struct lit_pop
-    {};
-    struct lit_get
-    {};
-    struct lit_set
-    {};
-    
-    struct list_create
-    {};
-    struct list_size
-    {};
-    struct list_push
-    {};
-    struct list_pop
-    {};
-    struct list_get
-    {};
-    struct list_set
-    {};
-    
-    const symbol& statement;
-
-    variadic_make_variant
-    <
-        add,
-        sub,
-        mul,
-        div,
-        alloc,
-        store,
-        load,
-        cond_branch,
-        branch,
-        phi,
-        cmp,
-        return_inst,
-        call,
-
-        is_id,
-        is_lit,
-        is_ref,
-        is_list,
-        is_macro,
-
-        lit_create,
-        lit_size,
-        lit_push,
-        lit_pop,
-        lit_get,
-        lit_set,
-
-        list_create,
-        list_size,
-        list_push,
-        list_pop,
-        list_get,
-        list_set
-    >::type kind;
+    const node& statement;
+    std::size_t cmp_kind;
+    type_info type;
+    llvm::Value* llvm_value;
 };
 
-struct cond_branch_call
+struct typed_alloc
 {
-    llvm::BranchInst* value;
-    const ref_symbol& true_block_name;
-    const ref_symbol& false_block_name;
+    const node& statement;
+    type_info type;
+    llvm::Value* llvm_value;
 };
-struct branch_call
+struct store
 {
-    llvm::BranchInst* value;
-    const ref_symbol& block_name;
+    const node& statement;
+    type_info type;
 };
-struct phi_call
+struct load
 {
-    llvm::PHINode* value;
-    struct incoming
-    {
-        const ref_symbol& variable_name;
-        const ref_symbol& block_name;
-    };
-    std::vector<incoming> incomings;
-    const symbol& statement;
-};
-struct call_call // call of the 'call' instruction...
-{
-    llvm::CallInst* value;
-    llvm::Function* ct_function;
-    llvm::Function* rt_function;
-};
-struct ct_only_call
-{
-    const symbol& instruction_node;
-};
-struct rt_only_call
-{
-    const symbol& instruction_node;
+    const node& statement;
+    type_info type;
+    llvm::Value* llvm_value;
 };
 
-struct special_calls_info
+struct branch
 {
-    std::vector<branch_call> branches;
-    std::vector<cond_branch_call> cond_branches;
-    std::vector<phi_call> phis;
-    std::vector<call_call> calls;
-    std::vector<ct_only_call> ct_only_instructions;
-    std::vector<rt_only_call> rt_only_instructions;
+    const node& statement;
 };
+struct cond_branch
+{
+    const node& statement;
+};
+struct phi
+{
+    const node& statement;
+    type_info type;
+    llvm::Value* llvm_value;
+};
+struct return_inst
+{
+    const node& statement;
+    type_info type;
+};
+struct call
+{
+    const node& statement;
+    type_info type;
+    llvm::Value* llvm_value;
+};
+
+struct is_id
+{
+    const node& statement;
+    llvm::Value* llvm_value;
+};
+struct is_lit
+{
+    const node& statement;
+    llvm::Value* llvm_value;
+};
+struct is_ref
+{
+    const node& statement;
+    llvm::Value* llvm_value;
+};
+struct is_list
+{
+    const node& statement;
+    llvm::Value* llvm_value;
+};
+struct is_macro
+{
+    const node& statement;
+    llvm::Value* llvm_value;
+};
+
+struct lit_create
+{
+    const node& statement;
+    llvm::Value* llvm_value;
+};
+struct lit_size
+{
+    const node& statement;
+    llvm::Value* llvm_value;
+};
+struct lit_push
+{
+    const node& statement;
+};
+struct lit_pop
+{
+    const node& statement;
+};
+struct lit_get
+{
+    const node& statement;
+    llvm::Value* llvm_value;
+};
+struct lit_set
+{
+    const node& statement;
+};
+
+struct list_create
+{
+    const node& statement;
+    llvm::Value* llvm_value;
+};
+struct list_size
+{
+    const node& statement;
+    llvm::Value* llvm_value;
+};
+struct list_push
+{
+    const node& statement;
+};
+struct list_pop
+{
+    const node& statement;
+};
+struct list_get
+{
+    const node& statement;
+    llvm::Value* llvm_value;
+};
+struct list_set
+{
+    const node& statement;
+};
+
+}
+
+variadic_make_variant
+<
+    instruction::add,
+    instruction::sub,
+    instruction::mul,
+    instruction::div,
+    instruction::typed_alloc,
+    instruction::store,
+    instruction::load,
+    instruction::cond_branch,
+    instruction::branch,
+    instruction::phi,
+    instruction::cmp,
+    instruction::return_inst,
+    instruction::call,
+
+    instruction::is_id,
+    instruction::is_lit,
+    instruction::is_ref,
+    instruction::is_list,
+    instruction::is_macro,
+
+    instruction::lit_create,
+    instruction::lit_size,
+    instruction::lit_push,
+    instruction::lit_pop,
+    instruction::lit_get,
+    instruction::lit_set,
+
+    instruction::list_create,
+    instruction::list_size,
+    instruction::list_push,
+    instruction::list_pop,
+    instruction::list_get,
+    instruction::list_set
+>::type statement;
 
 struct statement_context
 {
     llvm::IRBuilder<>& builder;
-    std::function<named_value_info& (const ref_symbol&)> lookup_variable;
-    special_calls_info& special_calls;
+    std::function<statement& (const ref_symbol&)> lookup_variable;
     const macro_execution_environment& macro_environment;
 };
 struct block_info
 {
     const ref_symbol& block_name;
     std::unordered_map<identifier_id_t, named_value_info> variable_table;
+    std::vector<instruction> instructions;
     llvm::BasicBlock* llvm_block;
 };
 struct function_info

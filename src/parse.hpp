@@ -133,7 +133,7 @@ node* parse_node(State& state)
 }
 
 template <class State>
-list_node* parse_file(State& state)
+list_node& parse_file(State& state)
 {
     using namespace parse_error;
 
@@ -153,7 +153,7 @@ list_node* parse_file(State& state)
         fatal<id("invalid_character")>(code_location{state.position(), state.file()});
 
     result.source(file_source{begin, state.position(), state.file()});
-    return &result;
+    return result;
 }
 
 #endif

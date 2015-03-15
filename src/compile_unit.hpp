@@ -3,12 +3,12 @@
 
 #include "module.hpp"
 #include "compilation_context.hpp"
-#include "symbol.hpp"
 
 #include <boost/filesystem.hpp>
 
 #include <vector>
 #include <string>
+#include <tuple>
 
 
 
@@ -21,8 +21,15 @@ struct file_not_found
 struct io_error
 {};
 
+struct parsed_file
+{
+    list_node& syntax_tree;
+    dynamic_graph graph_owner;
+    module_header header;
+};
+
 std::vector<std::size_t> toposort(const std::vector<std::vector<std::size_t>>& graph);
-std::vector<std::pair<list_symbol, module_header>> read_files(const std::vector<boost::filesystem::path>& paths, compilation_context& context);
+parsed_file read_file(std::size_t file_id, const boost::filesystem::path& p);
 std::vector<module> compile_unit(const std::vector<boost::filesystem::path>& paths, compilation_context& context);
 
 #endif

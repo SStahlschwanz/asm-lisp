@@ -3,7 +3,7 @@
 
 #include "range.hpp"
 #include "node_source.hpp"
-#include "boost_variant_utils.hpp"
+#include "utils/functor_utils.hpp"
 #include "dynamic_graph.hpp"
 
 #include <cstddef>
@@ -79,21 +79,19 @@ public:
     {
         return const_cast<node*>(this)->visit<ReturnType>([&](auto& obj)
         {
-            typedef typename std::decay<decltype(obj)>::type actual_type;
+            typedef std::decay_t<decltype(obj)> actual_type;
             functor(const_cast<const actual_type&>(obj));
         });
     }
     template<class ResultType = void, class Functor1Type, class Functor2Type, class... FunctorTypes>
     ResultType visit(Functor1Type&& functor1, Functor2Type&& functor2, FunctorTypes&&... functors)
     {
-        boost_variant_utils_detail::lambda_visitor<ResultType, Functor1Type, Functor2Type, FunctorTypes...> visitor{functor1, functor2, functors...};
-        return visit<ResultType>(visitor);
+        return visit<ResultType>(overloaded<ResultType>(std::forward<Functor1Type>(functor1), std::forward<Functor2Type>(functor2), std::forward<FunctorTypes>(functors)...));
     }
     template<class ResultType = void, class Functor1Type, class Functor2Type, class... FunctorTypes>
     ResultType visit(Functor1Type&& functor1, Functor2Type&& functor2, FunctorTypes&&... functors) const
     {
-        boost_variant_utils_detail::lambda_visitor<ResultType, Functor1Type, Functor2Type, FunctorTypes...> visitor{functor1, functor2, functors...};
-        return visit<ResultType>(visitor);
+        return visit<ResultType>(overloaded<ResultType>(std::forward<Functor1Type>(functor1), std::forward<Functor2Type>(functor2), std::forward<FunctorTypes>(functors)...));
     }
 private:
     friend class id_node;
