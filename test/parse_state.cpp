@@ -45,3 +45,19 @@ BOOST_AUTO_TEST_CASE(state_test)
     s.pop_front();
     BOOST_CHECK(s.empty());
 }
+
+
+BOOST_AUTO_TEST_CASE(comment_test)
+{
+    state s1 = make_state(
+R"(asdf #sdf;
+fsdfsdf#
+sdfsdfsf
+)");
+    BOOST_CHECK(remaining(s1) ==
+R"(asdf 
+fsdfsdf
+sdfsdfsf
+)");
+}
+

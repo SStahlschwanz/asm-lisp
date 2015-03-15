@@ -2,6 +2,7 @@
 
 #include "error/import_export_error.hpp"
 #include "error/evaluate_error.hpp"
+#include "core_utils.hpp"
 
 #include <mblib/range.hpp>
 
@@ -173,18 +174,18 @@ module evaluate_module(list_node& syntax_tree, dynamic_graph graph_owner, const 
     size_t header_size = header.imports.size() + header.exports.size();
     assert(header_size <= syntax_tree.size());
 
-    dynamic_graph node_owner;
-
     auto evaluate_macro = [&](auto node_range) -> pair<node&, dynamic_graph>
     {
-        // TODO: this is just temporary
-        dynamic_graph graph;
-        auto node_ptrs = save<vector<node*>>(mapped(node_range, [](node& n)
+        assert(!node_range.empty());
+        const node& resolved_macro = resolve_refs(node_range.front());
+        node_range.pop_front();
+
+        const macro_node& macro = resolved_macro.cast_else<macro_node>([&]
         {
-            return &n;
-        }));
-        list_node& l = graph.create_list(move(node_ptrs));
-        return {l, move(graph)};
+            fatal<id("not_a_macro")>(resolved_macro.source());
+        });
+
+        return macro(node_range);
     };
 
     for(auto it = syntax_tree.begin() + header_size; it != syntax_tree.end(); ++it)

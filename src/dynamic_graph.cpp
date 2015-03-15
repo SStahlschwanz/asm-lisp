@@ -74,5 +74,5 @@ macro_node& dynamic_graph::create_macro()
 
 void dynamic_graph::add(dynamic_graph graph)
 {
-    std::move(graph.data.begin(), graph.data.end(), back_inserter(graph.data));
+    std::move(graph.data.begin(), graph.data.end(), back_inserter(data));
 }

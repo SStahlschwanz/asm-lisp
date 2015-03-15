@@ -29,7 +29,7 @@ BOOST_AUTO_TEST_CASE(error_lookup_printing_test)
     
 
     ostringstream oss;
-    print_error(oss, exc, file_id_to_name);
+    print(oss, exc, file_id_to_name);
     BOOST_CHECK_EQUAL(oss.str(), "testmodule.al:6:3: unexpected character: 5\n");
 }
 
@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE(missing_error_message_test)
     compile_exception exc{error_kind::COMPILE_FUNCTION, id("empty_statement"), code_location{{5, 2}, 1}};
 
     ostringstream oss;
-    print_error(oss, exc, file_id_to_name);
+    print(oss, exc, file_id_to_name);
     BOOST_CHECK_EQUAL(oss.str(), "testmodule.al:6:3: <empty_statement> (missing error message)\n");
 }
 

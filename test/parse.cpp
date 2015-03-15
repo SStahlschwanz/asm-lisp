@@ -67,8 +67,7 @@ fj;
 BOOST_AUTO_TEST_CASE(parse_file_test1)
 {
     state s{mod1};
-    node* got = parse_file(s);
-    BOOST_CHECK(got);
+    node& got = parse_file(s);
     
     node& expected = list
     {
@@ -77,7 +76,7 @@ BOOST_AUTO_TEST_CASE(parse_file_test1)
         list{ref{"+-*"}, lit{"123"}}
     };
     
-    BOOST_CHECK(structurally_equal(*got, expected));
+    BOOST_CHECK(structurally_equal(got, expected));
 }
 
 const state mod2 = make_state(
@@ -86,14 +85,13 @@ R"(import (a b c) from a;)");
 BOOST_AUTO_TEST_CASE(parse_file_test2)
 {
     state s{mod2};
-    node* got = parse_file(s);
-    BOOST_CHECK(got);
+    node& got = parse_file(s);
     
     node& expected = list
     {
         list{ref{"import"}, list{ref{"a"}, ref{"b"}, ref{"c"}}, ref{"from"}, ref{"a"}}
     };
     
-    BOOST_CHECK(structurally_equal(*got, expected));
+    BOOST_CHECK(structurally_equal(got, expected));
 }
 

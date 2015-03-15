@@ -240,3 +240,4 @@ ostream& operator<<(ostream& os, const node& s)
     s.visit(print_node_visitor{os, indent});
     return os;
 }
+

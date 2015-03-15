@@ -27,7 +27,9 @@ public:
         file_pos{0, 0},
         file_id{file_id},
         graph_(graph)
-    {}
+    {
+        skip_comment();
+    }
     
     bool empty() const
     {
@@ -42,18 +44,8 @@ public:
     void pop_front()
     {
         assert(!empty());
-        
-        if(front() == '\n')
-        {
-            file_pos.line_pos = 0;
-            ++file_pos.line;
-        }
-        else
-        {
-            ++file_pos.line_pos;
-        }
-        
-        ++pos;
+        pop_front_no_comment_skip();
+        skip_comment();
     }
     
     const file_position& position() const
@@ -68,6 +60,31 @@ public:
     dynamic_graph& graph()
     {
         return graph_;
+    }
+
+private:
+    // pop_front but don't check whether to skip because of a comment
+    void pop_front_no_comment_skip()
+    {
+        if(front() == '\n')
+        {
+            file_pos.line_pos = 0;
+            ++file_pos.line;
+        }
+        else
+        {
+            ++file_pos.line_pos;
+        }
+        
+        ++pos;
+    }
+    void skip_comment()
+    {
+        if(!empty() && front() == '#')
+        {
+            while(!empty() && front() != '\n')
+                pop_front_no_comment_skip();
+        }
     }
 };
 
