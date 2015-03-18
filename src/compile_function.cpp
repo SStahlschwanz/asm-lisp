@@ -3,11 +3,15 @@
 #include "error/compile_function_error.hpp"
 
 #include <llvm/IR/CFG.h>
+#include <llvm/IR/Module.h>
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/Transforms/Utils/Cloning.h>
 
 using namespace compile_function_error;
 
 using llvm::Function;
 using llvm::Type;
+using llvm::IntegerType;
 using llvm::FunctionType;
 using llvm::Value;
 using llvm::Argument;
@@ -16,6 +20,7 @@ using llvm::BranchInst;
 using llvm::IRBuilder;
 using llvm::pred_begin;
 using llvm::pred_end;
+using llvm::ValueToValueMapTy;
 
 using boost::blank;
 using boost::get;
@@ -23,6 +28,7 @@ using boost::get;
 using std::pair;
 using std::tuple;
 using std::unique_ptr;
+using std::make_shared;
 using std::unordered_map;
 using std::string;
 using std::move;
@@ -249,6 +255,8 @@ pair<unique_ptr<Function>, function_info> compile_function(node_range source_ran
             fatal<id("block_invalid_termination")>(block.block_node.source());
     }
 
+    bool is_ct_only = false;
+    bool is_rt_only = false;
     for(block_info& block : blocks)
     {
         for(statement& st : block.statements)
@@ -285,10 +293,95 @@ pair<unique_ptr<Function>, function_info> compile_function(node_range source_ran
                         fatal<id("phi_missing_incoming_for_predecessor")>(st.first.source());
                 }
             }
+
+
+            is_ct_only = is_ct_only || visit<bool>(st.second, [&](const auto& inst)
+            {
+                return inst.is_ct_only;
+            });
+            is_rt_only = is_rt_only || visit<bool>(st.second, [&](const auto& inst)
+            {
+                return inst.is_rt_only;
+            });
         }
     }
 
     Function& func = *function;
-    return {move(function), function_info{func}};
+    return {move(function), function_info{move(blocks), is_ct_only, is_rt_only, func}};
+}
+
+macro_node compile_macro(node_range source, compilation_context& context)
+{
+    auto p = compile_function(source, context);
+    unique_ptr<Function>& func_owner = p.first;
+    function_info& func_info = p.second;
+    
+    Type* symbol_index_type = IntegerType::get(context.llvm(), 64);
+    Type* macro_type = FunctionType::get(symbol_index_type, vector<Type*>{symbol_index_type}, false);
+    
+    if(macro_type != func_info.llvm_function.getFunctionType())
+        fatal<id("invalid_macro_signature")>(boost::blank());
+    if(func_info.is_rt_only)
+        fatal<id("macro_uses_rt_only_instruction")>(blank());
+
+    context.macro_environment().llvm_module.getFunctionList().push_back(func_owner.get());
+    func_owner.release();
+
+    typedef uint64_t macro_function_signature(uint64_t);
+    auto func_ptr = (macro_function_signature*) context.macro_environment().llvm_engine.getPointerToFunction(&func_info.llvm_function);
+    assert(func_ptr);
+
+    auto macro_func = [func_ptr](node_range nodes) -> pair<node&, dynamic_graph>
+    {
+        // TODO
+    };
+
+    return {make_shared<std::function<macro_node::macro>>(macro_func)};
+}
+
+proc_node compile_proc(node_range source, compilation_context& context)
+{
+    auto p = compile_function(source, context);
+    unique_ptr<Function>& func_owner = p.first;
+    function_info& func_info = p.second;
+
+    Function* ct_function = nullptr;
+    Function* rt_function = nullptr;
+
+    if(!func_info.is_rt_only)
+    {
+        ValueToValueMapTy vtvm;
+        unique_ptr<Function> cloned_func{CloneFunction(func_owner.get(), vtvm, false)};
+        for(block_info& block : func_info.blocks)
+        {
+            for(statement& st : block.statements)
+            {
+                if(auto call = get<instruction::call>(&st.second))
+                    call->llvm_value.setCalledFunction(call->callee.ct_function());
+            }
+        }
+        context.macro_environment().llvm_module.getFunctionList().push_back(cloned_func.get());
+        ct_function = cloned_func.release();
+    }
+    if(!func_info.is_ct_only)
+    {
+        ValueToValueMapTy vtvm;
+        unique_ptr<Function> cloned_func{CloneFunction(func_owner.get(), vtvm, false)};
+        for(block_info& block : func_info.blocks)
+        {
+            for(statement& st : block.statements)
+            {
+                if(auto call = get<instruction::call>(&st.second))
+                    call->llvm_value.setCalledFunction(call->callee.rt_function());
+            }
+        }
+        context.runtime_module().getFunctionList().push_back(cloned_func.get());
+        rt_function = cloned_func.release();
+    }
+
+    if(ct_function == nullptr && rt_function == nullptr)
+        fatal<id("proc_neither_ct_nor_rt")>(blank());
+
+    return proc_node{ct_function, rt_function};
 }
 

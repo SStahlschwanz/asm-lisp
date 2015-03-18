@@ -107,33 +107,6 @@ type_info compile_type(const node& type_node, LLVMContext& llvm_context)
             assert(llvm_type);
             return {type_node, *llvm_type, type_info::pointer{}};
         }
-        case unique_ids::FUNCTION_SIGNATURE:
-        {
-            check_arity("function_signature", 2);
-            const list_node& arg_types_list = range.front().template cast_else<list_node>([&]
-            {
-                fatal<id("invalid_argument_type_list")>(range.front().source());
-            });
-            range.pop_front();
-
-            auto arg_types = save<vector<type_info>>(mapped(rangeify(arg_types_list), [&](const node& arg_type_node)
-            {
-                return compile_type(arg_type_node, llvm_context);
-            }));
-            auto llvm_args = save<vector<Type*>>(mapped(rangeify(arg_types), [&](const type_info& ti)
-            {
-                return &ti.llvm_type;
-            }));
-
-            const node& return_type_node = range.front();
-            range.pop_front();
-
-            auto return_type = make_shared<type_info>(compile_type(return_type_node, llvm_context));
-
-            FunctionType* llvm_type = FunctionType::get(&return_type->llvm_type, llvm_args, false /* no vararg */);
-            assert(llvm_type);
-            return {type_node, *llvm_type, type_info::function_signature{move(return_type), move(arg_types)}};
-        }
         default:
             fatal<id("unknown_type_constructor")>(type_constructor.source());
         }

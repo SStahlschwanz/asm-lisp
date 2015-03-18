@@ -31,7 +31,10 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"empty_statement", ""},
     {"let_invalid_argument_number", ""},
     {"let_for_instruction_without_result", ""},
-    {"unknown_instruction_constructor", ""}
+    {"unknown_instruction_constructor", ""},
+    {"call_invalid_argument_type_list", ""},
+    {"call_invalid_callee", ""},
+    {"call_signature_mismatch", ""}
 };
 
 constexpr std::size_t id(conststr str)

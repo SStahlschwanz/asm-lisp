@@ -30,6 +30,10 @@ struct block_info
 };
 struct function_info
 {
+    std::vector<block_info> blocks;
+    bool is_ct_only;
+    bool is_rt_only;
+
     llvm::Function& llvm_function;
 };
 

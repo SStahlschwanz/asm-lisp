@@ -16,8 +16,6 @@ struct type_info
     {};
     struct function_signature
     {
-        std::shared_ptr<type_info> return_type;
-        std::vector<type_info> arg_types;
     };
 
     const node& node;
@@ -25,11 +23,11 @@ struct type_info
     boost::variant
     <
         integer,
-        pointer,
-        function_signature
+        pointer
     > kind;
 };
 
 type_info compile_type(const node& node, llvm::LLVMContext& llvm_context); 
+
 #endif
 

@@ -30,12 +30,10 @@ using llvm::Function;
 using llvm::raw_string_ostream;
 using llvm::verifyFunction;
 
-id_node& function_signature = id{unique_ids::FUNCTION_SIGNATURE};
-
 list_node& int64_type = list{id{unique_ids::INT}, lit{"64"}};
 list_node& int1_type = list{id{unique_ids::INT}, lit{"1"}};
 ref_node& node_type = ref{"symbol", &int64_type};
-list_node& sig_int64_2int64 = list{function_signature, list{int64_type, int64_type}, int64_type};
+list_node& sig_int64_2int64 = list{list{int64_type, int64_type}, int64_type};
 
 ref_node& a = ref{"a"};
 ref_node& b = ref{"b"};

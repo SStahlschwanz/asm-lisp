@@ -1,7 +1,6 @@
 #include "macro_module.hpp"
 #include "compilation_context.hpp"
 
-
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>

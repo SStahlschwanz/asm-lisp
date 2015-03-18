@@ -1,10 +1,6 @@
 #ifndef COMPILE_INSTRUCTION_HPP_
 #define COMPILE_INSTRUCTION_HPP_
 
-#include <iostream>
-using std::cout;
-using std::endl;
-
 #include "compile_type.hpp"
 #include "error/compile_instruction_error.hpp"
 #include "node.hpp"
@@ -26,21 +22,33 @@ struct add
 {
     type_info type;
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = false;
+    static constexpr bool is_rt_only = false;
 };
 struct sub
 {
     type_info type;
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = false;
+    static constexpr bool is_rt_only = false;
 };
 struct mul
 {
     type_info type;
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = false;
+    static constexpr bool is_rt_only = false;
 };
 struct sdiv
 {
     type_info type;
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = false;
+    static constexpr bool is_rt_only = false;
 };
 
 struct cmp
@@ -48,21 +56,33 @@ struct cmp
     const id_node& cmp_kind;
     type_info type;
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = false;
+    static constexpr bool is_rt_only = false;
 };
 
 struct typed_alloc
 {
     type_info type;
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = false;
+    static constexpr bool is_rt_only = false;
 };
 struct store
 {
     type_info type;
+
+    static constexpr bool is_ct_only = false;
+    static constexpr bool is_rt_only = false;
 };
 struct load
 {
     type_info type;
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = false;
+    static constexpr bool is_rt_only = false;
 };
 
 struct branch
@@ -70,6 +90,9 @@ struct branch
     const ref_node& block_name;
 
     llvm::BranchInst* value;
+
+    static constexpr bool is_ct_only = false;
+    static constexpr bool is_rt_only = false;
 };
 struct cond_branch
 {
@@ -78,6 +101,9 @@ struct cond_branch
 
     llvm::Value& boolean;
     llvm::BranchInst* value;
+
+    static constexpr bool is_ct_only = false;
+    static constexpr bool is_rt_only = false;
 };
 struct phi
 {
@@ -91,81 +117,144 @@ struct phi
     std::vector<incoming> incomings;
 
     llvm::PHINode& llvm_value;
+
+    static constexpr bool is_ct_only = false;
+    static constexpr bool is_rt_only = false;
 };
 struct return_inst
 {
     type_info type;
+
+    static constexpr bool is_ct_only = false;
+    static constexpr bool is_rt_only = false;
 };
 struct call
 {
-    type_info type;
-    llvm::Value& llvm_value;
+    type_info return_type;
+    std::vector<type_info> arg_types;
+    const proc_node& callee;
+
+    llvm::CallInst& llvm_value;
+
+    bool is_ct_only;
+    bool is_rt_only;
 };
 
 struct is_id
 {
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 struct is_lit
 {
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 struct is_ref
 {
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 struct is_list
 {
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 struct is_macro
 {
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 
 struct lit_create
 {
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 struct lit_size
 {
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 struct lit_push
 {
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 struct lit_pop
 {
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 struct lit_get
 {
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 struct lit_set
 {
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 
 struct list_create
 {
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 struct list_size
 {
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 struct list_push
 {
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 struct list_pop
 {
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 struct list_get
 {
     llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 struct list_set
 {
     const node& statement;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
 };
 
 }
@@ -261,6 +350,9 @@ void compile_statement_impl
     using llvm::isa;
     using llvm::ConstantInt;
     using llvm::LLVMContext;
+    using llvm::Function;
+    using llvm::FunctionType;
+    using llvm::CallInst;
     using llvm::PHINode;
     using boost::optional;
     using boost::none;
@@ -641,6 +733,60 @@ void compile_statement_impl
 
             result(val);
             add_instruction(phi{move(type), move(incomings), val});
+            break;
+        }
+        case CALL:
+        {
+            constructor_name = "call";
+            check_constructor_arity(2);
+
+            const node& first_constr_arg = get_constr_arg();
+            auto arg_type_nodes = rangeify(first_constr_arg.cast_else<list_node>([&]
+            {
+                fatal<id("call_invalid_argument_type_list")>(first_constr_arg.source());
+            }));
+            auto arg_types = save<vector<type_info>>(mapped(arg_type_nodes,
+            [&](const node& type_node) -> type_info
+            {
+                return compile_type(type_node, llvm);
+            }));
+            auto llvm_arg_types = mapped(arg_types, [&](type_info& info) -> Type*
+            {
+                return &info.llvm_type;
+            });
+
+            type_info return_type = compile_type(get_constr_arg(), llvm);
+
+            check_instruction_arity(1 + arg_types.size());
+            const node& callee_node = resolve_refs(get_arg());
+            const proc_node& callee = callee_node.cast_else<proc_node>([&]
+            {
+                fatal<id("call_invalid_callee")>(callee_node.source());
+            });
+
+            Function* llvm_callee = nullptr;
+            if(callee.ct_function())
+                llvm_callee = callee.ct_function();
+            else
+                llvm_callee = callee.rt_function();
+            assert(llvm_callee);
+
+            FunctionType& llvm_callee_type = *llvm_callee->getFunctionType();
+            if(&return_type.llvm_type != llvm_callee_type.getReturnType() || rangeify(llvm_callee_type.param_begin(), llvm_callee_type.param_end()) != llvm_arg_types)
+                fatal<id("call_signature_mismatch")>(callee_node.source());
+
+            auto llvm_args = save<vector<Value*>>(mapped(arg_types,
+            [&](type_info& info) -> Value*
+            {
+                return &get_typed_arg(info.llvm_type);
+            }));
+            
+            CallInst& val = *builder.CreateCall(llvm_callee, llvm_args);
+
+            result(val);
+            bool is_ct_only = callee.rt_function() == nullptr;
+            bool is_rt_only = callee.ct_function() == nullptr;
+            add_instruction(call{return_type, move(arg_types), callee, val, is_ct_only, is_rt_only});
             break;
         }
         case IS_ID:

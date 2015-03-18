@@ -1,9 +1,8 @@
 #include "core_module.hpp"
 
-//#include "compile_type.hpp"
 #include "error/core_misc_error.hpp"
 #include "core_unique_ids.hpp"
-//#include "compile_function.hpp"
+#include "compile_function.hpp"
 
 #include <boost/variant.hpp>
 
@@ -69,19 +68,25 @@ module create_core_module(compilation_context& context)
     };
     add_macro_symbol("unique", unique_func);
     
-    /*
-    auto macro_func = [&context](list_symbol::const_iterator begin, list_symbol::const_iterator end) -> pair<any_symbol, vector<unique_ptr<any_symbol>>>
+    auto macro_func = [&context](node_range nodes) -> pair<node&, dynamic_graph>
     {
-        return {compile_macro(begin, end, context), vector<unique_ptr<any_symbol>>{}};
+        dynamic_graph graph;
+        macro_node& macro = graph.create_macro();
+        macro = compile_macro(nodes, context);
+        return {macro, move(graph)};
     };
     add_macro_symbol("macro", macro_func);
 
-    auto proc_func = [&context](list_symbol::const_iterator begin, list_symbol::const_iterator end) -> pair<any_symbol, vector<unique_ptr<any_symbol>>>
+    auto proc_func = [&context](node_range nodes) -> pair<node&, dynamic_graph>
     {
-        return {compile_proc(begin, end, context), vector<unique_ptr<any_symbol>>{}};
+        dynamic_graph graph;
+        proc_node& proc = graph.create_proc();
+        proc = compile_proc(nodes, context);
+        return {proc, move(graph)};
     };
     add_macro_symbol("proc", proc_func);
 
+    /*
     auto external_func = [&context](list_symbol::const_iterator begin, list_symbol::const_iterator end) -> pair<any_symbol, vector<unique_ptr<any_symbol>>>
     {
         if(distance(begin, end) != 2)
@@ -163,7 +168,6 @@ module create_core_module(compilation_context& context)
 
     add_id_symbol("int", unique_ids::INT);
     add_id_symbol("ptr", unique_ids::PTR);
-    add_id_symbol("function_signature", unique_ids::FUNCTION_SIGNATURE);
 
     add_id_symbol("let", unique_ids::LET);
 

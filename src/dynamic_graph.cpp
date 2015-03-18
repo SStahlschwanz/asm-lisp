@@ -71,6 +71,14 @@ macro_node& dynamic_graph::create_macro()
 
     return result;
 }
+proc_node& dynamic_graph::create_proc()
+{
+    auto storage = make_unique<node_data>(proc_node{nullptr, nullptr});
+    proc_node& result = get<proc_node>(*storage);
+    data.push_back(std::move(storage));
+
+    return result;
+}
 
 void dynamic_graph::add(dynamic_graph graph)
 {

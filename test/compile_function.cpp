@@ -301,8 +301,8 @@ BOOST_AUTO_TEST_CASE(a_times_b_test)
     BOOST_CHECK(function_ptr(33, 0) == 0);
     BOOST_CHECK(function_ptr(0, 0) == 0);
 }
-/*
-const list_node add_proc
+
+list_node& add_proc = list
 {
     list // params
     {
@@ -319,7 +319,7 @@ const list_node add_proc
         }}
     }
 };
-const list_node create_empty_list_proc
+list_node& create_empty_list_proc = list
 {
     list{}, // params
     int64_type, // return type
@@ -335,37 +335,39 @@ const list_node create_empty_list_proc
 
 BOOST_AUTO_TEST_CASE(compile_proc_test)
 {
-    proc_node rt_ct_proc = compile_proc(add_proc.begin(), add_proc.end(), context());
+    proc_node rt_ct_proc = compile_proc(rangeify(add_proc), context());
     BOOST_CHECK(rt_ct_proc.ct_function() != nullptr);
     BOOST_CHECK(rt_ct_proc.rt_function() != nullptr);
 
-    proc_node ct_proc = compile_proc(create_empty_list_proc.begin(), create_empty_list_proc.end(), context());
+    /*
+    proc_node ct_proc = compile_proc(rangeify(create_empty_list_proc), context());
     BOOST_CHECK(ct_proc.ct_function() != nullptr);
     BOOST_CHECK(ct_proc.rt_function() == nullptr);
+    */
 }
 
 BOOST_AUTO_TEST_CASE(call_test)
 {
-    const proc_node called_proc = compile_proc(add_proc.begin(), add_proc.end(), context());
+    proc_node called_proc = compile_proc(rangeify(add_proc), context());
 
-    const ref proc_ref{"proc"_id, &called_proc};
+    ref proc_ref = ref{"some_proc", &called_proc};
 
-    const list params =
+    list_node& params = list
     {
         list{a, int64_type},
         list{b, int64_type}
     };
-    const node& return_type = int64_type;
-    const list_node body =
+    node& return_type = int64_type;
+    list_node& body = list
     {
         list{block1, list
         {
-            list{let, x, list{call, sig_int64_2int64}, proc_ref, a, b},
+            list{let, x, list{call, list{int64_type, int64_type}, int64_type}, proc_ref, a, b},
             list{return_int64, x}
         }}
     };
 
-    const list_node function_source = 
+    list_node& function_source = list
     {
         params,
         return_type,
@@ -377,16 +379,16 @@ BOOST_AUTO_TEST_CASE(call_test)
     BOOST_CHECK_EQUAL(function_ptr(23, 43), 66);
 }
 
-
+/*
 BOOST_AUTO_TEST_CASE(missing_let_test)
 {
-    const list params =
+    list_node& params = list
     {
         list{a, int64_type},
         list{b, int64_type}
     };
-    const node& return_type = int64_type;
-    const list_node body =
+    node& return_type = int64_type;
+    list_node& body = list
     {
         list{block1, list
         {
@@ -394,13 +396,12 @@ BOOST_AUTO_TEST_CASE(missing_let_test)
         }}
     };
 
-    const list_node function_source = 
+    list_node& function_source = list
     {
         params,
         return_type,
         body
     };
-    BOOST_CHECK_THROW(compile_function(function_source.begin(), function_source.end(), context()), compile_exception);
+    BOOST_CHECK_THROW(compile_function(rangeify(function_source), context()), compile_exception);
 }
 */
-
