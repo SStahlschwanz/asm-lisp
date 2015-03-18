@@ -19,7 +19,7 @@ constexpr std::pair<conststr, conststr> dictionary[] =
 
 constexpr std::size_t id(conststr str)
 {
-    return id(str, dictionary);
+    return index_of(str, dictionary);
 }
 
 template<std::size_t error_id, class Location, class... ParamTypes>

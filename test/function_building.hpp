@@ -6,7 +6,9 @@
 #include "../src/error/compile_exception.hpp"
 #include "../src/printing.hpp"
 
-#include "state_utils.hpp"
+//#include "state_utils.hpp"
+#include "graph_building.hpp"
+#include "context.hpp"
 
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/Function.h>
@@ -90,37 +92,31 @@ list_node& list_get = list{id{unique_ids::LIST_GET}};
 list_node& list_push = list{id{unique_ids::LIST_PUSH}};
 list_node& list_pop = list{id{unique_ids::LIST_POP}};
 
-/*
 template<class T>
 T* get_compiled_function(const list_node& function_source)
 {
     unique_ptr<Function> function_owner;
     try
     {
-        tie(function_owner, ignore) = compile_function(function_source.begin(), function_source.end(), context);
+        tie(function_owner, ignore) = compile_function(rangeify(function_source), context());
     }
     catch(const compile_exception& exc)
     {
         ostringstream oss;
-        auto file_id_to_name = [](size_t)
-        {
-            return "";
-        };
-        print_error(oss, exc, file_id_to_name);
+        oss << exc;
         BOOST_FAIL("compilation failure:" << oss.str());
     }
     Function* function = function_owner.get();
-    context.macro_environment().llvm_module.getFunctionList().push_back(function_owner.get());
+    context().macro_environment().llvm_module.getFunctionList().push_back(function_owner.get());
     function_owner.release();
     
     string str;
     raw_string_ostream os(str);
     //BOOST_CHECK_MESSAGE(verifyFunction(*function, &os), os.str());
     // TODO: this fails - I don't know why, function->dump() looks good to me and verifyFunction doesn't produce a message
-    auto fptr = (T*) context.macro_environment().llvm_engine.getPointerToFunction(function);
+    auto fptr = (T*) context().macro_environment().llvm_engine.getPointerToFunction(function);
     return fptr;
 }
-*/
 
 #endif
 

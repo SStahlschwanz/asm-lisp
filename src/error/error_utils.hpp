@@ -57,7 +57,7 @@ constexpr bool has_duplicates(const error_dictionary<N>& dict)
 }
 
 template<unsigned int N>
-constexpr std::size_t id(conststr str, const error_dictionary<N>& dict)
+constexpr std::size_t index_of(conststr str, const error_dictionary<N>& dict)
 {
     for(std::size_t i = 0; i != N; ++i)
     {

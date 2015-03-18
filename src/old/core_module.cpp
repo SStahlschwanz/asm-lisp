@@ -1,9 +1,10 @@
 #include "core_module.hpp"
 
-//#include "compile_type.hpp"
+#include "compile_type.hpp"
+#include "symbol.hpp"
 #include "error/core_misc_error.hpp"
 #include "core_unique_ids.hpp"
-//#include "compile_function.hpp"
+#include "compile_function.hpp"
 
 #include <boost/variant.hpp>
 
@@ -21,8 +22,9 @@ using std::make_unique;
 using std::make_shared;
 using std::size_t;
 using std::move;
-using std::tie;
-using std::ignore;
+using namespace core_misc_error;
+
+using boost::blank;
 
 using llvm::Function;
 using llvm::FunctionType;
@@ -30,46 +32,35 @@ using llvm::Type;
 using llvm::IntegerType;
 using llvm::dyn_cast;
 
-using boost::blank;
-
-using namespace core_misc_error;
-
 module create_core_module(compilation_context& context)
 {
-    dynamic_graph node_owner;
-    symbol_table exports;
+    module core;
 
-    auto add_symbol = [&](string name, node& n)
+    auto add_symbol = [&](const char* name, symbol&& s)
     {
-        bool was_inserted;
-        tie(ignore, was_inserted) = exports.insert({move(name), n});
-        assert(was_inserted);
+        unique_ptr<any_symbol> any = make_unique<any_symbol>(move(s));
+        core.exports[context.identifier_id(name)] = any.get(); 
+        core.evaluated_exports.push_back(move(any));
     };
-    auto add_id_symbol = [&](string name, size_t id)
+    auto add_id_symbol = [&](const char* name, size_t id)
     {
-        id_node& node = node_owner.create_id(id);
-        add_symbol(move(name), node);
+        add_symbol(name, id_symbol{id});
     };
     auto add_macro_symbol = [&](const char* name, auto func)
     {
-        auto f = make_shared<std::function<macro_node::macro>>(move(func));
-        macro_node& m = node_owner.create_macro();
-        m.function(move(f));
-        add_symbol(move(name), m);
+        add_symbol(name, macro_symbol{make_shared<macro_symbol::macro_function>(move(func))});
     };
     
+
     size_t next_unique_id = static_cast<size_t>(unique_ids::FIRST_UNUSED);
-    auto unique_func = [next_unique_id](node_range nodes) mutable -> pair<node&, dynamic_graph>
+    auto unique_func = [next_unique_id](list_symbol::const_iterator begin, list_symbol::const_iterator end) mutable -> pair<any_symbol, vector<unique_ptr<any_symbol>>>
     {
-        if(!nodes.empty())
+        if(begin != end)
             fatal<id("unique_invalid_argument_number")>(blank());
-        dynamic_graph graph;
-        id_node& id = graph.create_id(next_unique_id++);
-        return {id, move(graph)};
+        return {id_symbol{next_unique_id++}, vector<unique_ptr<any_symbol>>{}};
     };
     add_macro_symbol("unique", unique_func);
     
-    /*
     auto macro_func = [&context](list_symbol::const_iterator begin, list_symbol::const_iterator end) -> pair<any_symbol, vector<unique_ptr<any_symbol>>>
     {
         return {compile_macro(begin, end, context), vector<unique_ptr<any_symbol>>{}};
@@ -120,12 +111,11 @@ module create_core_module(compilation_context& context)
         return {move(p), vector<unique_ptr<any_symbol>>{}};
     };
     add_macro_symbol("main", main_func);
-    */
 
     add_id_symbol("add", unique_ids::ADD);
     add_id_symbol("sub", unique_ids::SUB);
     add_id_symbol("mul", unique_ids::MUL);
-    add_id_symbol("sdiv", unique_ids::SDIV);
+    add_id_symbol("div", unique_ids::DIV);
     add_id_symbol("alloc", unique_ids::ALLOC);
     add_id_symbol("store", unique_ids::STORE);
     add_id_symbol("load", unique_ids::LOAD);
@@ -167,6 +157,6 @@ module create_core_module(compilation_context& context)
 
     add_id_symbol("let", unique_ids::LET);
 
-    return {move(node_owner), move(exports)};
+    return core;
 }
 

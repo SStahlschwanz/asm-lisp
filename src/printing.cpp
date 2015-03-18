@@ -7,6 +7,7 @@
 #include "error/core_misc_error.hpp"
 #include "error/compile_function_error.hpp"
 #include "error/macro_execution_error.hpp"
+#include "error/compile_instruction_error.hpp"
 
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/IR/Type.h>
@@ -189,6 +190,14 @@ void print(ostream& os, const compile_exception& exc, function<string (size_t)> 
         error_message_template = entry.second.data();
         break;
     }
+    case error_kind::COMPILE_INSTRUCTION:
+    {
+        assert(exc.error_id < size(compile_instruction_error::dictionary));
+        const auto& entry = compile_instruction_error::dictionary[exc.error_id];
+        error_name = entry.first.data();
+        error_message_template = entry.second.data();
+        break;
+    }
     }
     print_error_location(os, exc.location, file_id_to_name);
     if(error_message_template != string{""})
@@ -250,6 +259,10 @@ struct print_node_visitor
     void operator()(const macro_node&) const
     {
         os << indentation << "macro\n";
+    }
+    void operator()(const proc_node&) const
+    {
+        os << indentation << "proc\n";
     }
 };
 

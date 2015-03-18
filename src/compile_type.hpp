@@ -21,7 +21,7 @@ struct type_info
     };
 
     const node& node;
-    llvm::Type* llvm_type;
+    llvm::Type& llvm_type;
     boost::variant
     <
         integer,
@@ -30,7 +30,6 @@ struct type_info
     > kind;
 };
 
-type_info compile_type(const node& node, llvm::LLVMContext& llvm_context);
-
+type_info compile_type(const node& node, llvm::LLVMContext& llvm_context); 
 #endif
 

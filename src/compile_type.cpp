@@ -98,14 +98,14 @@ type_info compile_type(const node& type_node, LLVMContext& llvm_context)
             unsigned long bit_width = read_bit_width(bit_width_node);
             Type* llvm_type = IntegerType::get(llvm_context, bit_width);
             assert(llvm_type);
-            return {type_node, llvm_type, type_info::integer{bit_width}};
+            return {type_node, *llvm_type, type_info::integer{bit_width}};
         }
         case unique_ids::PTR:
         {
             check_arity("ptr", 0);
             Type* llvm_type = PointerType::getUnqual(IntegerType::get(llvm_context, 8));
             assert(llvm_type);
-            return {type_node, llvm_type, type_info::pointer{}};
+            return {type_node, *llvm_type, type_info::pointer{}};
         }
         case unique_ids::FUNCTION_SIGNATURE:
         {
@@ -122,7 +122,7 @@ type_info compile_type(const node& type_node, LLVMContext& llvm_context)
             }));
             auto llvm_args = save<vector<Type*>>(mapped(rangeify(arg_types), [&](const type_info& ti)
             {
-                return ti.llvm_type;
+                return &ti.llvm_type;
             }));
 
             const node& return_type_node = range.front();
@@ -130,9 +130,9 @@ type_info compile_type(const node& type_node, LLVMContext& llvm_context)
 
             auto return_type = make_shared<type_info>(compile_type(return_type_node, llvm_context));
 
-            FunctionType* llvm_type = FunctionType::get(return_type->llvm_type, llvm_args, false /* no vararg */);
+            FunctionType* llvm_type = FunctionType::get(&return_type->llvm_type, llvm_args, false /* no vararg */);
             assert(llvm_type);
-            return {type_node, llvm_type, type_info::function_signature{move(return_type), move(arg_types)}};
+            return {type_node, *llvm_type, type_info::function_signature{move(return_type), move(arg_types)}};
         }
         default:
             fatal<id("unknown_type_constructor")>(type_constructor.source());

@@ -21,7 +21,8 @@ enum class node_type
     LITERAL,
     REFERENCE,
     LIST,
-    MACRO
+    MACRO,
+    PROC
 };
 
 class node
@@ -78,10 +79,10 @@ public:
     template<class ReturnType = void, class FunctorType>
     ReturnType visit(FunctorType&& functor) const
     {
-        return const_cast<node*>(this)->visit<ReturnType>([&](auto& obj)
+        return const_cast<node*>(this)->visit<ReturnType>([&](auto& obj) -> ReturnType
         {
             typedef std::decay_t<decltype(obj)> actual_type;
-            functor(const_cast<const actual_type&>(obj));
+            return functor(const_cast<const actual_type&>(obj));
         });
     }
     template<class ResultType = void, class Functor1Type, class Functor2Type, class... FunctorTypes>
@@ -100,6 +101,7 @@ private:
     friend class ref_node;
     friend class list_node;
     friend class macro_node;
+    friend class proc_node;
 
     node(node_type nt)
       : nt_(nt)
@@ -295,21 +297,62 @@ private:
     std::shared_ptr<std::function<macro>> func_;
 };
 
+namespace llvm
+{
+
+class Function;
+
+}
+
+class proc_node
+  : public node
+{
+public:
+    static constexpr node_type type_id = node_type::PROC;
+
+    proc_node(llvm::Function* ct_func, llvm::Function* rt_func)
+      : node(type_id),
+        ct_func_(ct_func),
+        rt_func_(rt_func)
+    {}
+    llvm::Function* ct_function() const
+    {
+        return ct_func_;
+    }
+    void ct_function(llvm::Function* func)
+    {
+        ct_func_ = func;
+    }
+    llvm::Function* rt_function() const
+    {
+        return rt_func_;
+    }
+    void rt_function(llvm::Function* func)
+    {
+        rt_func_ = func;
+    }
+private:
+    llvm::Function* ct_func_;
+    llvm::Function* rt_func_;
+};
+
 template<class ReturnType, class FunctorType>
 ReturnType node::visit(FunctorType&& functor)
 {
     switch(type())
     {
     case node_type::ID:
-        return functor(this->cast<id_node>());
+        return functor(this->template cast<id_node>());
     case node_type::LITERAL:
-        return functor(this->cast<lit_node>());
+        return functor(this->template cast<lit_node>());
     case node_type::REFERENCE:
-        return functor(this->cast<ref_node>());
+        return functor(this->template cast<ref_node>());
     case node_type::LIST:
-        return functor(this->cast<list_node>());
+        return functor(this->template cast<list_node>());
     case node_type::MACRO:
-        return functor(this->cast<macro_node>());
+        return functor(this->template cast<macro_node>());
+    case node_type::PROC:
+        return functor(this->template cast<proc_node>());
     }
 }
 
@@ -347,6 +390,8 @@ inline bool structurally_equal(const node& lhs, const node& rhs)
         return is_equal;
     }        
     case node_type::MACRO:
+        return true; // TODO
+    case node_type::PROC:
         return true; // TODO
     }
 }

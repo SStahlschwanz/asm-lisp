@@ -29,7 +29,7 @@ BOOST_AUTO_TEST_CASE(int_test)
     list_node& type1 = list{int_id, lit("65")};
     ref_node& type1_alias = ref("assd", &type1);
     type_info result = compile_type(type1_alias, context().llvm());
-    BOOST_CHECK(result.llvm_type == IntegerType::get(context().llvm(), 65));
+    BOOST_CHECK(&result.llvm_type == IntegerType::get(context().llvm(), 65));
     
     list_node& type2 = list{int_id, lit{"0"}};
     BOOST_CHECK_THROW(compile_type(type2, context().llvm()), compile_exception);
@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(int_test)
 BOOST_AUTO_TEST_CASE(pointer_test)
 {
     type_info result = compile_type(ptr, context().llvm());
-    BOOST_CHECK(result.llvm_type == PointerType::getUnqual(IntegerType::get(context().llvm(), 8)));
+    BOOST_CHECK(&result.llvm_type == PointerType::getUnqual(IntegerType::get(context().llvm(), 8)));
 }
 
 BOOST_AUTO_TEST_CASE(function_signature_test)
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(function_signature_test)
     Type* llvm_int1 = IntegerType::get(context().llvm(), 1);
     vector<Type*> llvm_args1 = {llvm_int1};
     FunctionType* expected_llvm_type1 = FunctionType::get(llvm_int1, llvm_args1, false);
-    BOOST_CHECK(info1.llvm_type == expected_llvm_type1);
+    BOOST_CHECK(&info1.llvm_type == expected_llvm_type1);
 
 
     list_node& signature2 = list{function_signature, list{int1, signature1}, int2};
@@ -72,13 +72,13 @@ BOOST_AUTO_TEST_CASE(function_signature_test)
     Type* llvm_int2 = IntegerType::get(context().llvm(), 2);
     vector<Type*> llvm_args2 = {llvm_int1, expected_llvm_type1};
     FunctionType* expected_llvm_type2 = FunctionType::get(llvm_int2, llvm_args2, false);
-    BOOST_CHECK(info2.llvm_type == expected_llvm_type2);
+    BOOST_CHECK(&info2.llvm_type == expected_llvm_type2);
 
     type_info info3 = compile_type(sig_int64_2int64, context().llvm());
 
     Type* llvm_int64 = IntegerType::get(context().llvm(), 64);
     vector<Type*> llvm_args3 = {llvm_int64, llvm_int64};
     FunctionType* expected_llvm_type3 = FunctionType::get(llvm_int64, llvm_args3, false);
-    BOOST_CHECK(info3.llvm_type == expected_llvm_type3);
+    BOOST_CHECK(&info3.llvm_type == expected_llvm_type3);
 }
 

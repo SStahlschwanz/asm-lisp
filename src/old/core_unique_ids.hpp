@@ -13,7 +13,7 @@ enum
     ADD = 1,
     SUB,
     MUL,
-    SDIV,
+    DIV,
     ALLOC,
     STORE,
     LOAD,

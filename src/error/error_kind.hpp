@@ -8,6 +8,7 @@ enum class error_kind
     EVALUATE,
     COMPILE_TYPE,
     CORE_MISC,
+    COMPILE_INSTRUCTION,
     COMPILE_FUNCTION,
     MACRO_EXECUTION
 };
