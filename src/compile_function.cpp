@@ -139,7 +139,7 @@ block_info compile_block(const node& block_node, BasicBlock& llvm_block, LookupV
         statements.push_back(move(statement));
     };
 
-    auto st_context = make_statement_context(builder, define_variable, lookup_variable, add_statement);
+    auto st_context = make_statement_context(builder, define_variable, lookup_variable, add_statement, context.macro_environment());
     for(const node& n : block_body)
         compile_statement(n, st_context);
 

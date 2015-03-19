@@ -6,6 +6,7 @@
 #include "node.hpp"
 #include "core_unique_ids.hpp"
 #include "core_utils.hpp"
+#include "macro_environment.hpp"
 
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Function.h>
@@ -251,8 +252,6 @@ struct list_get
 };
 struct list_set
 {
-    const node& statement;
-
     static constexpr bool is_ct_only = true;
     static constexpr bool is_rt_only = false;
 };
@@ -314,7 +313,7 @@ struct statement_context
     LookupVariable& lookup_variable;
     AddStatementFunctor& add_statement;
 
-    //const macro_execution_environment& macro_environment;
+    macro_execution_environment& macro_environment;
 };
 
 template<class DefineVariableFunctor, class LookupVariable, class AddStatementFunctor>
@@ -323,10 +322,11 @@ statement_context<DefineVariableFunctor, LookupVariable, AddStatementFunctor> ma
     llvm::IRBuilder<>& builder,
     DefineVariableFunctor& define_variable,
     LookupVariable& lookup_variable,
-    AddStatementFunctor& add_statement
+    AddStatementFunctor& add_statement,
+    macro_execution_environment& environment
 )
 {
-    return {builder, define_variable, lookup_variable, add_statement};
+    return {builder, define_variable, lookup_variable, add_statement, environment};
 }
 
 
@@ -380,6 +380,7 @@ void compile_statement_impl
 
 
     IRBuilder<>& builder = st_context.builder;
+    macro_execution_environment& macro_env = st_context.macro_environment;
     auto&& add_statement = st_context.add_statement;
     auto&& lookup_variable = st_context.lookup_variable;
     auto&& define_variable = st_context.define_variable;
@@ -791,56 +792,250 @@ void compile_statement_impl
         }
         case IS_ID:
         {
+            constructor_name = "is_id";
+            check_constructor_arity(0);
+
+            check_instruction_arity(1);
+            Value& arg = get_typed_arg(symbol_type);
+            Value& val = *builder.CreateCall(&macro_env.is_id, &arg);
+
+            result(val);
+            add_instruction(is_id{val});
+            break;
         }
         case IS_LIT:
         {
+            constructor_name = "is_id";
+            check_constructor_arity(0);
+
+            check_instruction_arity(1);
+            Value& arg = get_typed_arg(symbol_type);
+            Value& val = *builder.CreateCall(&macro_env.is_id, &arg);
+
+            result(val);
+            add_instruction(is_id{val});
+            break;
         }
         case IS_REF:
         {
+            constructor_name = "is_ref";
+            check_constructor_arity(0);
+
+            check_instruction_arity(1);
+            Value& arg = get_typed_arg(symbol_type);
+            Value& val = *builder.CreateCall(&macro_env.is_ref, &arg);
+
+            result(val);
+            add_instruction(is_ref{val});
+            break;
         }
         case IS_LIST:
         {
+            constructor_name = "is_list";
+            check_constructor_arity(0);
+
+            check_instruction_arity(1);
+            Value& arg = get_typed_arg(symbol_type);
+            Value& val = *builder.CreateCall(&macro_env.is_list, &arg);
+
+            result(val);
+            add_instruction(is_list{val});
+            break;
         }
         case IS_MACRO:
         {
+            constructor_name = "is_macro";
+            check_constructor_arity(0);
+
+            check_instruction_arity(1);
+            Value& arg = get_typed_arg(symbol_type);
+            Value& val = *builder.CreateCall(&macro_env.is_macro, &arg);
+
+            result(val);
+            add_instruction(is_macro{val});
+            break;
         }
 
         case LIT_CREATE:
         {
+            constructor_name = "lit_create";
+            check_constructor_arity(0);
+
+            check_instruction_arity(0);
+            Value& val = *builder.CreateCall(&macro_env.lit_create);
+            
+            result(val);
+            add_instruction(lit_create{val});
+            break;
         }
         case LIT_SIZE:
         {
+            constructor_name = "lit_size";
+            check_constructor_arity(0);
+
+            check_instruction_arity(1);
+
+            Value& arg = get_typed_arg(symbol_type);
+            Value& val = *builder.CreateCall(&macro_env.lit_size, &arg);
+            
+            result(val);
+            add_instruction(lit_size{val});
+            break;
         }
         case LIT_PUSH:
         {
+            constructor_name = "lit_push";
+            check_constructor_arity(0);
+
+            check_instruction_arity(2);
+
+            Value& lit_arg = get_typed_arg(symbol_type);
+            Value& char_arg = get_typed_arg(int8_type);
+            
+            Value& val = *builder.CreateCall2(&macro_env.lit_push, &lit_arg, &char_arg);
+            
+            no_result();
+            add_instruction(lit_push{});
+            break;
         }
         case LIT_POP:
         {
+            constructor_name = "lit_pop";
+            check_constructor_arity(0);
+
+            check_instruction_arity(1);
+
+            Value& lit_arg = get_typed_arg(symbol_type);
+            
+            Value& val = *builder.CreateCall(&macro_env.lit_push, &lit_arg);
+            
+            no_result();
+            add_instruction(lit_pop{});
+            break;
         }
         case LIT_GET:
         {
+            constructor_name = "lit_get";
+            check_constructor_arity(0);
+
+            check_instruction_arity(2);
+
+            Value& lit_arg = get_typed_arg(symbol_type);
+            Value& index_arg = get_typed_arg(int64_type);
+            
+            Value& val = *builder.CreateCall2(&macro_env.lit_get, &lit_arg, &index_arg);
+            
+            result(val);
+            add_instruction(lit_get{val});
+            break;
         }
         case LIT_SET:
         {
+            constructor_name = "lit_set";
+            check_constructor_arity(0);
+
+            check_instruction_arity(3);
+
+            Value& lit_arg = get_typed_arg(symbol_type);
+            Value& index_arg = get_typed_arg(int64_type);
+            Value& char_arg = get_typed_arg(int8_type);
+            
+            builder.CreateCall3(&macro_env.lit_get, &lit_arg, &index_arg, &char_arg);
+            
+            no_result();
+            add_instruction(lit_set{});
+            break;
         }
 
         case LIST_CREATE:
         {
+            constructor_name = "list_create";
+            check_constructor_arity(0);
+
+            check_instruction_arity(0);
+            Value& val = *builder.CreateCall(&macro_env.list_create);
+            
+            result(val);
+            add_instruction(list_create{val});
+            break;
         }
         case LIST_SIZE:
         {
+            constructor_name = "list_size";
+            check_constructor_arity(0);
+
+            check_instruction_arity(1);
+
+            Value& arg = get_typed_arg(symbol_type);
+            Value& val = *builder.CreateCall(&macro_env.list_size, &arg);
+            
+            result(val);
+            add_instruction(list_size{val});
+            break;
         }
         case LIST_PUSH:
         {
+            constructor_name = "list_push";
+            check_constructor_arity(0);
+
+            check_instruction_arity(2);
+
+            Value& list_arg = get_typed_arg(symbol_type);
+            Value& pushed_arg = get_typed_arg(symbol_type);
+            
+            Value& val = *builder.CreateCall2(&macro_env.list_push, &list_arg, &pushed_arg);
+            
+            no_result();
+            add_instruction(list_push{});
+            break;
         }
         case LIST_POP:
         {
+            constructor_name = "list_pop";
+            check_constructor_arity(0);
+
+            check_instruction_arity(1);
+
+            Value& list_arg = get_typed_arg(symbol_type);
+            
+            builder.CreateCall(&macro_env.list_push, &list_arg);
+            
+            no_result();
+            add_instruction(list_pop{});
+            break;
         }
         case LIST_GET:
         {
+            constructor_name = "list_get";
+            check_constructor_arity(0);
+
+            check_instruction_arity(2);
+
+            Value& list_arg = get_typed_arg(symbol_type);
+            Value& index_arg = get_typed_arg(int64_type);
+            
+            Value& val = *builder.CreateCall2(&macro_env.list_get, &list_arg, &index_arg);
+            
+            result(val);
+            add_instruction(list_get{val});
+            break;
         }
         case LIST_SET:
         {
+            constructor_name = "list_set";
+            check_constructor_arity(0);
+
+            check_instruction_arity(3);
+
+            Value& list_arg = get_typed_arg(symbol_type);
+            Value& index_arg = get_typed_arg(int64_type);
+            Value& set_arg = get_typed_arg(symbol_type);
+            
+            builder.CreateCall3(&macro_env.list_get, &list_arg, &index_arg, &set_arg);
+            
+            no_result();
+            add_instruction(list_set{});
+            break;
         }
         default:
             fatal<id("unknown_instruction_constructor")>(instruction_type_constructor.source());

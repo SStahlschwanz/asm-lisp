@@ -5,8 +5,8 @@
 #include "../src/core_unique_ids.hpp"
 #include "../src/error/compile_exception.hpp"
 #include "../src/printing.hpp"
+#include "../src/compile_function.hpp"
 
-//#include "state_utils.hpp"
 #include "graph_building.hpp"
 #include "context.hpp"
 

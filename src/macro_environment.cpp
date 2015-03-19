@@ -1,4 +1,4 @@
-#include "macro_module.hpp"
+#include "macro_environment.hpp"
 #include "compilation_context.hpp"
 
 #include <llvm/IR/LLVMContext.h>

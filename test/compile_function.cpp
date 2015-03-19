@@ -379,7 +379,6 @@ BOOST_AUTO_TEST_CASE(call_test)
     BOOST_CHECK_EQUAL(function_ptr(23, 43), 66);
 }
 
-/*
 BOOST_AUTO_TEST_CASE(missing_let_test)
 {
     list_node& params = list
@@ -404,4 +403,4 @@ BOOST_AUTO_TEST_CASE(missing_let_test)
     };
     BOOST_CHECK_THROW(compile_function(rangeify(function_source), context()), compile_exception);
 }
-*/
+

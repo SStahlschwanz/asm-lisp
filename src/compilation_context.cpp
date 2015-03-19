@@ -1,6 +1,5 @@
 #include "compilation_context.hpp"
 
-#include "macro_module.hpp"
 #include "core_module.hpp"
 
 #include <llvm/IR/LLVMContext.h>
@@ -25,15 +24,6 @@ using llvm::EngineBuilder;
 compilation_context::compilation_context()
   : rt_module{new Module{"runtime module", llvm()}}
 {
-    identifier_table = 
-    {
-        {"export", static_cast<size_t>(identifier_ids::EXPORT)},
-        {"import", static_cast<size_t>(identifier_ids::IMPORT)},
-        {"from", static_cast<size_t>(identifier_ids::FROM)},
-        {"def", static_cast<size_t>(identifier_ids::DEF)},
-        {"core", static_cast<size_t>(identifier_ids::CORE)}
-    };
-    assert(identifier_table.size() + 1 == static_cast<size_t>(identifier_ids::FIRST_UNUSED));
     core = make_unique<module>(create_core_module(*this));
 }
 compilation_context::~compilation_context()
