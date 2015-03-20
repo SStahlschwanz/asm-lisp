@@ -3,6 +3,7 @@
 #include "error/compile_function_error.hpp"
 #include "compile_instruction.hpp"
 #include "instruction_types.hpp"
+#include "macro_execution.hpp"
 
 #include <llvm/IR/CFG.h>
 #include <llvm/IR/Module.h>
@@ -318,8 +319,8 @@ macro_node compile_macro(node_range source, compilation_context& context)
     unique_ptr<Function>& func_owner = p.first;
     function_info& func_info = p.second;
     
-    Type* symbol_index_type = IntegerType::get(context.llvm(), 64);
-    Type* macro_type = FunctionType::get(symbol_index_type, vector<Type*>{symbol_index_type}, false);
+    Type* node_type = &llvm_node_type(context.llvm());
+    Type* macro_type = FunctionType::get(node_type, vector<Type*>{node_type}, false);
     
     if(macro_type != func_info.llvm_function.getFunctionType())
         fatal<id("invalid_macro_signature")>(boost::blank());

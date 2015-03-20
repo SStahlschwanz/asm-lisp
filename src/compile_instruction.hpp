@@ -88,7 +88,8 @@ void compile_statement_impl
 
     const char* constructor_name;
     
-    const id_node& instruction_type_constructor = instruction_type_range.front().template cast_else<id_node>([&]
+    const node& instruction_type_constructor_node = resolve_refs(instruction_type_range.front());
+    const id_node& instruction_type_constructor = instruction_type_constructor_node.template cast_else<id_node>([&]
     {
         fatal<id("invalid_instruction_type_constructor")>(instruction_type_range.front().source());
     });
@@ -319,7 +320,7 @@ void compile_statement_impl
         {
             constructor_name = "cmp";
             check_constructor_arity(2);
-            const node& first_constr_arg = get_constr_arg();
+            const node& first_constr_arg = resolve_refs(get_constr_arg());
             const id_node& cmp_kind = first_constr_arg.cast_else<id_node>([&]
             {
                 fatal<id("invalid_comparison_kind_node")>(first_constr_arg.source());
@@ -796,7 +797,7 @@ void compile_statement(const node& statement_node, StatementContext& st_context)
     if(statement_range.empty())
         fatal<id("empty_instruction")>(statement_node.source());
 
-    const node& instruction_type_node = statement_range.front();
+    const node& instruction_type_node = resolve_refs(statement_range.front());
     statement_range.pop_front();
     auto& arguments_range = statement_range;
 
