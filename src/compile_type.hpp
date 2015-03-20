@@ -16,6 +16,8 @@ struct type_info
     {};
     struct node_type
     {};
+    struct void_type
+    {};
 
     const node& node;
     llvm::Type& llvm_type;
@@ -23,7 +25,8 @@ struct type_info
     <
         integer,
         pointer,
-        node_type
+        node_type,
+        void_type
     > kind;
 };
 

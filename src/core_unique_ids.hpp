@@ -56,6 +56,7 @@ enum
     INT,
     PTR,
     NODE,
+    VOID,
     
     // key words
     LET,

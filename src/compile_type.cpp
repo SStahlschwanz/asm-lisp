@@ -115,6 +115,12 @@ type_info compile_type(const node& type_node, LLVMContext& llvm_context)
             Type& llvm_type = llvm_node_type(llvm_context);
             return {type_node, llvm_type, type_info::node_type{}};
         }
+        case unique_ids::VOID:
+        {
+            check_arity("void", 0);
+            Type& llvm_type = *Type::getVoidTy(llvm_context);
+            return {type_node, llvm_type, type_info::node_type{}};
+        }
         default:
             fatal<id("unknown_type_constructor")>(type_constructor.source());
         }
