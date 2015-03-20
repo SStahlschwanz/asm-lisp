@@ -245,19 +245,15 @@ pair<node&, dynamic_graph> execute_macro(macro_function* func, node_range args)
     node** children_begin = &node_pointers[0];
     node** children_end = children_begin + node_pointers.size();
     list_node top_level_list{children_begin, children_end};
-    execution_data.graph = dynamic_graph{top_level_list};
 
-    node_ptr macro_arg = visit<node_ptr>(*execution_data.graph.data.front(),
-    [&](auto& v)
-    {
-        return reinterpret_cast<node_ptr>(&v);
-    });
+    auto p = dynamic_graph::clone(top_level_list);
+    execution_data.graph = move(p.second);
+    node& macro_arg = p.first;
 
     if(int error_id = setjmp(execution_data.jmp_env))
         throw compile_exception(error_kind::MACRO_EXECUTION, error_id, blank());
 
-    node_ptr result = func(macro_arg);
-    node* n = reinterpret_cast<node*>(result);
-    return {*n, move(execution_data.graph)};
+    node* result = as_node(func(as_node_ptr(&macro_arg)));
+    return {*result, move(execution_data.graph)};
 }
 

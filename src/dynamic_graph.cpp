@@ -93,10 +93,12 @@ void dynamic_graph::add(dynamic_graph graph)
     std::move(graph.data.begin(), graph.data.end(), back_inserter(data));
 }
 
-dynamic_graph::dynamic_graph(const node& n)
+pair<node&, dynamic_graph> dynamic_graph::clone(const node& n)
 {
     unordered_map<const node*, node_data*> copied_nodes;
     vector<pair<const node*, node_data*>> node_stack;
+
+    dynamic_graph graph;
 
     auto node_ptr_of_data = [&](node_data& d)
     {
@@ -112,15 +114,15 @@ dynamic_graph::dynamic_graph(const node& n)
         if(it != copied_nodes.end())
             return node_ptr_of_data(*it->second);
         
-        data.push_back(make_unique<node_data>(id_node{0}));
-        node_data* copied_data_ptr = data.back().get();
+        graph.data.push_back(make_unique<node_data>(id_node{0}));
+        node_data* copied_data_ptr = graph.data.back().get();
         copied_nodes.insert({&child_node, copied_data_ptr});
         node_stack.push_back(make_pair(&child_node, copied_data_ptr));
 
         return node_ptr_of_data(*copied_data_ptr);
     };
 
-    ptr_for(n);
+    node& result_node = *ptr_for(n);
     while(!node_stack.empty())
     {
         const node& current_node = *node_stack.back().first;
@@ -177,5 +179,7 @@ dynamic_graph::dynamic_graph(const node& n)
             *current_data = proc_node{proc};
         });
     }
+
+    return {result_node, move(graph)};
 }
 

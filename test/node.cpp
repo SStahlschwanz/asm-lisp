@@ -117,9 +117,11 @@ BOOST_AUTO_TEST_CASE(dynamic_graph_cloning_test)
     ref1.refered(&lit1);
     list_node& list1 = graph.create_list({&ref1, &lit1});
 
-    dynamic_graph clone{list1};
+    auto p = dynamic_graph::clone(list1);
+    list_node& cloned_list1 = p.first.cast<list_node>();
+    dynamic_graph& clone = p.second;
+
     BOOST_CHECK(clone.data.size() == 3);
-    list_node& cloned_list1 = get<dynamic_graph::list_data>(*clone.data.front()).first;
 
     BOOST_CHECK(length(rangeify(cloned_list1)) == 2);
     BOOST_CHECK(cloned_list1[0].is<ref_node>());

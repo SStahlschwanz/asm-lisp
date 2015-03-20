@@ -21,7 +21,6 @@ class dynamic_graph
 {
 public:
     dynamic_graph() = default;
-    dynamic_graph(const node& n);
 
     id_node& create_id(std::size_t id);
     lit_node& create_lit(std::string str);
@@ -32,8 +31,7 @@ public:
 
     void add(dynamic_graph);
 
-    static dynamic_graph to_macro_execution_data(const node& n);
-    void finalize_execution_data();
+    static std::pair<node&, dynamic_graph> clone(const node&);
 
     typedef id_node id_data;
     typedef std::pair<lit_node, std::string> lit_data;
