@@ -4,6 +4,8 @@
 
 #include "../src/compile_instruction.hpp"
 
+#include "context.hpp"
+
 using llvm::Value;
 using llvm::IRBuilder;
 
@@ -21,7 +23,7 @@ BOOST_AUTO_TEST_CASE(first_test)
         {
         };
         IRBuilder<>& builder = *static_cast<IRBuilder<>*>(nullptr);
-        auto st_context = make_statement_context(builder, define_variable, lookup_variable, add_statement);
+        auto st_context = make_statement_context(builder, define_variable, lookup_variable, add_statement, context().macro_environment());
         const node& n = *static_cast<const node*>(nullptr);
         compile_statement(n, st_context);
     }

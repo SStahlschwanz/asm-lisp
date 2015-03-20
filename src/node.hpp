@@ -421,8 +421,14 @@ inline bool structurally_equal(const node& lhs, const node& rhs)
     {
         const ref_node& lhs_ref = lhs.cast<ref_node>();
         const ref_node& rhs_ref = rhs.cast<ref_node>();
-        return lhs_ref.identifier() == rhs_ref.identifier() && 
-                ((lhs_ref.refered() == nullptr && rhs_ref.refered() == nullptr) || structurally_equal(*lhs_ref.refered(), *rhs_ref.refered()));
+        if(lhs_ref.identifier() != rhs_ref.identifier())
+            return false;
+        if(lhs_ref.refered() != rhs_ref.refered())
+            return false;
+        if(lhs_ref.refered() == nullptr) // this implies rhs_ref.refered() == nullptr
+            return true;
+
+        return structurally_equal(*lhs_ref.refered(), *rhs_ref.refered());
     }
     case node_type::LIST:
     {
@@ -435,7 +441,7 @@ inline bool structurally_equal(const node& lhs, const node& rhs)
         bool is_equal = true;
         for_each(zipped(lhs_range, rhs_range), unpacking([&](const node& lhs_node, const node& rhs_node)
         {
-            is_equal = (is_equal && structurally_equal(lhs_node, rhs_node));
+            is_equal = is_equal && structurally_equal(lhs_node, rhs_node);
         }));
         return is_equal;
     }        

@@ -109,6 +109,11 @@ BOOST_AUTO_TEST_CASE(list_symbol_equality_test)
     BOOST_CHECK(!structurally_equal(list1, list2));
 }
 
+#include <iostream>
+#include "../src/printing.hpp"
+using std::cout;
+using std::endl;
+
 BOOST_AUTO_TEST_CASE(dynamic_graph_cloning_test)
 {
     dynamic_graph graph;
@@ -117,10 +122,10 @@ BOOST_AUTO_TEST_CASE(dynamic_graph_cloning_test)
     ref1.refered(&lit1);
     list_node& list1 = graph.create_list({&lit1, &ref1});
 
-    dynamic_graph clone = dynamic_graph::clone_indexed(list1);
+    dynamic_graph clone{list1};
     BOOST_CHECK(clone.data.size() == 3);
     list_node& cloned_list1 = get<dynamic_graph::list_data>(*clone.data.front()).first;
     BOOST_CHECK(length(rangeify(cloned_list1)) == 2);
+    cout << cloned_list1;
     BOOST_CHECK(structurally_equal(cloned_list1, list1));
 }
-

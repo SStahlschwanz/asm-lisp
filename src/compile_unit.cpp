@@ -2,6 +2,8 @@
 
 #include "module.hpp"
 #include "compilation_context.hpp"
+#include "parse_state.hpp"
+#include "parse.hpp"
 #include "error/compile_exception.hpp"
 #include "error/import_export_error.hpp"
 
