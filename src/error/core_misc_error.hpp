@@ -12,8 +12,8 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"unique_invalid_argument_number", "invalid number of arguments to 'unique': expected 0"},
     {"identifier_not_defined", ""},
     {"external_invalid_argument_number", ""},
-    {"external_not_a_signature_type", ""},
     {"external_invalid_name", ""},
+    {"external_invalid_argument_type_list", ""},
     {"main_ct_only_proc", ""},
     {"main_invalid_signature", ""}
 };

@@ -86,31 +86,51 @@ module create_core_module(compilation_context& context)
     };
     add_macro_symbol("proc", proc_func);
 
-    /*
-    auto external_func = [&context](list_symbol::const_iterator begin, list_symbol::const_iterator end) -> pair<any_symbol, vector<unique_ptr<any_symbol>>>
+    auto external_func = [&context](node_range args) -> pair<node&, dynamic_graph>
     {
-        if(distance(begin, end) != 2)
+        if(length(args) != 3)
             fatal<id("external_invalid_argument_number")>(blank());
-        const lit_symbol& external_name = begin->cast_else<lit_symbol>([&]
+        const lit_node& external_name = args.front().cast_else<lit_node>([&]
         {
-            fatal<id("external_invalid_name")>(begin->source());
+            fatal<id("external_invalid_name")>(args.front().source());
         });
-        type_info type = compile_type(*(begin + 1), context.llvm());
+        args.pop_front();
 
-        FunctionType* func_type = dyn_cast<FunctionType>(type.llvm_type);
-        if(func_type == nullptr)
-            fatal<id("external_not_a_signature_type")>(type.node.source());
-        unique_ptr<Function> func_owner{Function::Create(func_type, Function::ExternalLinkage, (string)external_name)};
+        const list_node& arg_types_list = args.front().cast_else<list_node>([&]
+        {
+            fatal<id("external_invalid_argument_type_list")>(args.front().source());
+        });
+        args.pop_front();
+
+        auto llvm_arg_types = save<vector<Type*>>(mapped(arg_types_list,
+        [&](const node& type_node) -> Type*
+        {
+            return &compile_type(type_node, context.llvm()).llvm_type;
+        }));
+
+
+        Type* llvm_return_type = &compile_type(args.front(), context.llvm()).llvm_type;
+        FunctionType* func_type = FunctionType::get(llvm_return_type, llvm_arg_types, false);
+        assert(func_type);
+
+        unique_ptr<Function> func_owner{Function::Create(func_type, Function::ExternalLinkage, save<string>(external_name))};
         // TODO: check for duplicate names
         context.runtime_module().getFunctionList().push_back(func_owner.get());
         Function* func = func_owner.release();
-        return {proc_symbol{nullptr, func}, vector<unique_ptr<any_symbol>>{}};
+        
+        dynamic_graph graph;
+        proc_node& proc = graph.create_proc();
+        proc.ct_function(nullptr);
+        proc.rt_function(func);
+        return {proc, move(graph)};
     };
     add_macro_symbol("external", external_func);
 
-    auto main_func = [&context](list_symbol::const_iterator begin, list_symbol::const_iterator end) -> pair<any_symbol, vector<unique_ptr<any_symbol>>>
+    auto main_func = [&context](node_range args) -> pair<node&, dynamic_graph>
     {
-        proc_symbol p = compile_proc(begin, end, context);
+        dynamic_graph graph;
+        proc_node& p = graph.create_proc();
+        p = compile_proc(args, context);
         Function* f = p.rt_function();
         if(f == nullptr)
             fatal<id("main_ct_only_proc")>(blank());
@@ -122,10 +142,10 @@ module create_core_module(compilation_context& context)
         if(f->getFunctionType() != main_signature)
             fatal<id("main_invalid_signature")>(blank());
 
-        return {move(p), vector<unique_ptr<any_symbol>>{}};
+        return {p, move(graph)};
     };
     add_macro_symbol("main", main_func);
-    */
+
 
     add_id_symbol("add", unique_ids::ADD);
     add_id_symbol("sub", unique_ids::SUB);
