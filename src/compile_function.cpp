@@ -190,7 +190,6 @@ pair<unique_ptr<Function>, function_info> compile_function(node_range source_ran
             return &params_it->second;
 
         return nullptr;
-        //fatal<id("variable_undefined")>(name_ref.source());
     };
     auto check_for_duplicates = [&](const unordered_map<string, named_value_info>& variable_table)
     {
