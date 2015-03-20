@@ -2,14 +2,22 @@
 
 #include "node.hpp"
 
+#include <mblib/boost_variant.hpp>
+
+#include <unordered_map>
+#include <limits>
+
 using boost::get;
 
 using std::make_unique;
 using std::move;
 using std::string;
+using std::pair;
 using std::make_pair;
 using std::vector;
 using std::back_inserter;
+using std::unordered_map;
+using std::numeric_limits;
 using std::size_t;
 
 id_node& dynamic_graph::create_id(size_t id)
@@ -84,3 +92,204 @@ void dynamic_graph::add(dynamic_graph graph)
 {
     std::move(graph.data.begin(), graph.data.end(), back_inserter(data));
 }
+
+dynamic_graph::dynamic_graph(const node& n)
+{
+    static_assert(sizeof(node*) == sizeof(size_t), "");
+
+    unordered_map<const node*, node_data*> copied_nodes;
+    vector<pair<const node*, node_data*>> node_stack;
+
+    auto ptr_for = [&](const node& child_node) -> node*
+    {
+        auto it = copied_nodes.find(&child_node);
+        if(it != copied_nodes.end())
+            return reinterpret_cast<node*>(it->second);
+        
+        data.push_back(make_unique<node_data>(id_node{0}));
+        node_data* copied_data_ptr = data.back().get();
+        copied_nodes.insert({&child_node, copied_data_ptr});
+        node_stack.push_back(make_pair(&child_node, copied_data_ptr));
+
+        node* n = visit<node*>(*copied_data_ptr, [&](auto& obj)
+        {
+            return reinterpret_cast<node*>(&obj);
+        });
+        return n;
+    };
+
+    ptr_for(n);
+    while(!node_stack.empty())
+    {
+        const node& current_node = *node_stack.back().first;
+        node_data* current_data = node_stack.back().second;
+        node_stack.pop_back();
+
+        current_node.visit(
+        [&](const id_node& id)
+        {
+            *current_data = id_node{id};
+        },
+        [&](const lit_node& lit)
+        {
+            *current_data = make_pair(lit_node{nullptr, nullptr}, "");
+            lit_data& data = get<lit_data>(*current_data);
+            data.second = save<string>(lit);
+            char* str_begin = &data.second[0];
+            char* str_end = str_begin + data.second.size();
+            lit_node cloned_lit{str_begin, str_end};
+            data.first = lit_node{str_begin, str_end};
+        },
+        [&](const ref_node& ref)
+        {
+            *current_data = make_pair(ref_node{nullptr, nullptr, nullptr}, "");
+            ref_data& data = get<ref_data>(*current_data);
+            data.second = save<string>(ref.identifier());
+            char* str_begin = &data.second[0];
+            char* str_end = str_begin + data.second.size();
+            node* child = nullptr;
+            if(ref.refered())
+                child = ptr_for(*ref.refered());
+            data.first = ref_node{str_begin, str_end, child};
+        },
+        [&](const list_node& list)
+        {
+            *current_data = make_pair(list_node{nullptr, nullptr}, vector<node*>{});
+            list_data& data = get<list_data>(*current_data);
+            data.second = save<vector<node*>>(mapped(list,
+            [&](const node& n) -> node*
+            {
+                return ptr_for(n);
+            }));
+            node** children_begin = &data.second[0];
+            node** children_end = children_begin + data.second.size();
+            data.first = list_node{children_begin, children_end};
+        },
+        [&](const macro_node& macro)
+        {
+            *current_data = macro_node{macro};
+        },
+        [&](const proc_node& proc)
+        {
+            *current_data = proc_node{proc};
+        });
+    }
+}
+/*
+dynamic_graph dynamic_graph::from_macro_execution_data(const node& n)
+{
+    static_assert(sizeof(node*) == sizeof(size_t), "");
+
+    unordered_map<const node_data*, node*> copied_nodes;
+    vector<pair<const node_data*, node*>> node_stack;
+
+    dynamic_graph graph;
+
+    auto ptr_for = [&](const node_data& child_node) -> node*
+    {
+        auto it = copied_nodes.find(&child_node);
+        if(it != copied_nodes.end())
+            return it->second;
+        
+        graph.data.push_back(make_unique<node_data>(id_node{0}));
+        node_data* copied_data_ptr = graph.data.back().get();
+        copied_nodes.insert({&child_node, copied_data_ptr});
+        return copied_data_ptr;
+    };
+
+    auto to_node_ptr = [&](node_data* ptr) -> node*
+    {
+        return reinterpret_cast<node*>(ptr);
+    };
+
+    ptr_for(n);
+    while(!node_stack.empty())
+    {
+        const node& current_node = *node_stack.back().first;
+        node_data* current_data = node_stack.back().second;
+        node_stack.pop_back();
+
+        current_node.visit(
+        [&](const id_node& id)
+        {
+            *current_data = id_node{id};
+        },
+        [&](const lit_node& lit)
+        {
+            *current_data = make_pair(lit_node{nullptr, nullptr}, "");
+            lit_data& data = get<lit_data>(*current_data);
+            data.second = save<string>(lit);
+            char* str_begin = &data.second[0];
+            char* str_end = str_begin + data.second.size();
+            lit_node cloned_lit{str_begin, str_end};
+            data.first = lit_node{str_begin, str_end};
+        },
+        [&](const ref_node& ref)
+        {
+            *current_data = make_pair(ref_node{nullptr, nullptr, nullptr}, "");
+            ref_data& data = get<ref_data>(*current_data);
+            data.second = save<string>(ref.identifier());
+            char* str_begin = &data.second[0];
+            char* str_end = str_begin + data.second.size();
+            node_data* child = nullptr;
+            if(ref.refered())
+                child = ptr_for(*ref.refered());
+            data.first = ref_node{str_begin, str_end, to_node_ptr(child)};
+        },
+        [&](const list_node& list)
+        {
+            *current_data = make_pair(list_node{nullptr, nullptr}, vector<node*>{});
+            list_data& data = get<list_data>(*current_data);
+            data.second = save<vector<node*>>(mapped(list,
+            [&](const node& n) -> node*
+            {
+                return to_node_ptr(ptr_for(n));
+            }));
+            node** children_begin = &data.second[0];
+            node** children_end = children_begin + data.second.size();
+            data.first = list_node{children_begin, children_end};
+        },
+        [&](const macro_node& macro)
+        {
+            *current_data = macro_node{macro};
+        },
+        [&](const proc_node& proc)
+        {
+            *current_data = proc_node{proc};
+        });
+    }
+
+    return graph;
+}
+
+void dynamic_graph::finalize_execution_data()
+{
+    auto get_pointer_on_actual_node = [&](node* data) -> node*
+    {
+        if(data == nullptr)
+            return nullptr;
+        return visit<node*>(*reinterpret_cast<node_data*>(data),
+        [&](lit_data& lit)
+        {
+            return &lit.first;
+        },
+        [&](ref_data& ref)
+        {
+            return &ref.first;
+        },
+        [&](list_data& list)
+        {
+            return &list.first;
+        });
+    };
+    for_each(data, [&](auto& data_ptr)
+    {
+        visit(*data_ptr,
+        [&](ref_data& ref)
+        {
+            if(ref.first.refered())
+                ref.first.refered(
+        }
+    });
+}
+*/

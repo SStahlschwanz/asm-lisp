@@ -168,6 +168,7 @@ module create_core_module(compilation_context& context)
 
     add_id_symbol("int", unique_ids::INT);
     add_id_symbol("ptr", unique_ids::PTR);
+    add_id_symbol("node", unique_ids::NODE);
 
     add_id_symbol("let", unique_ids::LET);
 

@@ -356,6 +356,56 @@ ReturnType node::visit(FunctorType&& functor)
     }
 }
 
+/*
+namespace node_detail
+{
+
+bool structurally_equal(const node& lhs, const node& rhs, DereferenceFunctor&& dereference, IsNullFunctor&& is_null)
+{
+    if(lhs.type() != rhs.type())
+        return false;
+    switch(lhs.type())
+    {
+    case node_type::ID:
+        return lhs.cast<id_node>().id() == rhs.cast<id_node>().id();
+    case node_type::LITERAL:
+        return rangeify(lhs.cast<lit_node>()) == rangeify(rhs.cast<lit_node>());
+    case node_type::REFERENCE:
+    {
+        const ref_node& lhs_ref = lhs.cast<ref_node>();
+        const ref_node& rhs_ref = rhs.cast<ref_node>();
+        if(lhs_ref.identifier() != rhs_ref.identifier())
+            return false;
+        if(is_null(lhs_ref.refered())) // rhs_ref.refered() is also null
+            return true;
+
+        return structurally_equal(dereference(lhs_refered.refered()), dereference(rhs_refered.refered()), dereference, is_null);
+    }
+    case node_type::LIST:
+    {
+        auto lhs_range = rangeify(lhs.cast<list_node>());
+        auto rhs_range = rangeify(rhs.cast<list_node>());
+        
+        if(length(lhs_range) != length(rhs_range))
+            return false;
+        
+        bool is_equal = true;
+        for_each(zipped(lhs_range, rhs_range), unpacking([&](const node& lhs_node, const node& rhs_node)
+        {
+            is_equal = is_equal && structrually_equal(dereference(&lhs_node), dereference(&rhs_node));
+        }));
+        return is_equal;
+    }        
+    case node_type::MACRO:
+        return true; // TODO
+    case node_type::PROC:
+        return true; // TODO
+    }
+}
+
+}
+*/
+
 // TODO: only works for trees
 inline bool structurally_equal(const node& lhs, const node& rhs)
 {

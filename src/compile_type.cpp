@@ -3,6 +3,8 @@
 #include "error/compile_type_error.hpp"
 #include "core_unique_ids.hpp"
 #include "core_utils.hpp"
+#include "macro_execution.hpp"
+
 #include <mblib/range.hpp>
 
 #include <llvm/IR/DerivedTypes.h>
@@ -106,6 +108,12 @@ type_info compile_type(const node& type_node, LLVMContext& llvm_context)
             Type* llvm_type = PointerType::getUnqual(IntegerType::get(llvm_context, 8));
             assert(llvm_type);
             return {type_node, *llvm_type, type_info::pointer{}};
+        }
+        case unique_ids::NODE:
+        {
+            check_arity("node", 0);
+            Type& llvm_type = llvm_node_type(llvm_context);
+            return {type_node, llvm_type, type_info::node_type{}};
         }
         default:
             fatal<id("unknown_type_constructor")>(type_constructor.source());

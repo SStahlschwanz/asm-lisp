@@ -7,10 +7,18 @@
 #include <utility>
 #include <vector>
 
-typedef std::size_t macro_func(std::size_t);
+typedef uint8_t* node_ptr;
+typedef node_ptr macro_function(node_ptr);
 
-std::pair<const node&, dynamic_graph> execute_macro(macro_func* func, node_range args);
+std::pair<node&, dynamic_graph> execute_macro(macro_function* func, node_range args);
 
+namespace llvm
+{
+class Type;
+class LLVMContext;
+}
+
+llvm::Type& llvm_node_type(llvm::LLVMContext&);
 
 #endif
 

@@ -14,16 +14,16 @@ struct type_info
     };
     struct pointer
     {};
-    struct function_signature
-    {
-    };
+    struct node_type
+    {};
 
     const node& node;
     llvm::Type& llvm_type;
     boost::variant
     <
         integer,
-        pointer
+        pointer,
+        node_type
     > kind;
 };
 

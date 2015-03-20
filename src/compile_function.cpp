@@ -1,6 +1,8 @@
 #include "compile_function.hpp"
 
 #include "error/compile_function_error.hpp"
+#include "compile_instruction.hpp"
+#include "instruction_types.hpp"
 
 #include <llvm/IR/CFG.h>
 #include <llvm/IR/Module.h>
@@ -86,7 +88,7 @@ pair<unique_ptr<Function>, unordered_map<string, named_value_info>> compile_sign
             fatal<id("duplicate_parameter_name")>(name_ref.source());
     }));
 
-    return {move(function), move(parameter_table)};
+    return {std::move(function), std::move(parameter_table)};
 }
 
 
@@ -136,14 +138,14 @@ block_info compile_block(const node& block_node, BasicBlock& llvm_block, LookupV
     auto add_statement = [&](const node& statement_node, const instruction_data& data)
     {
         pair<const node&, instruction_data> statement{statement_node, data};
-        statements.push_back(move(statement));
+        statements.push_back(std::move(statement));
     };
 
     auto st_context = make_statement_context(builder, define_variable, lookup_variable, add_statement, context.macro_environment());
     for(const node& n : block_body)
         compile_statement(n, st_context);
 
-    return {block_node, block_name, move(local_variable_table), move(statements), llvm_block};
+    return {block_node, block_name, std::move(local_variable_table), std::move(statements), llvm_block};
 }
 
 block_info compile_block(const node& block_node, BasicBlock& llvm_block, std::function<named_value_info* (const ref_node&)> lookup_global_variable, compilation_context& context)
@@ -221,7 +223,7 @@ pair<unique_ptr<Function>, function_info> compile_function(node_range source_ran
         BasicBlock& llvm_block = *BasicBlock::Create(context.llvm(), "", function.get());
         block_info info = compile_block(block_node, llvm_block, lookup_global_variable, context);
         check_for_duplicates(info.variable_table);
-        blocks.push_back(move(info));
+        blocks.push_back(std::move(info));
     }
 
     auto get_block = [&](const ref_node& name_ref) -> block_info&
@@ -307,7 +309,7 @@ pair<unique_ptr<Function>, function_info> compile_function(node_range source_ran
     }
 
     Function& func = *function;
-    return {move(function), function_info{move(blocks), is_ct_only, is_rt_only, func}};
+    return {std::move(function), function_info{std::move(blocks), is_ct_only, is_rt_only, func}};
 }
 
 macro_node compile_macro(node_range source, compilation_context& context)
@@ -327,13 +329,12 @@ macro_node compile_macro(node_range source, compilation_context& context)
     context.macro_environment().llvm_module.getFunctionList().push_back(func_owner.get());
     func_owner.release();
 
-    typedef uint64_t macro_function_signature(uint64_t);
-    auto func_ptr = (macro_function_signature*) context.macro_environment().llvm_engine.getPointerToFunction(&func_info.llvm_function);
+    auto func_ptr = (macro_function*) context.macro_environment().llvm_engine.getPointerToFunction(&func_info.llvm_function);
     assert(func_ptr);
 
     auto macro_func = [func_ptr](node_range nodes) -> pair<node&, dynamic_graph>
     {
-        // TODO
+        return execute_macro(func_ptr, nodes);
     };
 
     return {make_shared<std::function<macro_node::macro>>(macro_func)};

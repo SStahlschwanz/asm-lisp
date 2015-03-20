@@ -1,12 +1,14 @@
 #ifndef COMPILE_INSTRUCTION_HPP_
 #define COMPILE_INSTRUCTION_HPP_
 
+#include "instruction_types.hpp"
 #include "compile_type.hpp"
 #include "error/compile_instruction_error.hpp"
 #include "node.hpp"
 #include "core_unique_ids.hpp"
 #include "core_utils.hpp"
 #include "macro_environment.hpp"
+#include "macro_execution.hpp"
 
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Function.h>
@@ -16,293 +18,6 @@
 
 #include <boost/optional.hpp>
 
-namespace instruction
-{
-
-struct add
-{
-    type_info type;
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = false;
-    static constexpr bool is_rt_only = false;
-};
-struct sub
-{
-    type_info type;
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = false;
-    static constexpr bool is_rt_only = false;
-};
-struct mul
-{
-    type_info type;
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = false;
-    static constexpr bool is_rt_only = false;
-};
-struct sdiv
-{
-    type_info type;
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = false;
-    static constexpr bool is_rt_only = false;
-};
-
-struct cmp
-{
-    const id_node& cmp_kind;
-    type_info type;
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = false;
-    static constexpr bool is_rt_only = false;
-};
-
-struct typed_alloc
-{
-    type_info type;
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = false;
-    static constexpr bool is_rt_only = false;
-};
-struct store
-{
-    type_info type;
-
-    static constexpr bool is_ct_only = false;
-    static constexpr bool is_rt_only = false;
-};
-struct load
-{
-    type_info type;
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = false;
-    static constexpr bool is_rt_only = false;
-};
-
-struct branch
-{
-    const ref_node& block_name;
-
-    llvm::BranchInst* value;
-
-    static constexpr bool is_ct_only = false;
-    static constexpr bool is_rt_only = false;
-};
-struct cond_branch
-{
-    const ref_node& true_block_name;
-    const ref_node& false_block_name;
-
-    llvm::Value& boolean;
-    llvm::BranchInst* value;
-
-    static constexpr bool is_ct_only = false;
-    static constexpr bool is_rt_only = false;
-};
-struct phi
-{
-    struct incoming
-    {
-        const ref_node& variable_name;
-        const ref_node& block_name;
-    };
-
-    type_info type;
-    std::vector<incoming> incomings;
-
-    llvm::PHINode& llvm_value;
-
-    static constexpr bool is_ct_only = false;
-    static constexpr bool is_rt_only = false;
-};
-struct return_inst
-{
-    type_info type;
-
-    static constexpr bool is_ct_only = false;
-    static constexpr bool is_rt_only = false;
-};
-struct call
-{
-    type_info return_type;
-    std::vector<type_info> arg_types;
-    const proc_node& callee;
-
-    llvm::CallInst& llvm_value;
-
-    bool is_ct_only;
-    bool is_rt_only;
-};
-
-struct is_id
-{
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-struct is_lit
-{
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-struct is_ref
-{
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-struct is_list
-{
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-struct is_macro
-{
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-
-struct lit_create
-{
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-struct lit_size
-{
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-struct lit_push
-{
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-struct lit_pop
-{
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-struct lit_get
-{
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-struct lit_set
-{
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-
-struct list_create
-{
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-struct list_size
-{
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-struct list_push
-{
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-struct list_pop
-{
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-struct list_get
-{
-    llvm::Value& llvm_value;
-
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-struct list_set
-{
-    static constexpr bool is_ct_only = true;
-    static constexpr bool is_rt_only = false;
-};
-
-}
-
-typedef variadic_make_variant
-<
-    instruction::add,
-    instruction::sub,
-    instruction::mul,
-    instruction::sdiv,
-    instruction::typed_alloc,
-    instruction::store,
-    instruction::load,
-    instruction::cond_branch,
-    instruction::branch,
-    instruction::phi,
-    instruction::cmp,
-    instruction::return_inst,
-    instruction::call,
-
-    instruction::is_id,
-    instruction::is_lit,
-    instruction::is_ref,
-    instruction::is_list,
-    instruction::is_macro,
-
-    instruction::lit_create,
-    instruction::lit_size,
-    instruction::lit_push,
-    instruction::lit_pop,
-    instruction::lit_get,
-    instruction::lit_set,
-
-    instruction::list_create,
-    instruction::list_size,
-    instruction::list_push,
-    instruction::list_pop,
-    instruction::list_get,
-    instruction::list_set
->::type instruction_data;
-
-typedef std::pair<const node&, instruction_data> statement;
-
-struct named_value_info
-{
-    llvm::Value& llvm_value;
-
-    const ref_node& name_ref;
-};
 
 template<class DefineVariableFunctor, class LookupVariable, class AddStatementFunctor>
 struct statement_context
@@ -341,7 +56,9 @@ void compile_statement_impl
     StatementContext st_context
 )
 {
-    using namespace compile_instruction_error;
+    //using namespace compile_instruction_error;
+    using compile_instruction_error::id;
+    using compile_instruction_error::fatal;
     using llvm::Value;
     using llvm::Type;
     using llvm::IRBuilder;
@@ -366,7 +83,6 @@ void compile_statement_impl
     using std::tuple;
     using std::out_of_range;
 
-
     if(instruction_type_range.empty())
         fatal<id("empty_instruction_type")>(instruction_type_node.source());
 
@@ -387,7 +103,7 @@ void compile_statement_impl
 
     LLVMContext& llvm = builder.getContext();
     Type& pointer_type = *PointerType::getUnqual(IntegerType::get(builder.getContext(), 8));
-    Type& symbol_type = *IntegerType::get(builder.getContext(), 64);
+    Type& node_type = llvm_node_type(llvm);
     Type& int64_type = *IntegerType::get(builder.getContext(), 64);
     Type& int1_type = *IntegerType::get(builder.getContext(), 1);
     Type& int8_type = *IntegerType::get(builder.getContext(), 8);
@@ -395,7 +111,7 @@ void compile_statement_impl
 
     auto add_instruction = [&](instruction_data data)
     {
-        add_statement(statement_node, move(data));
+        add_statement(statement_node, std::move(data));
     };
 
     auto result = [&](Value& val)
@@ -499,7 +215,7 @@ void compile_statement_impl
             Value& val = *builder.CreateAdd(&arg1, &arg2);
 
             result(val);
-            add_instruction(add{move(type), val});
+            add_instruction(add{std::move(type), val});
             break;
         }
         case SUB:
@@ -514,7 +230,7 @@ void compile_statement_impl
             Value& val = *builder.CreateSub(&arg1, &arg2);
 
             result(val);
-            add_instruction(sub{move(type), val});
+            add_instruction(sub{std::move(type), val});
             break;
         }
         case MUL:
@@ -529,7 +245,7 @@ void compile_statement_impl
             Value& val = *builder.CreateMul(&arg1, &arg2);
 
             result(val);
-            add_instruction(mul{move(type), val});
+            add_instruction(mul{std::move(type), val});
             break;
         }
         case SDIV:
@@ -544,7 +260,7 @@ void compile_statement_impl
             Value& val = *builder.CreateSDiv(&arg1, &arg2);
 
             result(val);
-            add_instruction(sdiv{move(type), val});
+            add_instruction(sdiv{std::move(type), val});
             break;
         }
 
@@ -560,7 +276,7 @@ void compile_statement_impl
             Value& val = *builder.CreatePointerCast(&typed_pointer, &pointer_type);
             
             result(val);
-            add_instruction(typed_alloc{move(type), val});
+            add_instruction(typed_alloc{std::move(type), val});
             break;
         }
         case STORE:
@@ -578,7 +294,7 @@ void compile_statement_impl
             builder.CreateStore(&stored, &typed_pointer);
             
             no_result();
-            add_instruction(store{move(type)});
+            add_instruction(store{std::move(type)});
             break;
         }
         case LOAD:
@@ -642,7 +358,7 @@ void compile_statement_impl
             }
 
             result(*val);
-            add_statement(statement_node, cmp{cmp_kind, move(type), *val});
+            add_statement(statement_node, cmp{cmp_kind, std::move(type), *val});
             break;
         }
         case RETURN:
@@ -657,7 +373,7 @@ void compile_statement_impl
             //Value& val = *builder.CreateRet(&arg);
 
             no_result();
-            add_statement(statement_node, return_inst{move(type)});
+            add_statement(statement_node, return_inst{std::move(type)});
             break;
         }
         case COND_BRANCH:
@@ -733,7 +449,7 @@ void compile_statement_impl
             PHINode& val = *builder.CreatePHI(&type.llvm_type, incomings.size());
 
             result(val);
-            add_instruction(phi{move(type), move(incomings), val});
+            add_instruction(phi{std::move(type), std::move(incomings), val});
             break;
         }
         case CALL:
@@ -787,7 +503,7 @@ void compile_statement_impl
             result(val);
             bool is_ct_only = callee.rt_function() == nullptr;
             bool is_rt_only = callee.ct_function() == nullptr;
-            add_instruction(call{return_type, move(arg_types), callee, val, is_ct_only, is_rt_only});
+            add_instruction(call{return_type, std::move(arg_types), callee, val, is_ct_only, is_rt_only});
             break;
         }
         case IS_ID:
@@ -796,7 +512,7 @@ void compile_statement_impl
             check_constructor_arity(0);
 
             check_instruction_arity(1);
-            Value& arg = get_typed_arg(symbol_type);
+            Value& arg = get_typed_arg(node_type);
             Value& val = *builder.CreateCall(&macro_env.is_id, &arg);
 
             result(val);
@@ -809,8 +525,8 @@ void compile_statement_impl
             check_constructor_arity(0);
 
             check_instruction_arity(1);
-            Value& arg = get_typed_arg(symbol_type);
-            Value& val = *builder.CreateCall(&macro_env.is_id, &arg);
+            Value& arg = get_typed_arg(node_type);
+            Value& val = *builder.CreateCall(&macro_env.is_lit, &arg);
 
             result(val);
             add_instruction(is_id{val});
@@ -822,7 +538,7 @@ void compile_statement_impl
             check_constructor_arity(0);
 
             check_instruction_arity(1);
-            Value& arg = get_typed_arg(symbol_type);
+            Value& arg = get_typed_arg(node_type);
             Value& val = *builder.CreateCall(&macro_env.is_ref, &arg);
 
             result(val);
@@ -835,7 +551,7 @@ void compile_statement_impl
             check_constructor_arity(0);
 
             check_instruction_arity(1);
-            Value& arg = get_typed_arg(symbol_type);
+            Value& arg = get_typed_arg(node_type);
             Value& val = *builder.CreateCall(&macro_env.is_list, &arg);
 
             result(val);
@@ -848,7 +564,7 @@ void compile_statement_impl
             check_constructor_arity(0);
 
             check_instruction_arity(1);
-            Value& arg = get_typed_arg(symbol_type);
+            Value& arg = get_typed_arg(node_type);
             Value& val = *builder.CreateCall(&macro_env.is_macro, &arg);
 
             result(val);
@@ -875,7 +591,7 @@ void compile_statement_impl
 
             check_instruction_arity(1);
 
-            Value& arg = get_typed_arg(symbol_type);
+            Value& arg = get_typed_arg(node_type);
             Value& val = *builder.CreateCall(&macro_env.lit_size, &arg);
             
             result(val);
@@ -889,7 +605,7 @@ void compile_statement_impl
 
             check_instruction_arity(2);
 
-            Value& lit_arg = get_typed_arg(symbol_type);
+            Value& lit_arg = get_typed_arg(node_type);
             Value& char_arg = get_typed_arg(int8_type);
             
             Value& val = *builder.CreateCall2(&macro_env.lit_push, &lit_arg, &char_arg);
@@ -905,9 +621,9 @@ void compile_statement_impl
 
             check_instruction_arity(1);
 
-            Value& lit_arg = get_typed_arg(symbol_type);
+            Value& lit_arg = get_typed_arg(node_type);
             
-            Value& val = *builder.CreateCall(&macro_env.lit_push, &lit_arg);
+            Value& val = *builder.CreateCall(&macro_env.lit_pop, &lit_arg);
             
             no_result();
             add_instruction(lit_pop{});
@@ -920,7 +636,7 @@ void compile_statement_impl
 
             check_instruction_arity(2);
 
-            Value& lit_arg = get_typed_arg(symbol_type);
+            Value& lit_arg = get_typed_arg(node_type);
             Value& index_arg = get_typed_arg(int64_type);
             
             Value& val = *builder.CreateCall2(&macro_env.lit_get, &lit_arg, &index_arg);
@@ -936,11 +652,11 @@ void compile_statement_impl
 
             check_instruction_arity(3);
 
-            Value& lit_arg = get_typed_arg(symbol_type);
+            Value& lit_arg = get_typed_arg(node_type);
             Value& index_arg = get_typed_arg(int64_type);
             Value& char_arg = get_typed_arg(int8_type);
             
-            builder.CreateCall3(&macro_env.lit_get, &lit_arg, &index_arg, &char_arg);
+            builder.CreateCall3(&macro_env.lit_set, &lit_arg, &index_arg, &char_arg);
             
             no_result();
             add_instruction(lit_set{});
@@ -966,7 +682,7 @@ void compile_statement_impl
 
             check_instruction_arity(1);
 
-            Value& arg = get_typed_arg(symbol_type);
+            Value& arg = get_typed_arg(node_type);
             Value& val = *builder.CreateCall(&macro_env.list_size, &arg);
             
             result(val);
@@ -980,8 +696,8 @@ void compile_statement_impl
 
             check_instruction_arity(2);
 
-            Value& list_arg = get_typed_arg(symbol_type);
-            Value& pushed_arg = get_typed_arg(symbol_type);
+            Value& list_arg = get_typed_arg(node_type);
+            Value& pushed_arg = get_typed_arg(node_type);
             
             Value& val = *builder.CreateCall2(&macro_env.list_push, &list_arg, &pushed_arg);
             
@@ -996,9 +712,9 @@ void compile_statement_impl
 
             check_instruction_arity(1);
 
-            Value& list_arg = get_typed_arg(symbol_type);
+            Value& list_arg = get_typed_arg(node_type);
             
-            builder.CreateCall(&macro_env.list_push, &list_arg);
+            builder.CreateCall(&macro_env.list_pop, &list_arg);
             
             no_result();
             add_instruction(list_pop{});
@@ -1011,7 +727,7 @@ void compile_statement_impl
 
             check_instruction_arity(2);
 
-            Value& list_arg = get_typed_arg(symbol_type);
+            Value& list_arg = get_typed_arg(node_type);
             Value& index_arg = get_typed_arg(int64_type);
             
             Value& val = *builder.CreateCall2(&macro_env.list_get, &list_arg, &index_arg);
@@ -1027,11 +743,11 @@ void compile_statement_impl
 
             check_instruction_arity(3);
 
-            Value& list_arg = get_typed_arg(symbol_type);
+            Value& list_arg = get_typed_arg(node_type);
             Value& index_arg = get_typed_arg(int64_type);
-            Value& set_arg = get_typed_arg(symbol_type);
+            Value& set_arg = get_typed_arg(node_type);
             
-            builder.CreateCall3(&macro_env.list_get, &list_arg, &index_arg, &set_arg);
+            builder.CreateCall3(&macro_env.list_set, &list_arg, &index_arg, &set_arg);
             
             no_result();
             add_instruction(list_set{});

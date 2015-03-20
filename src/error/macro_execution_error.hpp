@@ -9,7 +9,9 @@ namespace macro_execution_error
 
 constexpr std::pair<conststr, conststr> dictionary[] =
 {
-    {"generic_error", ""}
+    {"invalid_node_index", ""},
+    {"invalid_node_type", ""},
+    {"index_out_of_bounds", ""},
 };
 
 constexpr std::size_t id(conststr str)

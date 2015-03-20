@@ -8,6 +8,8 @@
 using std::string;
 using std::exception;
 
+using boost::get;
+
 BOOST_AUTO_TEST_CASE(asdf_test)
 {
     node& n1 = list{};
@@ -106,3 +108,19 @@ BOOST_AUTO_TEST_CASE(list_symbol_equality_test)
     BOOST_CHECK(!structurally_equal(list1, list3));
     BOOST_CHECK(!structurally_equal(list1, list2));
 }
+
+BOOST_AUTO_TEST_CASE(dynamic_graph_cloning_test)
+{
+    dynamic_graph graph;
+    lit_node& lit1 = graph.create_lit("lit1");
+    ref_node& ref1 = graph.create_ref("ref1");
+    ref1.refered(&lit1);
+    list_node& list1 = graph.create_list({&lit1, &ref1});
+
+    dynamic_graph clone = dynamic_graph::clone_indexed(list1);
+    BOOST_CHECK(clone.data.size() == 3);
+    list_node& cloned_list1 = get<dynamic_graph::list_data>(*clone.data.front()).first;
+    BOOST_CHECK(length(rangeify(cloned_list1)) == 2);
+    BOOST_CHECK(structurally_equal(cloned_list1, list1));
+}
+

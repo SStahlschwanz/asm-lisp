@@ -7,17 +7,13 @@
 #include "graph_building.hpp"
 #include "function_building.hpp"
 
-
-typedef size_t macro_function(size_t);
-
-
 BOOST_AUTO_TEST_CASE(parameter_return_test)
 {
     list_node& params = list
     {
-        list{s, symbol_type}
+        list{s, node_type}
     };
-    node& return_type = symbol_type;
+    node& return_type = node_type;
     list_node& body = list
     {
         list{block1, list
@@ -42,7 +38,7 @@ BOOST_AUTO_TEST_CASE(parameter_return_test)
     auto p2 = execute_macro(func, rangeify(l2));
     BOOST_CHECK(structurally_equal(p2.first, l2));
     
-    const list_node& l3 = list{lit{}};
+    const list_node& l3 = list{lit{""}};
     auto p3 = execute_macro(func, rangeify(l3));
     BOOST_CHECK(structurally_equal(p3.first, l3));
 }
@@ -51,9 +47,9 @@ BOOST_AUTO_TEST_CASE(is_test)
 {
     list_node& params = list
     {
-        list{s, symbol_type}
+        list{s, node_type}
     };
-    node& return_type = symbol_type;
+    node& return_type = node_type;
     
     list_node& body = list
     {
@@ -94,20 +90,20 @@ BOOST_AUTO_TEST_CASE(is_test)
     auto p2 = execute_macro(func, rangeify(l2));
     BOOST_CHECK(structurally_equal(expected23, p2.first));
 
-    const list_node& l3{ref{""}};
+    const list_node& l3 = list{ref{""}};
     auto p3 = execute_macro(func, rangeify(l3));
     BOOST_CHECK(structurally_equal(expected23, p3.first));
 }
 
 BOOST_AUTO_TEST_CASE(list_push_pop)
 {
-    const list_node& params = list
+    list_node& params = list
     {
-        list{s, symbol_type}
+        list{s, node_type}
     };
-    const node& return_type = symbol_type;
+    node& return_type = node_type;
     
-    const list_node& body = list
+    list_node& body = list
     {
         list{block1, list
         {
@@ -120,7 +116,7 @@ BOOST_AUTO_TEST_CASE(list_push_pop)
         }}
     };
 
-    const list_node& function_source = list
+    list_node& function_source = list
     {
         params,
         return_type,
@@ -128,9 +124,9 @@ BOOST_AUTO_TEST_CASE(list_push_pop)
     };
 
     macro_function* func = get_compiled_function<macro_function>(function_source);
-    const list l;
+    const list_node& l = list{};
     auto p = execute_macro(func, rangeify(l));
-    list_node& expected = list{lit{}};
+    list_node& expected = list{lit{""}};
     BOOST_CHECK(structurally_equal(p.first, expected));
 }
 
@@ -138,9 +134,9 @@ BOOST_AUTO_TEST_CASE(list_size_test)
 {
     list_node& params = list
     {
-        list{s, symbol_type}
+        list{s, node_type}
     };
-    node& return_type = symbol_type;
+    node& return_type = node_type;
     
     list_node& body = list
     {
@@ -176,9 +172,9 @@ BOOST_AUTO_TEST_CASE(list_size_test)
     };
 
     macro_function* func = get_compiled_function<macro_function>(function_source);
-    const list l;
+    const list_node& l = list{};
     auto p = execute_macro(func, rangeify(l));
-    lit expected = {};
+    lit_node& expected = lit{""};
     BOOST_CHECK(structurally_equal(p.first, expected));
 }
 
@@ -186,9 +182,9 @@ BOOST_AUTO_TEST_CASE(list_set_get_test)
 {
     list_node& params = list
     {
-        list{s, symbol_type}
+        list{s, node_type}
     };
-    node& return_type = symbol_type;
+    node& return_type = node_type;
     
     list_node& body = list
     {
@@ -215,7 +211,7 @@ BOOST_AUTO_TEST_CASE(list_set_get_test)
     };
 
     macro_function* func = get_compiled_function<macro_function>(function_source);
-    const list l;
+    const list_node& l = list{};
     auto p = execute_macro(func, rangeify(l));
     list expected = {};
     BOOST_CHECK(structurally_equal(p.first, expected));
@@ -225,9 +221,9 @@ BOOST_AUTO_TEST_CASE(lit_push_pop_test)
 {
     list_node& params = list
     {
-        list{s, symbol_type}
+        list{s, node_type}
     };
-    node& return_type = symbol_type;
+    node& return_type = node_type;
     
     list_node& body = list
     {
@@ -260,7 +256,7 @@ BOOST_AUTO_TEST_CASE(lit_push_pop_test)
     };
 
     macro_function* func = get_compiled_function<macro_function>(function_source);
-    const list l;
+    const list_node& l = list{};
     auto p = execute_macro(func, rangeify(l));
     lit expected = {"Hello World!"};
     BOOST_CHECK(structurally_equal(p.first, expected));

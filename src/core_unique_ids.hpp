@@ -55,6 +55,7 @@ enum
     // type constructors
     INT,
     PTR,
+    NODE,
     
     // key words
     LET,

@@ -1,16 +1,16 @@
 #ifndef COMPILE_FUNCTION_HPP_
 #define COMPILE_FUNCTION_HPP_
 
+#include "compilation_context.hpp"
+#include "instruction_types.hpp"
+#include "node.hpp"
+
 #include <utility>
 #include <memory>
 #include <unordered_map>
 #include <string>
 #include <vector>
 #include <functional>
-
-#include "compilation_context.hpp"
-#include "compile_instruction.hpp"
-#include "node.hpp"
 
 namespace llvm
 {
@@ -19,6 +19,8 @@ class Function;
 class BasicBlock;
 
 }
+
+
 
 struct block_info
 {

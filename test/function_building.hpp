@@ -32,7 +32,7 @@ using llvm::verifyFunction;
 
 list_node& int64_type = list{id{unique_ids::INT}, lit{"64"}};
 list_node& int1_type = list{id{unique_ids::INT}, lit{"1"}};
-ref_node& node_type = ref{"symbol", &int64_type};
+node& node_type = id{unique_ids::NODE};
 list_node& sig_int64_2int64 = list{list{int64_type, int64_type}, int64_type};
 
 ref_node& a = ref{"a"};
