@@ -109,23 +109,27 @@ BOOST_AUTO_TEST_CASE(list_symbol_equality_test)
     BOOST_CHECK(!structurally_equal(list1, list2));
 }
 
-#include <iostream>
-#include "../src/printing.hpp"
-using std::cout;
-using std::endl;
-
 BOOST_AUTO_TEST_CASE(dynamic_graph_cloning_test)
 {
     dynamic_graph graph;
     lit_node& lit1 = graph.create_lit("lit1");
     ref_node& ref1 = graph.create_ref("ref1");
     ref1.refered(&lit1);
-    list_node& list1 = graph.create_list({&lit1, &ref1});
+    list_node& list1 = graph.create_list({&ref1, &lit1});
 
     dynamic_graph clone{list1};
     BOOST_CHECK(clone.data.size() == 3);
     list_node& cloned_list1 = get<dynamic_graph::list_data>(*clone.data.front()).first;
+
     BOOST_CHECK(length(rangeify(cloned_list1)) == 2);
-    cout << cloned_list1;
+    BOOST_CHECK(cloned_list1[0].is<ref_node>());
+    BOOST_CHECK(cloned_list1[1].is<lit_node>());
+    ref_node& ref1_clone = cloned_list1[0].cast<ref_node>();
+    lit_node& lit1_clone = cloned_list1[1].cast<lit_node>();
+    BOOST_CHECK_EQUAL(save<string>(ref1_clone.identifier()), "ref1");
+    BOOST_CHECK_EQUAL(save<string>(lit1_clone), "lit1");
+    BOOST_CHECK_EQUAL(ref1_clone.refered(), &lit1_clone);
+
     BOOST_CHECK(structurally_equal(cloned_list1, list1));
 }
+

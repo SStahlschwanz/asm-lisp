@@ -95,27 +95,29 @@ void dynamic_graph::add(dynamic_graph graph)
 
 dynamic_graph::dynamic_graph(const node& n)
 {
-    static_assert(sizeof(node*) == sizeof(size_t), "");
-
     unordered_map<const node*, node_data*> copied_nodes;
     vector<pair<const node*, node_data*>> node_stack;
+
+    auto node_ptr_of_data = [&](node_data& d)
+    {
+        return visit<node*>(d, [&](auto& obj) -> node*
+        {
+            return reinterpret_cast<node*>(&obj);
+        });
+    };
 
     auto ptr_for = [&](const node& child_node) -> node*
     {
         auto it = copied_nodes.find(&child_node);
         if(it != copied_nodes.end())
-            return reinterpret_cast<node*>(it->second);
+            return node_ptr_of_data(*it->second);
         
         data.push_back(make_unique<node_data>(id_node{0}));
         node_data* copied_data_ptr = data.back().get();
         copied_nodes.insert({&child_node, copied_data_ptr});
         node_stack.push_back(make_pair(&child_node, copied_data_ptr));
 
-        node* n = visit<node*>(*copied_data_ptr, [&](auto& obj)
-        {
-            return reinterpret_cast<node*>(&obj);
-        });
-        return n;
+        return node_ptr_of_data(*copied_data_ptr);
     };
 
     ptr_for(n);
@@ -160,6 +162,7 @@ dynamic_graph::dynamic_graph(const node& n)
             [&](const node& n) -> node*
             {
                 return ptr_for(n);
+                //return nullptr;
             }));
             node** children_begin = &data.second[0];
             node** children_end = children_begin + data.second.size();

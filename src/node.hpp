@@ -423,10 +423,8 @@ inline bool structurally_equal(const node& lhs, const node& rhs)
         const ref_node& rhs_ref = rhs.cast<ref_node>();
         if(lhs_ref.identifier() != rhs_ref.identifier())
             return false;
-        if(lhs_ref.refered() != rhs_ref.refered())
-            return false;
-        if(lhs_ref.refered() == nullptr) // this implies rhs_ref.refered() == nullptr
-            return true;
+        if(lhs_ref.refered() == nullptr || rhs_ref.refered() == nullptr)
+            return lhs_ref.refered() == rhs_ref.refered();
 
         return structurally_equal(*lhs_ref.refered(), *rhs_ref.refered());
     }
