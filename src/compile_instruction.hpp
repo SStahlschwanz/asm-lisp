@@ -105,9 +105,9 @@ void compile_statement_impl
     LLVMContext& llvm = builder.getContext();
     Type& pointer_type = *PointerType::getUnqual(IntegerType::get(builder.getContext(), 8));
     Type& node_type = llvm_node_type(llvm);
-    Type& int64_type = *IntegerType::get(builder.getContext(), 64);
-    Type& int1_type = *IntegerType::get(builder.getContext(), 1);
-    Type& int8_type = *IntegerType::get(builder.getContext(), 8);
+    IntegerType& int64_type = *IntegerType::get(builder.getContext(), 64);
+    IntegerType& int1_type = *IntegerType::get(builder.getContext(), 1);
+    IntegerType& int8_type = *IntegerType::get(builder.getContext(), 8);
 
 
     auto add_instruction = [&](instruction_data data)
@@ -609,7 +609,7 @@ void compile_statement_impl
             Value& lit_arg = get_typed_arg(node_type);
             Value& char_arg = get_typed_arg(int8_type);
             
-            Value& val = *builder.CreateCall2(&macro_env.lit_push, &lit_arg, &char_arg);
+            builder.CreateCall2(&macro_env.lit_push, &lit_arg, &char_arg);
             
             no_result();
             add_instruction(lit_push{});
@@ -624,7 +624,7 @@ void compile_statement_impl
 
             Value& lit_arg = get_typed_arg(node_type);
             
-            Value& val = *builder.CreateCall(&macro_env.lit_pop, &lit_arg);
+            builder.CreateCall(&macro_env.lit_pop, &lit_arg);
             
             no_result();
             add_instruction(lit_pop{});
@@ -700,7 +700,7 @@ void compile_statement_impl
             Value& list_arg = get_typed_arg(node_type);
             Value& pushed_arg = get_typed_arg(node_type);
             
-            Value& val = *builder.CreateCall2(&macro_env.list_push, &list_arg, &pushed_arg);
+            builder.CreateCall2(&macro_env.list_push, &list_arg, &pushed_arg);
             
             no_result();
             add_instruction(list_push{});
@@ -752,6 +752,143 @@ void compile_statement_impl
             
             no_result();
             add_instruction(list_set{});
+            break;
+        }
+
+        case REF_CREATE:
+        {
+            constructor_name = "ref_create";
+            check_constructor_arity(0);
+
+            check_instruction_arity(0);
+
+            Value& val = *builder.CreateCall(&macro_env.ref_create);
+
+            result(val);
+            add_instruction(ref_create{val});
+            break;
+        }
+        case REF_GET_IDENTIFIER:
+        {
+            constructor_name = "ref_get_identifier";
+            check_constructor_arity(0);
+
+            check_instruction_arity(1);
+
+            Value& arg = get_typed_arg(node_type);
+
+            Value& val = *builder.CreateCall(&macro_env.ref_get_identifier, &arg);
+
+            result(val);
+            add_instruction(ref_get_identifier{val});
+            break;
+        }
+        case REF_SET_IDENTIFIER:
+        {
+            constructor_name = "ref_get_identifier";
+            check_constructor_arity(0);
+
+            check_instruction_arity(1);
+
+            Value& ref_arg = get_typed_arg(node_type);
+            Value& lit_arg = get_typed_arg(node_type);
+
+            builder.CreateCall2(&macro_env.ref_set_identifier, &ref_arg, &lit_arg);
+
+            no_result();
+            add_instruction(ref_set_identifier{});
+            break;
+        }
+        case REF_HAS_REFERED:
+        {
+            constructor_name = "ref_has_refered";
+            check_constructor_arity(0);
+
+            check_instruction_arity(1);
+
+            Value& ref_arg = get_typed_arg(node_type);
+
+            Value& val = *builder.CreateCall(&macro_env.ref_has_refered, &ref_arg);
+
+            result(val);
+            add_instruction(ref_has_refered{val});
+            break;
+        }
+        case REF_GET_REFERED:
+        {
+            constructor_name = "ref_get_refered";
+            check_constructor_arity(0);
+
+            check_instruction_arity(1);
+
+            Value& ref_arg = get_typed_arg(node_type);
+
+            Value& val = *builder.CreateCall(&macro_env.ref_get_refered, &ref_arg);
+
+            result(val);
+            add_instruction(ref_get_refered{val});
+            break;
+        }
+        case REF_SET_REFERED:
+        {
+            constructor_name = "ref_set_refered";
+            check_constructor_arity(0);
+
+            check_instruction_arity(2);
+
+            Value& ref_arg = get_typed_arg(node_type);
+            Value& new_refered = get_typed_arg(node_type);
+
+            builder.CreateCall2(&macro_env.ref_set_refered, &ref_arg, &new_refered);
+
+            no_result();
+            add_instruction(ref_set_refered{});
+            break;
+        }
+        case TO_NODE:
+        {
+            constructor_name = "to_node";
+
+            check_constructor_arity(0);
+
+            check_instruction_arity(1);
+
+            const node& arg = get_arg();
+
+            static_assert(sizeof(size_t) == sizeof(node*), "");
+            size_t ptr_as_int = reinterpret_cast<size_t>(&arg);
+            
+            Value& actual_arg = *ConstantInt::get(&int64_type, ptr_as_int);
+            Value& val = *builder.CreateCall(&macro_env.to_node, &actual_arg);
+            assert(&val);
+
+            result(val);
+            add_instruction(to_node{val});
+            break;
+        }
+        case CALL_MACRO:
+        {
+            constructor_name = "call_macro";
+            
+            check_constructor_arity(0);
+
+            check_instruction_arity(2);
+
+            const node& first_arg = resolve_refs(get_arg());
+            const macro_node& macro = first_arg.cast_else<macro_node>([&]
+            {
+                fatal<id("call_macro_invalid_macro")>(first_arg.source());
+            });
+
+            static_assert(sizeof(size_t) == sizeof(&macro), "");
+            size_t macro_ptr_as_int = reinterpret_cast<size_t>(&macro);
+            Value& constant_int = *ConstantInt::get(&int64_type, macro_ptr_as_int);
+            Value& macro_arg = get_typed_arg(node_type);
+            
+            Value& val = *builder.CreateCall2(&macro_env.call_macro, &constant_int, &macro_arg);
+
+            result(val);
+            add_instruction(call_macro{val});
             break;
         }
         default:

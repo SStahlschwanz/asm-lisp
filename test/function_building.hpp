@@ -66,7 +66,9 @@ list_node& load_int64 = list{id{unique_ids::LOAD}, int64_type};
 list_node& add_int64 = list{id{unique_ids::ADD}, int64_type};
 list_node& sub_int64 = list{id{unique_ids::SUB}, int64_type};
 list_node& return_int64 = list{id{unique_ids::RETURN}, int64_type};
+// TODO: remove return_symbol, only use return_node
 list_node& return_symbol = list{id{unique_ids::RETURN}, node_type};
+list_node& return_node = return_symbol;
 list_node& cmp_eq_int64 = list{id{unique_ids::CMP}, id{unique_ids::EQ}, int64_type};
 list_node& cmp_ne_int64 = list{id{unique_ids::CMP}, id{unique_ids::NE}, int64_type};
 list_node& cmp_eq_int1 = list{id{unique_ids::CMP}, id{unique_ids::EQ}, int1_type};
@@ -89,6 +91,9 @@ list_node& list_set = list{id{unique_ids::LIST_SET}};
 list_node& list_get = list{id{unique_ids::LIST_GET}};
 list_node& list_push = list{id{unique_ids::LIST_PUSH}};
 list_node& list_pop = list{id{unique_ids::LIST_POP}};
+
+id_node& to_node = id{unique_ids::TO_NODE};
+id_node& call_macro = id{unique_ids::CALL_MACRO};
 
 template<class T>
 T* get_compiled_function(const list_node& function_source)

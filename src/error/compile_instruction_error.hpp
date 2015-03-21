@@ -34,7 +34,8 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"unknown_instruction_constructor", ""},
     {"call_invalid_argument_type_list", ""},
     {"call_invalid_callee", ""},
-    {"call_signature_mismatch", ""}
+    {"call_signature_mismatch", ""},
+    {"call_macro_invalid_macro", ""}
 };
 
 constexpr std::size_t id(conststr str)

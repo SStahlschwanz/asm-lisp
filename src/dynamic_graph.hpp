@@ -30,6 +30,7 @@ public:
     proc_node& create_proc();
 
     void add(dynamic_graph);
+    node& add(const node&);
 
     static std::pair<node&, dynamic_graph> clone(const node&);
 

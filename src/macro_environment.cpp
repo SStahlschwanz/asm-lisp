@@ -56,13 +56,20 @@ macro_execution_environment create_macro_environment(llvm::LLVMContext& llvm_con
     params = {node};
     FunctionType* sig_int64_node = FunctionType::get(int64, params, false);
     FunctionType* sig_void_node = FunctionType::get(llvm_void, params, false);
+    FunctionType* sig_node_node = FunctionType::get(node, params, false);
     FunctionType* sig_int1_node = FunctionType::get(int1, params, false);
+
+    params = {int64};
+    FunctionType* sig_node_int64 = FunctionType::get(node, params, false);
+
+    params = {int64, node};
+    FunctionType* sig_node_int64_node = FunctionType::get(node, params, false);
 
     params = {node, int8};
     FunctionType* sig_void_node_int8 = FunctionType::get(llvm_void, params, false);
     
     params = {node, node};
-    FunctionType* sig_void_node_node = FunctionType::get(llvm_void, params, false);
+    FunctionType* sig_void_2node = FunctionType::get(llvm_void, params, false);
 
 
     params = {node, int64};
@@ -81,6 +88,7 @@ macro_execution_environment create_macro_environment(llvm::LLVMContext& llvm_con
     Function* is_ref = Function::Create(sig_int1_node, Function::InternalLinkage, "macro_is_ref", module);
     Function* is_list = Function::Create(sig_int1_node, Function::InternalLinkage, "macro_is_list", module);
     Function* is_macro = Function::Create(sig_int1_node, Function::InternalLinkage, "macro_is_macro", module);
+    Function* is_proc = Function::Create(sig_int1_node, Function::InternalLinkage, "macro_is_proc", module);
 
     Function* lit_create = Function::Create(sig_node, Function::InternalLinkage, "macro_lit_create", module);
     Function* lit_size = Function::Create(sig_int64_node, Function::InternalLinkage, "macro_lit_size", module);
@@ -93,8 +101,18 @@ macro_execution_environment create_macro_environment(llvm::LLVMContext& llvm_con
     Function* list_size = Function::Create(sig_int64_node, Function::InternalLinkage, "macro_list_size", module);
     Function* list_get = Function::Create(sig_node_node_int64, Function::InternalLinkage, "macro_list_get", module);
     Function* list_set = Function::Create(sig_void_node_int64_node, Function::InternalLinkage, "macro_list_set", module);
-    Function* list_push = Function::Create(sig_void_node_node, Function::InternalLinkage, "macro_list_push", module);
+    Function* list_push = Function::Create(sig_void_2node, Function::InternalLinkage, "macro_list_push", module);
     Function* list_pop = Function::Create(sig_void_node, Function::InternalLinkage, "macro_list_pop", module);
+
+    Function* ref_create = Function::Create(sig_node, Function::InternalLinkage, "macro_ref_create");
+    Function* ref_get_identifier = Function::Create(sig_node_node, Function::InternalLinkage, "macro_ref_get_identifier", module);
+    Function* ref_set_identifier = Function::Create(sig_void_2node, Function::InternalLinkage, "macro_ref_set_identifier", module);
+    Function* ref_has_refered = Function::Create(sig_int1_node, Function::InternalLinkage, "macro_ref_has_refered", module);
+    Function* ref_get_refered = Function::Create(sig_node_node, Function::InternalLinkage, "macro_ref_get_refered", module);
+    Function* ref_set_refered = Function::Create(sig_void_2node, Function::InternalLinkage, "macro_ref_set_refered", module);
+
+    Function* to_node = Function::Create(sig_node_int64, Function::InternalLinkage, "macro_to_node", module);
+    Function* call_macro = Function::Create(sig_node_int64_node, Function::InternalLinkage, "macro_call_macro", module);
 
     return macro_execution_environment
     {
@@ -106,6 +124,7 @@ macro_execution_environment create_macro_environment(llvm::LLVMContext& llvm_con
         *is_ref,
         *is_list,
         *is_macro,
+        *is_proc,
 
         *lit_create,
         *lit_size,
@@ -119,7 +138,17 @@ macro_execution_environment create_macro_environment(llvm::LLVMContext& llvm_con
         *list_set,
         *list_get,
         *list_push,
-        *list_pop
+        *list_pop,
+
+        *ref_create,
+        *ref_get_identifier,
+        *ref_set_identifier,
+        *ref_has_refered,
+        *ref_get_refered,
+        *ref_set_refered,
+
+        *to_node,
+        *call_macro
     };
 }
 

@@ -22,6 +22,7 @@ struct macro_execution_environment
     llvm::Function& is_ref;
     llvm::Function& is_list;
     llvm::Function& is_macro;
+    llvm::Function& is_proc;
 
     llvm::Function& lit_create;
     llvm::Function& lit_size;
@@ -36,6 +37,16 @@ struct macro_execution_environment
     llvm::Function& list_get;
     llvm::Function& list_push;
     llvm::Function& list_pop;
+
+    llvm::Function& ref_create;
+    llvm::Function& ref_get_identifier;
+    llvm::Function& ref_set_identifier;
+    llvm::Function& ref_has_refered;
+    llvm::Function& ref_get_refered;
+    llvm::Function& ref_set_refered;
+
+    llvm::Function& to_node;
+    llvm::Function& call_macro;
 };
 
 macro_execution_environment create_macro_environment(llvm::LLVMContext& llvm_context);

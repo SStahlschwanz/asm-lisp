@@ -43,6 +43,16 @@ enum
     LIST_POP,
     LIST_GET,
     LIST_SET,
+
+    REF_CREATE,
+    REF_GET_IDENTIFIER,
+    REF_SET_IDENTIFIER,
+    REF_HAS_REFERED,
+    REF_GET_REFERED,
+    REF_SET_REFERED,
+
+    TO_NODE,
+    CALL_MACRO,
     
     // cmp kinds
     EQ,

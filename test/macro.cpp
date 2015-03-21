@@ -7,6 +7,12 @@
 #include "graph_building.hpp"
 #include "function_building.hpp"
 
+#include <utility>
+
+using std::pair;
+using std::make_shared;
+using std::move;
+
 BOOST_AUTO_TEST_CASE(parameter_return_test)
 {
     list_node& params = list
@@ -62,12 +68,12 @@ BOOST_AUTO_TEST_CASE(is_test)
         list{block2, list
         {
             list{let, b, list_create},
-            list{return_symbol, b}
+            list{return_node, b}
         }},
         list{block3, list
         {
             list{let, c, lit_create},
-            list{return_symbol, c}
+            list{return_node, c}
         }}
     };
 
@@ -262,3 +268,80 @@ BOOST_AUTO_TEST_CASE(lit_push_pop_test)
     BOOST_CHECK(structurally_equal(p.first, expected));
 }
 
+BOOST_AUTO_TEST_CASE(to_node_test)
+{
+    list_node& params = list
+    {
+        list{s, node_type}
+    };
+    node& return_type = node_type;
+    
+    list_node& body = list
+    {
+        list{block1, list
+        {
+            list{let, a, to_node, list{lit{"123"}, ref{"123"}}},
+            list{return_node, a}
+        }}
+    };
+
+    list_node& function_source = list
+    {
+        params,
+        return_type,
+        body
+    };
+
+    macro_function* func = get_compiled_function<macro_function>(function_source);
+    const list_node& l = list{};
+    auto p = execute_macro(func, rangeify(l));
+    node& expected = list{lit{"123"}, ref{"123"}};
+
+    BOOST_CHECK(structurally_equal(p.first, expected));
+}
+
+BOOST_AUTO_TEST_CASE(call_macro_test)
+{
+    macro_node some_macro{make_shared<std::function<macro_node::macro>>(
+    [&](node_range range) -> pair<node&, dynamic_graph>
+    {
+        BOOST_CHECK(length(range) == 1);
+        BOOST_CHECK(structurally_equal(range.front(), list{}));
+        dynamic_graph graph;
+        lit_node& lit = graph.create_lit("1234");
+        list_node& list = graph.create_list({&lit});
+        return {list, move(graph)};
+    })};
+
+    list_node& params = list
+    {
+        list{s, node_type}
+    };
+    node& return_type = node_type;
+    
+    list_node& body = list
+    {
+        list{block1, list
+        {
+            list{let, a, list_create},
+            list{let, b, list_create},
+            list{list_push, a, b},
+            list{let, c, call_macro, some_macro, a},
+            list{return_node, c}
+        }}
+    };
+
+    list_node& function_source = list
+    {
+        params,
+        return_type,
+        body
+    };
+
+    macro_function* func = get_compiled_function<macro_function>(function_source);
+    const list_node& l = list{};
+    auto p = execute_macro(func, rangeify(l));
+    node& expected = list{lit{"123"}};
+
+    BOOST_CHECK(structurally_equal(p.first, expected));
+}

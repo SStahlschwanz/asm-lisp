@@ -92,7 +92,12 @@ void dynamic_graph::add(dynamic_graph graph)
 {
     std::move(graph.data.begin(), graph.data.end(), back_inserter(data));
 }
-
+node& dynamic_graph::add(const node& n)
+{
+    auto p = clone(n);
+    add(move(p.second));
+    return p.first;
+}
 pair<node&, dynamic_graph> dynamic_graph::clone(const node& n)
 {
     unordered_map<const node*, node_data*> copied_nodes;

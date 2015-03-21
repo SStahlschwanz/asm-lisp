@@ -12,6 +12,8 @@ constexpr std::pair<conststr, conststr> dictionary[] =
     {"invalid_node_index", ""},
     {"invalid_node_type", ""},
     {"index_out_of_bounds", ""},
+    {"ref_null", ""},
+    {"call_macro_arg_not_a_list", ""}
 };
 
 constexpr std::size_t id(conststr str)

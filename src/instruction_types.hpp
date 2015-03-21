@@ -253,6 +253,60 @@ struct list_set
     static constexpr bool is_rt_only = false;
 };
 
+struct ref_create
+{
+    llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
+};
+struct ref_get_identifier
+{
+    llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
+};
+struct ref_set_identifier
+{
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
+};
+struct ref_has_refered
+{
+    llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
+};
+struct ref_get_refered
+{
+    llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
+};
+struct ref_set_refered
+{
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
+};
+
+struct to_node
+{
+    llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
+};
+struct call_macro
+{
+    llvm::Value& llvm_value;
+
+    static constexpr bool is_ct_only = true;
+    static constexpr bool is_rt_only = false;
+};
+
 }
 
 typedef variadic_make_variant
@@ -289,7 +343,17 @@ typedef variadic_make_variant
     instruction::list_push,
     instruction::list_pop,
     instruction::list_get,
-    instruction::list_set
+    instruction::list_set,
+
+    instruction::ref_create,
+    instruction::ref_get_identifier,
+    instruction::ref_set_identifier,
+    instruction::ref_has_refered,
+    instruction::ref_get_refered,
+    instruction::ref_set_refered,
+
+    instruction::to_node,
+    instruction::call_macro
 >::type instruction_data;
 
 typedef std::pair<const node&, instruction_data> statement;

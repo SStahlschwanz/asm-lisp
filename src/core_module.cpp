@@ -179,6 +179,16 @@ module create_core_module(compilation_context& context)
     add_id_symbol("list_get", unique_ids::LIST_GET);
     add_id_symbol("list_set", unique_ids::LIST_SET);
 
+    add_id_symbol("ref_create", unique_ids::REF_CREATE);
+    add_id_symbol("ref_get_identifier", unique_ids::REF_GET_IDENTIFIER);
+    add_id_symbol("ref_set_identifier", unique_ids::REF_SET_IDENTIFIER);
+    add_id_symbol("ref_has_refered", unique_ids::REF_HAS_REFERED);
+    add_id_symbol("ref_get_refered", unique_ids::REF_GET_REFERED);
+    add_id_symbol("ref_set_refered", unique_ids::REF_SET_REFERED);
+
+    add_id_symbol("to_node", unique_ids::TO_NODE);
+    add_id_symbol("call_macro", unique_ids::TO_NODE);
+
     add_id_symbol("eq", unique_ids::EQ);
     add_id_symbol("ne", unique_ids::NE);
     add_id_symbol("lt", unique_ids::LT);

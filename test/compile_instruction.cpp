@@ -9,7 +9,7 @@
 using llvm::Value;
 using llvm::IRBuilder;
 
-BOOST_AUTO_TEST_CASE(first_test)
+BOOST_AUTO_TEST_CASE(compiles_test)
 {
     if(false)
     {
