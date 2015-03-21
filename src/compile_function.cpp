@@ -20,6 +20,8 @@ using llvm::Value;
 using llvm::Argument;
 using llvm::BasicBlock;
 using llvm::BranchInst;
+using llvm::cast;
+using llvm::CallInst;
 using llvm::IRBuilder;
 using llvm::pred_begin;
 using llvm::pred_end;
@@ -358,7 +360,7 @@ proc_node compile_proc(node_range source, compilation_context& context)
             for(statement& st : block.statements)
             {
                 if(auto call = get<instruction::call>(&st.second))
-                    call->llvm_value.setCalledFunction(call->callee.ct_function());
+                    cast<CallInst>(vtvm[&call->llvm_value])->setCalledFunction(call->callee.ct_function());
             }
         }
         context.macro_environment().llvm_module.getFunctionList().push_back(cloned_func.get());
@@ -373,7 +375,7 @@ proc_node compile_proc(node_range source, compilation_context& context)
             for(statement& st : block.statements)
             {
                 if(auto call = get<instruction::call>(&st.second))
-                    call->llvm_value.setCalledFunction(call->callee.rt_function());
+                    cast<CallInst>(vtvm[&call->llvm_value])->setCalledFunction(call->callee.rt_function());
             }
         }
         context.runtime_module().getFunctionList().push_back(cloned_func.get());

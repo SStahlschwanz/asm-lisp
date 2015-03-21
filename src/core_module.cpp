@@ -187,7 +187,7 @@ module create_core_module(compilation_context& context)
     add_id_symbol("ref_set_refered", unique_ids::REF_SET_REFERED);
 
     add_id_symbol("to_node", unique_ids::TO_NODE);
-    add_id_symbol("call_macro", unique_ids::TO_NODE);
+    add_id_symbol("call_macro", unique_ids::CALL_MACRO);
 
     add_id_symbol("eq", unique_ids::EQ);
     add_id_symbol("ne", unique_ids::NE);
