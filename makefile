@@ -1,6 +1,6 @@
 CPP=clang++
 LLVM_CPP_FLAGS=-D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -I$(shell llvm-config --includedir)
-COMMON_CPPFLAGS=-std=c++14 $(LLVM_CPP_FLAGS)
+COMMON_CPPFLAGS=-std=c++14 -Iinclude $(LLVM_CPP_FLAGS)
 DEBUG_CPPFLAGS=$(COMMON_CPPFLAGS) -Wall -g -fcolor-diagnostics
 RELEASE_CPPFLAGS=$(COMMON_CPPFLAGS) -O3 -DNDEBUG
 
@@ -20,11 +20,11 @@ ALL_TESTS=$(wildcard test/*.cpp)
 
 
 
-# build library, create build directories and build executable
+# create build-dirs, and build debug
 full-build:
 	make build-dirs
 	echo "building executable..."
-	make -j build/release/bin
+	make -j build/debug/bin
 	echo "building executable done"
 .SILENT: full-build
 
