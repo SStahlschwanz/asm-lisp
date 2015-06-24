@@ -15,3 +15,4 @@ enum class error_kind
 
 #endif
 
+e
